@@ -168,5 +168,24 @@ if (!marker.test(source)) {
   throw new Error('lib/client.js: could not find the BUNDLED_THEMES declaration to replace')
 }
 
-writeFileSync(clientPath, source.replace(marker, `const BUNDLED_THEMES = ${literal}`))
+// The panel shows the version, and the browser half has no way to read its own
+// manifest — so it is inlined here, from package.json, on every run. A stale value
+// would be a UI that lies about itself, which is why publish-check compares the two
+// and why the release workflow fails when this step changes a tracked file.
+const versionMarker = /const BUNDLED_VERSION = '[^']*'/
+if (!versionMarker.test(source)) {
+  throw new Error('lib/client.js: could not find the BUNDLED_VERSION declaration to replace')
+}
+const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+if (typeof pkg.version !== 'string' || pkg.version === '') {
+  throw new Error('package.json: version is missing')
+}
+
+writeFileSync(
+  clientPath,
+  source
+    .replace(marker, `const BUNDLED_THEMES = ${literal}`)
+    .replace(versionMarker, `const BUNDLED_VERSION = '${pkg.version}'`),
+)
 console.log(`embedded ${themes.length} theme(s) from ${files.length} file(s): ${[...seen.keys()].join(', ')}`)
+console.log(`inlined version ${pkg.version}`)

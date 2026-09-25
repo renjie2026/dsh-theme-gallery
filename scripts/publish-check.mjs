@@ -127,6 +127,15 @@ check(`内联的皮肤与 lib/themes 一致（${fileIds.length} 个）`,
   `文件 ${JSON.stringify(fileIds.sort())} vs 内联 ${JSON.stringify(bundledIds.sort())}\n`
   + '     → 跑 node scripts/embed-themes.mjs 重新内联')
 
+// The panel prints the version it was built from, so a stale inlined value is a UI
+// that lies about itself — and "which version am I running" is exactly the question
+// a user asks when deciding whether to update.
+const inlinedVersion = /const BUNDLED_VERSION = '([^']*)'/.exec(clientSource)
+check('面板显示的版本与 package.json 一致',
+  inlinedVersion !== null && inlinedVersion[1] === pkg.version,
+  `package.json ${pkg.version} vs lib/client.js ${inlinedVersion === null ? '(未声明)' : inlinedVersion[1]}\n`
+  + '     → 跑 node scripts/embed-themes.mjs 同步')
+
 // ── 4. README 不得含本机痕迹（对外第一印象）─────────────────────────────────
 console.log('\n── README 卫生 ──')
 const readmeRaw = existsSync(join(root, 'README.md'))
