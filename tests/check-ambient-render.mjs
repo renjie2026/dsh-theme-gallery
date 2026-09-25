@@ -456,6 +456,65 @@ check('the scene markup is remembered on the box', /dataset\.ambientMarkup = mar
 check('the geometry is refreshed on every pass', /applySceneBox\(box, column\)/.test(drawSource))
 check('the geometry write is separate from the paint', /function applySceneBox\(box, column\)/.test(source))
 
+// ── the debug switch gates DETAIL, never bad news ────────────────────────────
+//
+// The panel's readings used to print unconditionally. That was right while the
+// scenery was being brought up, and wrong once the package shipped: every user
+// would read a paragraph of internals (geometry, hit tests, an attempt log). They
+// are now opt-in — and the gate must never swallow a failure, which is the one
+// lesson this project has had to re-learn most often.
+
+const switchSource = [
+  "const DEBUG_KEY = 'theme-gallery:debug'",
+  block('debugEnabled'),
+  block('sceneryLineIsWarning'),
+].join('\n\n')
+
+/**
+ * Run the switch helpers against a stubbed window.
+ * @param hash - the URL fragment ('' for none).
+ * @param flag - the localStorage value (null for absent).
+ * @returns the two helpers, bound to the stub.
+ */
+function withWindow(hash, flag) {
+  const store = { getItem: (key) => (key === 'theme-gallery:debug' ? flag : null) }
+  // eslint-disable-next-line no-new-func
+  return new Function('window', `${switchSource}\nreturn { debugEnabled, sceneryLineIsWarning }`)(
+    { location: { hash }, localStorage: store },
+  )
+}
+
+check('the detail lines are off by default', withWindow('', null).debugEnabled() === false)
+check('the detail lines stay off when storage holds something else',
+  withWindow('', '0').debugEnabled() === false)
+check('the URL fragment switches the detail lines on',
+  withWindow('#theme-gallery-debug', null).debugEnabled() === true)
+check('the localStorage flag switches the detail lines on',
+  withWindow('', '1').debugEnabled() === true)
+check('a missing window reports "off" instead of throwing',
+  // eslint-disable-next-line no-new-func
+  new Function('window', `${switchSource}\nreturn debugEnabled()`)(undefined) === false)
+
+const switchApi = withWindow('', null)
+check('a routine pass is not a warning',
+  switchApi.sceneryLineIsWarning('装饰自检通过 · dream · 子元素=1') === false)
+check('a ⚠ line counts as a warning',
+  switchApi.sceneryLineIsWarning('⚠ 装饰未生效：报告缺失（期望 dream）') === true)
+check('a failure line counts as a warning',
+  switchApi.sceneryLineIsWarning('装饰自检失败: boom') === true)
+check('a null line is not a warning', switchApi.sceneryLineIsWarning(null) === false)
+
+// Structural guards, so a later edit cannot quietly make the line unconditional
+// again — or make a failure invisible.
+check('the panel decides the scenery line from the switch and the warning test',
+  /const showScenery = scenery !== null && \(debugEnabled\(\) \|\| sceneryLineIsWarning\(scenery\)\)/
+    .test(source))
+check('the panel renders the scenery line through that decision',
+  /showScenery\s*\n?\s*\?\s*jsx\('div', \{\s*\n\s*className: `tg-debug/.test(source))
+check('the diagnostics line still renders only behind the switch',
+  /debugEnabled\(\) \? jsx\('div', \{ className: 'tg-debug', children: themeDiagnostics\(selected\) \}\) : null/
+    .test(source))
+
 if (failed > 0) {
   console.error(`\n${failed} ambient markup check(s) failed`)
   process.exit(1)
