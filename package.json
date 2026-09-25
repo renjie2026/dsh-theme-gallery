@@ -1,6 +1,6 @@
 {
   "name": "dsh-theme-gallery",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A community theme gallery for DeepSeek Harness: JSON-defined skins with full-screen coverage, selectable from Settings, extendable without code",
   "author": "renjie2026 <renjie330@163.com> (https://github.com/renjie2026)",
   "license": "MIT",
