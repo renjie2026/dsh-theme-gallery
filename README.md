@@ -625,3 +625,7 @@ npm publish --access public   # 发布到 npm
 ## License
 
 MIT
+
+---
+
+作者 & 维护：[renjie2026](https://github.com/renjie2026)
