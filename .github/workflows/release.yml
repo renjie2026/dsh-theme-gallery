@@ -20,6 +20,20 @@
 # 不存在"CI 构建出与源码不同的东西"。工作流仍然跑完整套校验，因为产物一旦发出去就收不回：
 # 用户装到的皮肤是**内联在 lib/client.js 里**的，仓库里改了 JSON 而忘记内联时，
 # 发出去的就是旧皮肤。
+#
+# ── npm 发布：可信发布（OIDC），不存任何长期令牌 ─────────────────────────────
+#
+# 打 tag 时，第二个 job 会在 Release 构建成功**之后**把同一个 commit 发布到 npm。
+# 认证走 npm 官方的**可信发布**：仓库里不存 npm token，npm 凭 GitHub 提供的短时
+# OIDC 令牌信任「本仓库的这个工作流文件」。
+#
+# 启用前需要在 npmjs.com 的**包设置页**绑定一次（只有包主能做，且包必须已存在）：
+#   Organization or user = renjie2026
+#   Repository           = dsh-theme-gallery
+#   Workflow filename    = release.yml
+#   Allowed actions      = 必须**勾选允许 `npm publish`**
+#     —— 2026-09-03 之后创建的绑定默认只允许 `npm stage publish`，
+#        不勾选的话本 job 会被 npm 拒绝。
 name: release
 
 on:
@@ -36,11 +50,12 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
+          package-manager-cache: false   # 发布构建不缓存
 
       # 皮肤 JSON 必须内联进 lib/client.js —— 这是产物正确性的**前提**，
       # 不是可选的构建步骤。忘掉它 = 发出旧皮肤，而仓库里看起来是新的。
@@ -125,3 +140,44 @@ jobs:
 
             左侧栏底部会出现 **主题皮肤** 入口（**不在**「设置 → 通用 → 外观」里）。
             卸载与回滚方式见仓库 README 的「卸载与回滚」一节。
+
+  # ── npm 发布：可信发布（Trusted Publishing / OIDC）─────────────────────────
+  #
+  # 放在 `needs: release` 之后：先确认 Release 产物构建成功，再发 npm。
+  # 测试与类型检查已经由 release job 在同一个 commit 上跑过，这里不重复。
+  publish-npm:
+    name: Publish to npm (trusted publishing)
+    needs: release
+    # 只在真实 tag 上发布：workflow_dispatch 时 github.ref 是分支，不该发布
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write     # OIDC —— 可信发布需要的唯一权限
+    steps:
+      - uses: actions/checkout@v6
+
+      # npm 可信发布要求 npm CLI ≥ 11.5.1 与 Node ≥ 22.14，所以这里用 24。
+      # registry-url 指向**官方** registry：npm 的镜像（如 npmmirror）只能装不能发。
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      # 同一个 tag 可能被重跑。已发布的版本号不能重发，直接跳过而不是让 CI 红着失败。
+      - name: Skip when this version is already on npm
+        id: check
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if npm view "dsh-theme-gallery@$version" version >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::dsh-theme-gallery@$version 已在 npm 上，跳过发布"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # `prepack`（内联皮肤）与 `prepublishOnly`（发布前自检）由 npm 自动执行
+      - name: Publish
+        if: steps.check.outputs.exists == 'false'
+        run: npm publish

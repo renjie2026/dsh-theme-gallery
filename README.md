@@ -82,23 +82,39 @@ const CUBES = [light, dark, system]
 
 ## 安装
 
-### 直接用（推荐）
+### 三种安装方式
 
-1. **设置 → 插件 → 添加插件**，输入：
+**① 下载构建产物（推荐，零构建授权）**
 
-   ```
-   dsh-theme-gallery
-   ```
+1. 到 [Releases](https://github.com/renjie2026/dsh-theme-gallery/releases/latest) 下载 `dsh-theme-gallery-<版本>.tgz`
+2. **设置 → 插件 → 添加插件** → 粘贴该文件的**完整路径**
+3. **重启应用**
+4. 左侧栏底部出现 **主题皮肤** 入口（**不在**「设置 → 通用 → 外观」里，原因见下文），
+   当前三个主题：山青婷彩 / 梦海游鱼 / 深色
 
-   或粘贴本仓库地址 / 本地 `.tgz` 文件路径——该界面三者都接受。
+**② 用包名安装**（需要本包已发布到 npm；桌面版在「添加插件」里直接填包名即可）
 
-2. **重启应用。**
+```sh
+dsh plugin --profile web add dsh-theme-gallery
+```
 
-3. 左侧栏底部会多出 **主题皮肤** 入口（**不在**「设置 → 通用 → 外观」里，原因见下文）。
-   三个主题：山青婷彩 / 梦海游鱼 / 深色。
+> 桌面版的 profile 由 Electron 独占，`dsh plugin --profile desktop …` 会被拒绝 ——
+> 桌面用户请走上面的界面，这条 CLI 写法适用于 Web / CLI profile。
 
-> **不需要任何构建授权。** 本包把 `lib/` 作为源码随包分发（无构建步骤），
-> 安装即用，不会出现"缺 `lib/` 目录"那类失败。
+**③ 用仓库地址安装**（`github:renjie2026/dsh-theme-gallery`，拉的是**源码**，不推荐）
+
+只在你想跟源码时用它。本包**没有构建步骤**，所以不会出现"缺 `lib/` 目录"那类失败；
+它的代价是 pnpm 可能要求你为构建脚本授权（`allowBuilds`）。
+
+### 兼容性与权限
+
+| 项 | 说明 |
+|---|---|
+| 平台 | DeepSeek Harness **桌面版 0.1.7-rc.2**（实测通过）；同为 web 客户端的 Web / CLI profile 理论可用，但本项目只实测过桌面版 |
+| 网络 | **不联网** —— 插件半侧不发起任何请求 |
+| 文件 | 包内只有 `lib/`、`schema/`、`cordis.patch.yml`（见 `package.json` 的 `files`），不读写用户文件 |
+| 界面改动 | 只新增左侧栏一个面板入口；**不碰**官方「设置 → 通用 → 外观」那一行 |
+| 本地状态 | 皮肤选择存在 `localStorage`；主题偏好只写 `light`/`dark`/`system` |
 
 ### 装不上或想手动装
 

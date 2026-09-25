@@ -1,7 +1,7 @@
 {
   "name": "dsh-theme-gallery",
-  "version": "0.1.1",
-  "description": "A community theme gallery for DeepSeek Harness: JSON-defined skins with full-screen coverage, selectable from Settings, extendable without code",
+  "version": "0.1.2",
+  "description": "A community theme gallery for DeepSeek Harness (DSH): JSON-defined skins with full-screen coverage and ported sidebar scenery, switched from the plugin's own sidebar panel — adding skins needs no code change",
   "author": "renjie2026 <renjie330@163.com> (https://github.com/renjie2026)",
   "license": "MIT",
   "repository": {
@@ -78,10 +78,15 @@
   "keywords": [
     "dsh",
     "dsh-plugin",
+    "deepseek",
     "deepseek-harness",
     "theme",
     "themes",
-    "skin"
+    "skin",
+    "skins",
+    "plugin",
+    "cordis",
+    "desktop"
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
