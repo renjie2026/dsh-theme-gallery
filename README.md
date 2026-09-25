@@ -1,5 +1,8 @@
 # dsh-theme-gallery
 
+[![npm version](https://img.shields.io/npm/v/dsh-theme-gallery.svg)](https://www.npmjs.com/package/dsh-theme-gallery)
+[![license](https://img.shields.io/github/license/renjie2026/dsh-theme-gallery.svg)](https://github.com/renjie2026/dsh-theme-gallery/blob/main/LICENSE)
+
 给 DeepSeek Harness 的**主题画廊**：一个插件 + 一堆 JSON 皮肤。装一次，拿到全部主题；加皮肤**不用改代码、不用重启、不用重新装包**。
 
 | 你想要 | 怎么做 |
@@ -84,22 +87,27 @@ const CUBES = [light, dark, system]
 
 ### 三种安装方式
 
-**① 下载构建产物（推荐，零构建授权）**
+**① 用包名安装（推荐）** —— 包已发布到 npm：<https://www.npmjs.com/package/dsh-theme-gallery>
 
-1. 到 [Releases](https://github.com/renjie2026/dsh-theme-gallery/releases/latest) 下载 `dsh-theme-gallery-<版本>.tgz`
-2. **设置 → 插件 → 添加插件** → 粘贴该文件的**完整路径**
-3. **重启应用**
-4. 左侧栏底部出现 **主题皮肤** 入口（**不在**「设置 → 通用 → 外观」里，原因见下文），
+1. **设置 → 插件 → 添加插件** → 填 **`dsh-theme-gallery`**
+2. **重启应用**
+3. 左侧栏底部出现 **主题皮肤** 入口（**不在**「设置 → 通用 → 外观」里，原因见下文），
    当前三个主题：山青婷彩 / 梦海游鱼 / 深色
 
-**② 用包名安装**（需要本包已发布到 npm；桌面版在「添加插件」里直接填包名即可）
+Web / CLI profile 用官方 CLI 装同一个包：
 
 ```sh
 dsh plugin --profile web add dsh-theme-gallery
 ```
 
 > 桌面版的 profile 由 Electron 独占，`dsh plugin --profile desktop …` 会被拒绝 ——
-> 桌面用户请走上面的界面，这条 CLI 写法适用于 Web / CLI profile。
+> 桌面用户请走上面的界面。
+
+**② 下载构建产物**（不经过 npm 的等价方式，零构建授权）
+
+1. 到 [Releases](https://github.com/renjie2026/dsh-theme-gallery/releases/latest) 下载 `dsh-theme-gallery-<版本>.tgz`
+2. **设置 → 插件 → 添加插件** → 粘贴该文件的**完整路径**
+3. **重启应用**
 
 **③ 用仓库地址安装**（`github:renjie2026/dsh-theme-gallery`，拉的是**源码**，不推荐）
 

@@ -1,6 +1,6 @@
 {
   "name": "dsh-theme-gallery",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A community theme gallery for DeepSeek Harness (DSH): JSON-defined skins with full-screen coverage and ported sidebar scenery, switched from the plugin's own sidebar panel — adding skins needs no code change",
   "author": "renjie2026 (https://github.com/renjie2026)",
   "license": "MIT",
