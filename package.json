@@ -1,6 +1,6 @@
 {
   "name": "dsh-theme-gallery",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A community theme gallery for DeepSeek Harness (DSH): JSON-defined skins with full-screen coverage and ported sidebar scenery, switched from the plugin's own sidebar panel — adding skins needs no code change",
   "author": "renjie2026 (https://github.com/renjie2026)",
   "license": "MIT",
@@ -61,7 +61,8 @@
     "test:scopelogic": "node tests/check-scope-reach-logic.mjs",
     "test:preview": "node scripts/build-ambient-preview.mjs",
     "test:calls": "node tests/check-undefined-calls.mjs",
-    "test": "npm run test:schema && npm run test:host && npm run test:store && npm run test:order && npm run test:tdz && npm run test:theme && npm run test:ambient && npm run test:boot && npm run test:safety && npm run test:module && npm run test:bounded && npm run test:bootpath && npm run test:scope && npm run test:scopelogic && npm run test:calls",
+    "test:emitguard": "node tests/check-self-emit-guard.mjs && node tests/check-self-emit-guard-logic.mjs",
+    "test": "npm run test:schema && npm run test:host && npm run test:store && npm run test:order && npm run test:tdz && npm run test:theme && npm run test:ambient && npm run test:boot && npm run test:safety && npm run test:module && npm run test:bounded && npm run test:bootpath && npm run test:scope && npm run test:scopelogic && npm run test:calls && npm run test:emitguard",
     "prepack": "node scripts/embed-themes.mjs",
     "publish:check": "node scripts/publish-check.mjs",
     "embed-themes": "node scripts/embed-themes.mjs",
