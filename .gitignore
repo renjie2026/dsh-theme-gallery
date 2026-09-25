@@ -1,0 +1,24 @@
+# 依赖与构建产物
+node_modules/
+*.tsbuildinfo
+
+# 编辑器
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 安装脚本生成的 profile 备份（含本机绝对路径，不入库）
+.profile-backup-*/
+
+# 说明：tools/theme-bench/_shot-*.png 是**刻意纳入版本控制**的。
+# 它们是调参台的视觉交付物，记录了「空对话态 / 有对话态」与两套皮肤的实际
+# 观感，是配色决策的凭据。重新跑调参台只能生成新的截图，无法复现同一张，
+# 所以这四张随仓库留存（约 1.1MB）。
+# 若只想本地走查、不想提交新截图：
+#   git update-index --skip-worktree tools/theme-bench/_shot-*.png
+
+# ── 发布产物（由 npm pack / GitHub Actions 生成，不进版本控制）────────
+*.tgz
+SHA256SUMS.txt

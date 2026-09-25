@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>DSH 侧栏氛围装饰预览</title>
+<style>
+  /* Everything below the marker is the plugin's own stylesheet, verbatim. */
+  #dsh-theme-ambient{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:60}
+.dsh-ambient-scene{overflow:hidden}
+.ZTP-Xa_sidebarCol{position:relative}
+.dsh-amb-control{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+.dsh-amb-control-scene{overflow:hidden}
+.dsh-amb-control-scene .sta-mountains{position:absolute;left:0;right:0;bottom:0;height:46%;z-index:3}
+.dsh-amb-control-scene .sta-mountains svg{display:block;width:100%;height:100%}
+.dsh-amb-control-scene .sta-mist{position:absolute;height:1.6em;border-radius:1000px;z-index:4;
+background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);
+filter:blur(5px);opacity:.85;animation:dsh-amb-mist 26s ease-in-out infinite alternate}
+.dsh-amb-control-scene .sta-mist-1{width:62%;top:56%;left:12%}
+.dsh-amb-control-scene .sta-mist-2{width:44%;top:61%;left:38%;opacity:.6;
+animation-duration:32s;animation-delay:-9s}
+.dsh-amb-control-scene .sta-pond{position:absolute;left:0;right:0;bottom:0;height:13%;z-index:5;
+background:linear-gradient(to bottom,rgba(104,178,150,.62),rgba(66,141,113,.78))}
+.dsh-amb-control-scene .sta-pond-line{position:absolute;top:0;left:0;right:0;height:1.2px;opacity:.6;
+background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent)}
+.dsh-amb-control-scene .sta-ripple{position:absolute;z-index:6;width:.55em;height:.55em}
+.dsh-amb-control-scene .sta-ripple span{position:absolute;inset:0;
+border:1.6px solid rgba(217,123,164,.9);border-radius:50%;
+animation:dsh-amb-ring 3.2s ease-out infinite}
+.dsh-amb-control-scene .sta-ripple span:nth-child(2){animation-delay:1.6s}
+@keyframes dsh-amb-ring{0%{transform:scale(.4);opacity:.8}100%{transform:scale(4.2);opacity:0}}
+.dsh-amb-control-scene .sta-dfly{position:absolute;z-index:8;will-change:transform}
+.dsh-amb-control-scene .sta-dfly svg{display:block;width:100%;height:auto}
+.dsh-amb-control-scene .sta-bob{animation:dsh-amb-bob .9s ease-in-out infinite}
+.dsh-amb-control-scene .sta-dfly-2 .sta-bob{animation-duration:1.1s;animation-delay:-.4s}
+@keyframes dsh-amb-hover1{0%{transform:translate(0,0)}18%{transform:translate(1.4em,.7em)}
+38%{transform:translate(2.4em,-.5em)}55%{transform:translate(1.2em,.5em)}
+70%{transform:translate(-.5em,-.9em)}100%{transform:translate(0,0)}}
+@keyframes dsh-amb-hover2{0%{transform:translate(0,0)}25%{transform:translate(-1.5em,-1.2em)}
+50%{transform:translate(-2.4em,.5em)}75%{transform:translate(-.7em,1.2em)}100%{transform:translate(0,0)}}
+@keyframes dsh-amb-bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-2.5px) rotate(-2deg)}}
+.dsh-amb-control-scene .sta-petals{position:absolute;inset:0;z-index:2;pointer-events:none}
+.dsh-amb-control-scene .sta-petal{position:absolute;top:-1em;
+border-radius:60% 40% 55% 45%/60% 55% 45% 40%;opacity:1;animation:dsh-amb-fall linear infinite;
+box-shadow:0 0 3px rgba(217,123,164,.45)}
+@keyframes dsh-amb-fall{0%{transform:translate(0,-1em) rotate(0);opacity:0}8%{opacity:.9}
+35%{transform:translate(-1.2em,5em) rotate(140deg)}70%{transform:translate(.9em,10em) rotate(280deg)}
+100%{transform:translate(-.5em,15em) rotate(380deg);opacity:0}}
+@keyframes dsh-amb-mist{from{transform:translateX(0)}to{transform:translateX(11%)}}
+.dsh-amb-control-scene .dof-glow{position:absolute;inset:0;z-index:2}
+.dsh-amb-control-scene .dof-corner{position:absolute;top:-14%;left:-30%;width:150%;height:46%;
+background:radial-gradient(ellipse at 30% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 62%);
+filter:blur(10px);animation:dsh-amb-wash 18s ease-in-out infinite alternate}
+.dsh-amb-control-scene .dof-wash{position:absolute;left:-20%;width:140%;height:30%;filter:blur(12px);
+opacity:.5;background:linear-gradient(100deg,transparent,rgba(255,255,255,.8),transparent);
+animation:dsh-amb-wash 24s ease-in-out infinite alternate}
+.dsh-amb-control-scene .dof-wash-1{top:14%}
+.dsh-amb-control-scene .dof-wash-2{top:34%;opacity:.34;animation-duration:31s;animation-delay:-8s}
+@keyframes dsh-amb-wash{from{transform:translateX(0)}to{transform:translateX(9%)}}
+.dsh-amb-control-scene .dof-bubbles{position:absolute;inset:0;z-index:6;pointer-events:none}
+.dsh-amb-control-scene .dof-bubble{position:absolute;bottom:-1em;border-radius:50%;
+background:radial-gradient(circle at 34% 30%,#FFFFFF 0%,#D6F1FF 38%,rgba(122,205,255,.55) 70%,rgba(122,205,255,0) 100%);
+box-shadow:0 0 10px 3px rgba(122,205,255,.55),0 0 22px 6px rgba(122,205,255,.22);
+animation:dsh-amb-rise linear infinite}
+@keyframes dsh-amb-rise{0%{transform:translate(0,0) scale(.55);opacity:0}12%{opacity:.9}
+55%{transform:translate(1em,-11em) scale(1)}100%{transform:translate(-.6em,-23em) scale(.8);opacity:0}}
+.dsh-amb-control-scene .dof-seaweed{position:absolute;left:0;right:0;bottom:0;height:34%;z-index:5}
+.dsh-amb-control-scene .dof-seaweed svg{display:block;width:100%;height:100%}
+.dsh-amb-control-scene .dof-blade{transform-origin:50% 100%;
+animation:dsh-amb-sway 6s ease-in-out infinite alternate}
+.dsh-amb-control-scene .dof-blade-2{animation-duration:7.4s;animation-delay:-1.6s}
+.dsh-amb-control-scene .dof-blade-3{animation-duration:5.2s;animation-delay:-2.8s}
+.dsh-amb-control-scene .dof-blade-4{animation-duration:8.1s;animation-delay:-.9s}
+.dsh-amb-control-scene .dof-blade-5{animation-duration:6.6s;animation-delay:-3.4s}
+@keyframes dsh-amb-sway{from{transform:rotate(-3.5deg)}to{transform:rotate(3.5deg)}}
+@media (prefers-reduced-motion:reduce){.dsh-amb-control-scene *{animation:none!important}}
+#dsh-theme-ambient .sta-mountains{position:absolute;left:0;right:0;bottom:0;height:46%;z-index:3}
+#dsh-theme-ambient .sta-mountains svg{display:block;width:100%;height:100%}
+#dsh-theme-ambient .sta-mist{position:absolute;height:1.6em;border-radius:1000px;z-index:4;
+background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);
+filter:blur(5px);opacity:.85;animation:dsh-amb-mist 26s ease-in-out infinite alternate}
+#dsh-theme-ambient .sta-mist-1{width:66%;top:58.5%;left:13%}
+#dsh-theme-ambient .sta-mist-2{width:48%;top:63%;left:40%;opacity:.6;animation-duration:32s;animation-delay:-9s}
+@keyframes dsh-amb-mist{from{transform:translateX(0)}to{transform:translateX(11%)}}
+#dsh-theme-ambient .sta-pond{position:absolute;left:0;right:0;bottom:0;height:14%;z-index:5;
+background:linear-gradient(to bottom,rgba(104,178,150,.62),rgba(66,141,113,.78))}
+#dsh-theme-ambient .sta-pond-line{position:absolute;top:0;left:0;right:0;height:1.2px;opacity:.6;
+background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent)}
+#dsh-theme-ambient .sta-ripple{position:absolute;z-index:6;width:.55em;height:.55em}
+#dsh-theme-ambient .sta-ripple span{position:absolute;inset:0;border:1.6px solid rgba(232,139,176,.92);
+border-radius:50%;animation:dsh-amb-ring 3.2s ease-out infinite}
+#dsh-theme-ambient .sta-ripple span:nth-child(2){animation-delay:1.6s}
+@keyframes dsh-amb-ring{0%{transform:scale(.4);opacity:.8}100%{transform:scale(4.2);opacity:0}}
+#dsh-theme-ambient .sta-dfly{position:absolute;z-index:8;width:6.4em;will-change:transform}
+#dsh-theme-ambient .sta-dfly svg{display:block;width:100%;height:auto}
+#dsh-theme-ambient .sta-dfly-1{top:30%;left:16%;animation:dsh-amb-hover1 11s ease-in-out infinite}
+#dsh-theme-ambient .sta-dfly-2{top:52%;left:48%;width:4.4em;opacity:.95;
+animation:dsh-amb-hover2 13s ease-in-out infinite;animation-delay:-5s}
+#dsh-theme-ambient .sta-bob{animation:dsh-amb-bob .9s ease-in-out infinite}
+#dsh-theme-ambient .sta-dfly-2 .sta-bob{animation-duration:1.1s;animation-delay:-.4s}
+@keyframes dsh-amb-hover1{0%{transform:translate(0,0)}18%{transform:translate(2.4em,.9em)}
+38%{transform:translate(5.4em,-.6em)}55%{transform:translate(2.8em,.6em)}
+70%{transform:translate(-1.1em,-1.3em)}100%{transform:translate(0,0)}}
+@keyframes dsh-amb-hover2{0%{transform:translate(0,0)}25%{transform:translate(-2.8em,-1.7em)}
+50%{transform:translate(-4.8em,.7em)}75%{transform:translate(-1.9em,1.7em)}100%{transform:translate(0,0)}}
+@keyframes dsh-amb-bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-2.5px) rotate(-2deg)}}
+#dsh-theme-ambient .sta-petals{position:absolute;inset:0;z-index:7;pointer-events:none}
+#dsh-theme-ambient .sta-petal{position:absolute;top:-1em;border-radius:60% 40% 55% 45%/60% 55% 45% 40%;
+background:linear-gradient(135deg,#F9A8C8 0%,#E88BB0 55%,#CF6B96 100%);opacity:.9;animation:dsh-amb-fall linear infinite}
+@keyframes dsh-amb-fall{0%{transform:translate(0,-1em) rotate(0);opacity:0}8%{opacity:.9}
+35%{transform:translate(-1.5em,10em) rotate(140deg)}70%{transform:translate(1.1em,20em) rotate(280deg)}
+100%{transform:translate(-.6em,30em) rotate(380deg);opacity:0}}
+#dsh-theme-ambient .dof-glow{position:absolute;inset:0;z-index:2}
+#dsh-theme-ambient .dof-corner{position:absolute;top:-14%;left:-30%;width:150%;height:46%;
+background:radial-gradient(ellipse at 30% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 62%);
+filter:blur(10px);animation:dsh-amb-wash 18s ease-in-out infinite alternate}
+#dsh-theme-ambient .dof-wash{position:absolute;left:-20%;width:140%;height:30%;filter:blur(12px);opacity:.5;
+background:linear-gradient(100deg,transparent,rgba(255,255,255,.8),transparent);
+animation:dsh-amb-wash 24s ease-in-out infinite alternate}
+#dsh-theme-ambient .dof-wash-1{top:14%}
+#dsh-theme-ambient .dof-wash-2{top:34%;opacity:.34;animation-duration:31s;animation-delay:-8s}
+@keyframes dsh-amb-wash{from{transform:translateX(0)}to{transform:translateX(9%)}}
+#dsh-theme-ambient .dof-bubbles{position:absolute;inset:0;z-index:6;pointer-events:none}
+#dsh-theme-ambient .dof-bubble{position:absolute;bottom:-1em;border-radius:50%;
+background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.95),rgba(190,232,246,.55));
+box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);animation:dsh-amb-rise linear infinite}
+@keyframes dsh-amb-rise{0%{transform:translate(0,0) scale(.6);opacity:0}12%{opacity:.85}
+55%{transform:translate(1em,-11em) scale(1)}100%{transform:translate(-.6em,-23em) scale(.8);opacity:0}}
+#dsh-theme-ambient .dof-seaweed{position:absolute;left:0;right:0;bottom:0;height:38%;z-index:5}
+#dsh-theme-ambient .dof-seaweed svg{display:block;width:100%;height:100%}
+#dsh-theme-ambient .dof-blade{transform-origin:50% 100%;animation:dsh-amb-sway 6s ease-in-out infinite alternate}
+#dsh-theme-ambient .dof-blade-2{animation-duration:7.4s;animation-delay:-1.6s}
+#dsh-theme-ambient .dof-blade-3{animation-duration:5.2s;animation-delay:-2.8s}
+#dsh-theme-ambient .dof-blade-4{animation-duration:8.1s;animation-delay:-.9s}
+#dsh-theme-ambient .dof-blade-5{animation-duration:6.6s;animation-delay:-3.4s}
+@keyframes dsh-amb-sway{from{transform:rotate(-3.5deg)}to{transform:rotate(3.5deg)}}
+@media (prefers-reduced-motion:reduce){#dsh-theme-ambient *{animation:none!important}}
+
+  /* ── preview chrome only ───────────────────────────────────────────── */
+  body{margin:0;padding:28px;background:#f6f7f9;color:#1f2430;
+    font:14px/1.6 system-ui,"Segoe UI","Microsoft YaHei",sans-serif}
+  h1{font-size:17px;margin:0 0 4px}
+  .lede{margin:0 0 24px;color:#5b6472;font-size:13px}
+  .pane{margin:0 0 28px}
+  figcaption{margin-bottom:10px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  figcaption span{color:#6b7280;font-size:12px}
+  .colwrap{display:flex;gap:20px;align-items:flex-start}
+  /* The shell's own width range: default 280, draggable down. */
+  .ZTP-Xa_sidebarCol{width:280px;height:620px;border-radius:10px;overflow:hidden;
+    box-shadow:0 6px 20px rgba(20,30,50,.14);position:relative}
+  .ZTP-Xa_sidebarCol.is-narrow{width:200px;height:420px}
+  .mocknav{position:relative;z-index:1;display:flex;flex-direction:column;
+    padding:12px 12px 0;gap:2px;font-size:12.5px;color:#2E5C4D}
+  .mockrow{padding:7px 9px;border-radius:7px}
+  .mockrow.is-active{background:rgba(232,139,176,.16);box-shadow:inset 0 0 0 1px #E88BB0;
+    color:#1F4638;font-weight:600}
+  .mockfoot{margin-top:auto}
+  /* The opaque-nav variant used by the stacking comparison. */
+  .mocknav.is-opaque{background:rgba(255,255,255,.72);flex:1}
+  /* Forces the seat back to the pre-fix value. */
+  #dsh-theme-ambient.is-behind{z-index:0 !important}
+  code{background:#eceff3;padding:1px 5px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+  <h1>DSH 侧栏氛围装饰（复刻自电商新零售系统）</h1>
+  <p class="lede">
+    下面每一段 CSS 都<strong>直接读自 <code>lib/client.js</code></strong>，不是另抄一份；
+    两种宽度都画出来，因为侧栏可拖拽、而装饰是按百分比自适应的。
+    场景挂在 <code>#dsh-theme-ambient</code> 上，该元素 <code>pointer-events:none</code>
+    且位于导航之下，不会遮挡任何菜单项。
+  </p>
+
+  <figure class="pane">
+    <figcaption>
+      <strong>山青婷彩 · shan</strong>
+      <span>青山两层 + 云雾 + 水面涟漪 + 两只蜻蜓 + 花瓣飘落</span>
+    </figcaption>
+    <div class="colwrap">
+      <div class="ZTP-Xa_sidebarCol" style="background:linear-gradient(to bottom,#EAF7F0 0%,#D8EFE4 20%,#C9E8DA 36%,#BFE2D2 50%,#B4DCCA 62%,#A8D2BE 74%,#9CC9B2 86%,#90C0A8 100%)">
+        <div id="dsh-theme-ambient"><div class="sta">
+    <div class="sta-mountains">
+      <svg viewBox="0 0 223 190" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="dsh-sta-back" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#8FBFAA"/><stop offset="1" stop-color="#74AE96"/>
+          </linearGradient>
+          <linearGradient id="dsh-sta-front" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#3E8A66"/><stop offset="1" stop-color="#2B6E4F"/>
+          </linearGradient>
+        </defs>
+        <path d="M 0 78 Q 30 48 62 66 Q 96 34 128 60 Q 160 40 190 62 Q 208 50 223 58 L 223 190 L 0 190 Z" fill="url(#dsh-sta-back)"/>
+        <path d="M 0 122 Q 36 92 70 110 Q 104 84 140 108 Q 176 90 223 116 L 223 190 L 0 190 Z" fill="url(#dsh-sta-front)"/>
+      </svg>
+    </div>
+    <div class="sta-mist sta-mist-1"></div>
+    <div class="sta-mist sta-mist-2"></div>
+    <div class="sta-pond"><div class="sta-pond-line"></div></div>
+    <div class="sta-ripple" style="left:38%;bottom:5.2%"><span></span><span></span></div>
+    <div class="sta-ripple" style="left:62%;bottom:3.4%"><span></span><span></span></div>
+    <div class="sta-dfly sta-dfly-1"><div class="sta-bob">
+    <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="dsh-sta-dfly-body-1" x1="1" y1="0" x2="0" y2="0">
+        <stop offset="0" stop-color="#1F6B4C"/><stop offset="1" stop-color="#2E8C66"/>
+      </linearGradient></defs>
+      <ellipse cx="36" cy="15" rx="17" ry="4.4" fill="rgba(150,200,222,0.5)" transform="rotate(-40 36 15)"/>
+      <ellipse cx="38" cy="24" rx="15" ry="4" fill="rgba(150,200,222,0.42)" transform="rotate(-14 38 24)"/>
+      <ellipse cx="31" cy="11" rx="19" ry="5" fill="rgba(214,242,248,0.7)" transform="rotate(-30 31 11)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <ellipse cx="34" cy="22" rx="16" ry="4.6" fill="rgba(240,214,242,0.62)" transform="rotate(-6 34 22)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <path d="M 27 32 C 42 39, 60 46, 84 55" stroke="url(#dsh-sta-dfly-body-1)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="84" cy="55" r="1.4" fill="#17513C"/>
+      <ellipse cx="27" cy="30" rx="6.5" ry="5" fill="#1F6B4C"/>
+      <circle cx="18.5" cy="27.5" r="4.2" fill="#17513C"/>
+      <circle cx="16.2" cy="25.8" r="1.9" fill="#0F3D2E"/>
+      <circle cx="20.6" cy="25.4" r="1.9" fill="#0F3D2E"/>
+      <circle cx="15.6" cy="25.2" r="0.6" fill="#DFF3EC"/>
+      <circle cx="20" cy="24.8" r="0.6" fill="#DFF3EC"/>
+    </svg></div></div>
+    <div class="sta-dfly sta-dfly-2"><div class="sta-bob">
+    <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="dsh-sta-dfly-body-2" x1="1" y1="0" x2="0" y2="0">
+        <stop offset="0" stop-color="#1F6B4C"/><stop offset="1" stop-color="#2E8C66"/>
+      </linearGradient></defs>
+      <ellipse cx="36" cy="15" rx="17" ry="4.4" fill="rgba(150,200,222,0.5)" transform="rotate(-40 36 15)"/>
+      <ellipse cx="38" cy="24" rx="15" ry="4" fill="rgba(150,200,222,0.42)" transform="rotate(-14 38 24)"/>
+      <ellipse cx="31" cy="11" rx="19" ry="5" fill="rgba(214,242,248,0.7)" transform="rotate(-30 31 11)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <ellipse cx="34" cy="22" rx="16" ry="4.6" fill="rgba(240,214,242,0.62)" transform="rotate(-6 34 22)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <path d="M 27 32 C 42 39, 60 46, 84 55" stroke="url(#dsh-sta-dfly-body-2)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="84" cy="55" r="1.4" fill="#17513C"/>
+      <ellipse cx="27" cy="30" rx="6.5" ry="5" fill="#1F6B4C"/>
+      <circle cx="18.5" cy="27.5" r="4.2" fill="#17513C"/>
+      <circle cx="16.2" cy="25.8" r="1.9" fill="#0F3D2E"/>
+      <circle cx="20.6" cy="25.4" r="1.9" fill="#0F3D2E"/>
+      <circle cx="15.6" cy="25.2" r="0.6" fill="#DFF3EC"/>
+      <circle cx="20" cy="24.8" r="0.6" fill="#DFF3EC"/>
+    </svg></div></div>
+    <div class="sta-petals"><div class="sta-petal" style="left:25%;width:6px;height:5px;animation-duration:12s;animation-delay:-1.3s"></div><div class="sta-petal" style="left:42%;width:6px;height:5px;animation-duration:13s;animation-delay:-2.6s"></div><div class="sta-petal" style="left:59%;width:6px;height:5px;animation-duration:14s;animation-delay:-3.9000000000000004s"></div><div class="sta-petal" style="left:76%;width:6px;height:5px;animation-duration:11s;animation-delay:-5.2s"></div><div class="sta-petal" style="left:13%;width:6px;height:5px;animation-duration:12s;animation-delay:-6.5s"></div><div class="sta-petal" style="left:30%;width:6px;height:5px;animation-duration:13s;animation-delay:-7.800000000000001s"></div></div>
+  </div></div>
+        <nav class="mocknav">
+          <div class="mockrow">＋ 新对话</div>
+          <div class="mockrow">搜索会话…</div>
+          <div class="mockrow is-active">山青婷彩主题复刻</div>
+          <div class="mockrow">梦海游鱼配色提取</div>
+          <div class="mockrow">dsh-theme-gallery 插件架构</div>
+          <div class="mockrow">阅读态削弱方案</div>
+          <div class="mockrow">设置行插槽注册</div>
+          <div class="mockrow">token 清单核对</div>
+          <div class="mockrow">电商后台主题映射</div>
+          <div class="mockrow">发布到 npm 的流程</div>
+          <div class="mockrow">版本锁定陷阱</div>
+          <div class="mockrow">CSS 注入的生命周期</div>
+          <div class="mockrow mockfoot">⚙ 设置</div>
+        </nav>
+      </div>
+      <!-- A second width, because the sidebar is draggable and the scene is
+           percentage-based: this is where a fixed-pixel port would break. -->
+      <div class="ZTP-Xa_sidebarCol is-narrow" style="background:linear-gradient(to bottom,#EAF7F0 0%,#D8EFE4 20%,#C9E8DA 36%,#BFE2D2 50%,#B4DCCA 62%,#A8D2BE 74%,#9CC9B2 86%,#90C0A8 100%)">
+        <div id="dsh-theme-ambient"><div class="sta">
+    <div class="sta-mountains">
+      <svg viewBox="0 0 223 190" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="dsh-sta-back" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#8FBFAA"/><stop offset="1" stop-color="#74AE96"/>
+          </linearGradient>
+          <linearGradient id="dsh-sta-front" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#3E8A66"/><stop offset="1" stop-color="#2B6E4F"/>
+          </linearGradient>
+        </defs>
+        <path d="M 0 78 Q 30 48 62 66 Q 96 34 128 60 Q 160 40 190 62 Q 208 50 223 58 L 223 190 L 0 190 Z" fill="url(#dsh-sta-back)"/>
+        <path d="M 0 122 Q 36 92 70 110 Q 104 84 140 108 Q 176 90 223 116 L 223 190 L 0 190 Z" fill="url(#dsh-sta-front)"/>
+      </svg>
+    </div>
+    <div class="sta-mist sta-mist-1"></div>
+    <div class="sta-mist sta-mist-2"></div>
+    <div class="sta-pond"><div class="sta-pond-line"></div></div>
+    <div class="sta-ripple" style="left:38%;bottom:5.2%"><span></span><span></span></div>
+    <div class="sta-ripple" style="left:62%;bottom:3.4%"><span></span><span></span></div>
+    <div class="sta-dfly sta-dfly-1"><div class="sta-bob">
+    <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="dsh-sta-dfly-body-1" x1="1" y1="0" x2="0" y2="0">
+        <stop offset="0" stop-color="#1F6B4C"/><stop offset="1" stop-color="#2E8C66"/>
+      </linearGradient></defs>
+      <ellipse cx="36" cy="15" rx="17" ry="4.4" fill="rgba(150,200,222,0.5)" transform="rotate(-40 36 15)"/>
+      <ellipse cx="38" cy="24" rx="15" ry="4" fill="rgba(150,200,222,0.42)" transform="rotate(-14 38 24)"/>
+      <ellipse cx="31" cy="11" rx="19" ry="5" fill="rgba(214,242,248,0.7)" transform="rotate(-30 31 11)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <ellipse cx="34" cy="22" rx="16" ry="4.6" fill="rgba(240,214,242,0.62)" transform="rotate(-6 34 22)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <path d="M 27 32 C 42 39, 60 46, 84 55" stroke="url(#dsh-sta-dfly-body-1)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="84" cy="55" r="1.4" fill="#17513C"/>
+      <ellipse cx="27" cy="30" rx="6.5" ry="5" fill="#1F6B4C"/>
+      <circle cx="18.5" cy="27.5" r="4.2" fill="#17513C"/>
+      <circle cx="16.2" cy="25.8" r="1.9" fill="#0F3D2E"/>
+      <circle cx="20.6" cy="25.4" r="1.9" fill="#0F3D2E"/>
+      <circle cx="15.6" cy="25.2" r="0.6" fill="#DFF3EC"/>
+      <circle cx="20" cy="24.8" r="0.6" fill="#DFF3EC"/>
+    </svg></div></div>
+    <div class="sta-dfly sta-dfly-2"><div class="sta-bob">
+    <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="dsh-sta-dfly-body-2" x1="1" y1="0" x2="0" y2="0">
+        <stop offset="0" stop-color="#1F6B4C"/><stop offset="1" stop-color="#2E8C66"/>
+      </linearGradient></defs>
+      <ellipse cx="36" cy="15" rx="17" ry="4.4" fill="rgba(150,200,222,0.5)" transform="rotate(-40 36 15)"/>
+      <ellipse cx="38" cy="24" rx="15" ry="4" fill="rgba(150,200,222,0.42)" transform="rotate(-14 38 24)"/>
+      <ellipse cx="31" cy="11" rx="19" ry="5" fill="rgba(214,242,248,0.7)" transform="rotate(-30 31 11)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <ellipse cx="34" cy="22" rx="16" ry="4.6" fill="rgba(240,214,242,0.62)" transform="rotate(-6 34 22)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <path d="M 27 32 C 42 39, 60 46, 84 55" stroke="url(#dsh-sta-dfly-body-2)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="84" cy="55" r="1.4" fill="#17513C"/>
+      <ellipse cx="27" cy="30" rx="6.5" ry="5" fill="#1F6B4C"/>
+      <circle cx="18.5" cy="27.5" r="4.2" fill="#17513C"/>
+      <circle cx="16.2" cy="25.8" r="1.9" fill="#0F3D2E"/>
+      <circle cx="20.6" cy="25.4" r="1.9" fill="#0F3D2E"/>
+      <circle cx="15.6" cy="25.2" r="0.6" fill="#DFF3EC"/>
+      <circle cx="20" cy="24.8" r="0.6" fill="#DFF3EC"/>
+    </svg></div></div>
+    <div class="sta-petals"><div class="sta-petal" style="left:25%;width:6px;height:5px;animation-duration:12s;animation-delay:-1.3s"></div><div class="sta-petal" style="left:42%;width:6px;height:5px;animation-duration:13s;animation-delay:-2.6s"></div><div class="sta-petal" style="left:59%;width:6px;height:5px;animation-duration:14s;animation-delay:-3.9000000000000004s"></div><div class="sta-petal" style="left:76%;width:6px;height:5px;animation-duration:11s;animation-delay:-5.2s"></div><div class="sta-petal" style="left:13%;width:6px;height:5px;animation-duration:12s;animation-delay:-6.5s"></div><div class="sta-petal" style="left:30%;width:6px;height:5px;animation-duration:13s;animation-delay:-7.800000000000001s"></div></div>
+  </div></div>
+        <nav class="mocknav">
+          <div class="mockrow">＋ 新对话</div>
+          <div class="mockrow is-active">山青婷彩主题复刻</div>
+          <div class="mockrow">设置</div>
+        </nav>
+      </div>
+    </div>
+  </figure>
+
+  <figure class="pane">
+    <figcaption>
+      <strong>梦海游鱼 · dream</strong>
+      <span>左上柔光辉 + 气泡上浮 + 水草摇摆（原系统另有独立卡通小鱼组件，未含在此）</span>
+    </figcaption>
+    <div class="colwrap">
+      <div class="ZTP-Xa_sidebarCol" style="background:linear-gradient(to bottom,#EAF5FF 0%,#DDF0FF 26%,#CDE9FB 52%,#BFE2F6 74%,#B0D9F0 100%)">
+        <div id="dsh-theme-ambient"><div class="dof">
+    <div class="dof-glow">
+      <div class="dof-corner"></div>
+      <div class="dof-wash dof-wash-1"></div>
+      <div class="dof-wash dof-wash-2"></div>
+    </div>
+    <div class="dof-bubbles"><div class="dof-bubble" style="left:29%;width:3px;height:3px;animation-duration:15s;animation-delay:-1.7s"></div><div class="dof-bubble" style="left:52%;width:3px;height:3px;animation-duration:14s;animation-delay:-3.4s"></div><div class="dof-bubble" style="left:75%;width:3px;height:3px;animation-duration:13s;animation-delay:-5.1s"></div><div class="dof-bubble" style="left:12%;width:3px;height:3px;animation-duration:12s;animation-delay:-6.8s"></div><div class="dof-bubble" style="left:35%;width:3px;height:3px;animation-duration:11s;animation-delay:-8.5s"></div><div class="dof-bubble" style="left:58%;width:3px;height:3px;animation-duration:10s;animation-delay:-10.2s"></div><div class="dof-bubble" style="left:81%;width:3px;height:3px;animation-duration:9s;animation-delay:-11.9s"></div><div class="dof-bubble" style="left:18%;width:3px;height:3px;animation-duration:8s;animation-delay:-13.6s"></div><div class="dof-bubble" style="left:41%;width:3px;height:3px;animation-duration:15s;animation-delay:-15.299999999999999s"></div></div>
+    <div class="dof-seaweed">
+      <svg viewBox="0 0 140 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="dsh-dof-weed-a" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stop-color="#1F6B57"/><stop offset="0.55" stop-color="#3E9C82"/><stop offset="1" stop-color="#9FE3D2" stop-opacity="0.85"/>
+          </linearGradient>
+          <linearGradient id="dsh-dof-weed-b" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stop-color="#2B7C87"/><stop offset="0.6" stop-color="#4FA9B1"/><stop offset="1" stop-color="#B3E8EC" stop-opacity="0.85"/>
+          </linearGradient>
+          <linearGradient id="dsh-dof-weed-c" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stop-color="#5568AC"/><stop offset="0.6" stop-color="#7B92CA"/><stop offset="1" stop-color="#CFD9F2" stop-opacity="0.8"/>
+          </linearGradient>
+        </defs>
+        <g class="dof-blade dof-blade-1"><path d="M 22 120 C 12 96, 26 74, 18 48 C 15 38, 18 28, 24 20 C 20 34, 24 44, 30 60 C 36 80, 30 100, 32 120 Z" fill="url(#dsh-dof-weed-a)" stroke="url(#dsh-dof-weed-a)" stroke-width="2.2" opacity="0.95"/></g>
+        <g class="dof-blade dof-blade-2"><path d="M 48 120 C 40 98, 54 80, 46 56 C 42 44, 48 34, 56 24 C 50 40, 56 52, 60 68 C 64 88, 56 104, 58 120 Z" fill="url(#dsh-dof-weed-b)" stroke="url(#dsh-dof-weed-b)" stroke-width="2" opacity="0.92"/></g>
+        <g class="dof-blade dof-blade-3"><path d="M 74 120 C 68 102, 78 88, 72 68 C 69 58, 72 48, 78 40 C 74 52, 78 62, 82 76 C 86 94, 80 108, 82 120 Z" fill="url(#dsh-dof-weed-c)" stroke="url(#dsh-dof-weed-c)" stroke-width="1.8" opacity="0.88"/></g>
+        <g class="dof-blade dof-blade-4"><path d="M 96 120 C 92 104, 102 90, 96 72 C 93 62, 96 54, 102 46 C 98 58, 102 68, 106 82 C 110 98, 102 110, 104 120 Z" fill="url(#dsh-dof-weed-a)" stroke="url(#dsh-dof-weed-a)" stroke-width="1.6" opacity="0.85"/></g>
+        <g class="dof-blade dof-blade-5"><path d="M 118 120 C 114 108, 122 96, 117 82 C 115 74, 117 68, 121 62 C 118 72, 121 80, 124 92 C 127 104, 121 112, 123 120 Z" fill="url(#dsh-dof-weed-b)" stroke="url(#dsh-dof-weed-b)" stroke-width="1.4" opacity="0.8"/></g>
+        <ellipse cx="30" cy="119" rx="14" ry="4" fill="#7FAFC6" opacity="0.55"/>
+        <ellipse cx="72" cy="120" rx="10" ry="3.4" fill="#8FB9CE" opacity="0.5"/>
+        <ellipse cx="108" cy="119.5" rx="12" ry="3.6" fill="#7FAFC6" opacity="0.45"/>
+      </svg>
+    </div>
+  </div></div>
+        <nav class="mocknav">
+          <div class="mockrow">＋ 新对话</div>
+          <div class="mockrow">搜索会话…</div>
+          <div class="mockrow is-active">山青婷彩主题复刻</div>
+          <div class="mockrow">梦海游鱼配色提取</div>
+          <div class="mockrow">dsh-theme-gallery 插件架构</div>
+          <div class="mockrow">阅读态削弱方案</div>
+          <div class="mockrow">设置行插槽注册</div>
+          <div class="mockrow">token 清单核对</div>
+          <div class="mockrow">电商后台主题映射</div>
+          <div class="mockrow">发布到 npm 的流程</div>
+          <div class="mockrow">版本锁定陷阱</div>
+          <div class="mockrow">CSS 注入的生命周期</div>
+          <div class="mockrow mockfoot">⚙ 设置</div>
+        </nav>
+      </div>
+      <!-- A second width, because the sidebar is draggable and the scene is
+           percentage-based: this is where a fixed-pixel port would break. -->
+      <div class="ZTP-Xa_sidebarCol is-narrow" style="background:linear-gradient(to bottom,#EAF5FF 0%,#DDF0FF 26%,#CDE9FB 52%,#BFE2F6 74%,#B0D9F0 100%)">
+        <div id="dsh-theme-ambient"><div class="dof">
+    <div class="dof-glow">
+      <div class="dof-corner"></div>
+      <div class="dof-wash dof-wash-1"></div>
+      <div class="dof-wash dof-wash-2"></div>
+    </div>
+    <div class="dof-bubbles"><div class="dof-bubble" style="left:29%;width:3px;height:3px;animation-duration:15s;animation-delay:-1.7s"></div><div class="dof-bubble" style="left:52%;width:3px;height:3px;animation-duration:14s;animation-delay:-3.4s"></div><div class="dof-bubble" style="left:75%;width:3px;height:3px;animation-duration:13s;animation-delay:-5.1s"></div><div class="dof-bubble" style="left:12%;width:3px;height:3px;animation-duration:12s;animation-delay:-6.8s"></div><div class="dof-bubble" style="left:35%;width:3px;height:3px;animation-duration:11s;animation-delay:-8.5s"></div><div class="dof-bubble" style="left:58%;width:3px;height:3px;animation-duration:10s;animation-delay:-10.2s"></div><div class="dof-bubble" style="left:81%;width:3px;height:3px;animation-duration:9s;animation-delay:-11.9s"></div><div class="dof-bubble" style="left:18%;width:3px;height:3px;animation-duration:8s;animation-delay:-13.6s"></div><div class="dof-bubble" style="left:41%;width:3px;height:3px;animation-duration:15s;animation-delay:-15.299999999999999s"></div></div>
+    <div class="dof-seaweed">
+      <svg viewBox="0 0 140 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="dsh-dof-weed-a" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stop-color="#1F6B57"/><stop offset="0.55" stop-color="#3E9C82"/><stop offset="1" stop-color="#9FE3D2" stop-opacity="0.85"/>
+          </linearGradient>
+          <linearGradient id="dsh-dof-weed-b" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stop-color="#2B7C87"/><stop offset="0.6" stop-color="#4FA9B1"/><stop offset="1" stop-color="#B3E8EC" stop-opacity="0.85"/>
+          </linearGradient>
+          <linearGradient id="dsh-dof-weed-c" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stop-color="#5568AC"/><stop offset="0.6" stop-color="#7B92CA"/><stop offset="1" stop-color="#CFD9F2" stop-opacity="0.8"/>
+          </linearGradient>
+        </defs>
+        <g class="dof-blade dof-blade-1"><path d="M 22 120 C 12 96, 26 74, 18 48 C 15 38, 18 28, 24 20 C 20 34, 24 44, 30 60 C 36 80, 30 100, 32 120 Z" fill="url(#dsh-dof-weed-a)" stroke="url(#dsh-dof-weed-a)" stroke-width="2.2" opacity="0.95"/></g>
+        <g class="dof-blade dof-blade-2"><path d="M 48 120 C 40 98, 54 80, 46 56 C 42 44, 48 34, 56 24 C 50 40, 56 52, 60 68 C 64 88, 56 104, 58 120 Z" fill="url(#dsh-dof-weed-b)" stroke="url(#dsh-dof-weed-b)" stroke-width="2" opacity="0.92"/></g>
+        <g class="dof-blade dof-blade-3"><path d="M 74 120 C 68 102, 78 88, 72 68 C 69 58, 72 48, 78 40 C 74 52, 78 62, 82 76 C 86 94, 80 108, 82 120 Z" fill="url(#dsh-dof-weed-c)" stroke="url(#dsh-dof-weed-c)" stroke-width="1.8" opacity="0.88"/></g>
+        <g class="dof-blade dof-blade-4"><path d="M 96 120 C 92 104, 102 90, 96 72 C 93 62, 96 54, 102 46 C 98 58, 102 68, 106 82 C 110 98, 102 110, 104 120 Z" fill="url(#dsh-dof-weed-a)" stroke="url(#dsh-dof-weed-a)" stroke-width="1.6" opacity="0.85"/></g>
+        <g class="dof-blade dof-blade-5"><path d="M 118 120 C 114 108, 122 96, 117 82 C 115 74, 117 68, 121 62 C 118 72, 121 80, 124 92 C 127 104, 121 112, 123 120 Z" fill="url(#dsh-dof-weed-b)" stroke="url(#dsh-dof-weed-b)" stroke-width="1.4" opacity="0.8"/></g>
+        <ellipse cx="30" cy="119" rx="14" ry="4" fill="#7FAFC6" opacity="0.55"/>
+        <ellipse cx="72" cy="120" rx="10" ry="3.4" fill="#8FB9CE" opacity="0.5"/>
+        <ellipse cx="108" cy="119.5" rx="12" ry="3.6" fill="#7FAFC6" opacity="0.45"/>
+      </svg>
+    </div>
+  </div></div>
+        <nav class="mocknav">
+          <div class="mockrow">＋ 新对话</div>
+          <div class="mockrow is-active">山青婷彩主题复刻</div>
+          <div class="mockrow">设置</div>
+        </nav>
+      </div>
+    </div>
+  </figure>
+
+  <figure class="pane">
+    <figcaption>
+      <strong>层级对照测试</strong>
+      <span>导航使用不透明表面时：左＝座位 z-index 0（旧），右＝出货值（新）</span>
+    </figcaption>
+    <div class="colwrap">
+      <div class="ZTP-Xa_sidebarCol" style="background:linear-gradient(to bottom,#EAF7F0 0%,#D8EFE4 20%,#C9E8DA 36%,#BFE2D2 50%,#B4DCCA 62%,#A8D2BE 74%,#9CC9B2 86%,#90C0A8 100%)">
+        <div id="dsh-theme-ambient" class="is-behind"><div class="sta">
+    <div class="sta-mountains">
+      <svg viewBox="0 0 223 190" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="dsh-sta-back" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#8FBFAA"/><stop offset="1" stop-color="#74AE96"/>
+          </linearGradient>
+          <linearGradient id="dsh-sta-front" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#3E8A66"/><stop offset="1" stop-color="#2B6E4F"/>
+          </linearGradient>
+        </defs>
+        <path d="M 0 78 Q 30 48 62 66 Q 96 34 128 60 Q 160 40 190 62 Q 208 50 223 58 L 223 190 L 0 190 Z" fill="url(#dsh-sta-back)"/>
+        <path d="M 0 122 Q 36 92 70 110 Q 104 84 140 108 Q 176 90 223 116 L 223 190 L 0 190 Z" fill="url(#dsh-sta-front)"/>
+      </svg>
+    </div>
+    <div class="sta-mist sta-mist-1"></div>
+    <div class="sta-mist sta-mist-2"></div>
+    <div class="sta-pond"><div class="sta-pond-line"></div></div>
+    <div class="sta-ripple" style="left:38%;bottom:5.2%"><span></span><span></span></div>
+    <div class="sta-ripple" style="left:62%;bottom:3.4%"><span></span><span></span></div>
+    <div class="sta-dfly sta-dfly-1"><div class="sta-bob">
+    <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="dsh-sta-dfly-body-1" x1="1" y1="0" x2="0" y2="0">
+        <stop offset="0" stop-color="#1F6B4C"/><stop offset="1" stop-color="#2E8C66"/>
+      </linearGradient></defs>
+      <ellipse cx="36" cy="15" rx="17" ry="4.4" fill="rgba(150,200,222,0.5)" transform="rotate(-40 36 15)"/>
+      <ellipse cx="38" cy="24" rx="15" ry="4" fill="rgba(150,200,222,0.42)" transform="rotate(-14 38 24)"/>
+      <ellipse cx="31" cy="11" rx="19" ry="5" fill="rgba(214,242,248,0.7)" transform="rotate(-30 31 11)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <ellipse cx="34" cy="22" rx="16" ry="4.6" fill="rgba(240,214,242,0.62)" transform="rotate(-6 34 22)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <path d="M 27 32 C 42 39, 60 46, 84 55" stroke="url(#dsh-sta-dfly-body-1)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="84" cy="55" r="1.4" fill="#17513C"/>
+      <ellipse cx="27" cy="30" rx="6.5" ry="5" fill="#1F6B4C"/>
+      <circle cx="18.5" cy="27.5" r="4.2" fill="#17513C"/>
+      <circle cx="16.2" cy="25.8" r="1.9" fill="#0F3D2E"/>
+      <circle cx="20.6" cy="25.4" r="1.9" fill="#0F3D2E"/>
+      <circle cx="15.6" cy="25.2" r="0.6" fill="#DFF3EC"/>
+      <circle cx="20" cy="24.8" r="0.6" fill="#DFF3EC"/>
+    </svg></div></div>
+    <div class="sta-dfly sta-dfly-2"><div class="sta-bob">
+    <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="dsh-sta-dfly-body-2" x1="1" y1="0" x2="0" y2="0">
+        <stop offset="0" stop-color="#1F6B4C"/><stop offset="1" stop-color="#2E8C66"/>
+      </linearGradient></defs>
+      <ellipse cx="36" cy="15" rx="17" ry="4.4" fill="rgba(150,200,222,0.5)" transform="rotate(-40 36 15)"/>
+      <ellipse cx="38" cy="24" rx="15" ry="4" fill="rgba(150,200,222,0.42)" transform="rotate(-14 38 24)"/>
+      <ellipse cx="31" cy="11" rx="19" ry="5" fill="rgba(214,242,248,0.7)" transform="rotate(-30 31 11)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <ellipse cx="34" cy="22" rx="16" ry="4.6" fill="rgba(240,214,242,0.62)" transform="rotate(-6 34 22)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <path d="M 27 32 C 42 39, 60 46, 84 55" stroke="url(#dsh-sta-dfly-body-2)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="84" cy="55" r="1.4" fill="#17513C"/>
+      <ellipse cx="27" cy="30" rx="6.5" ry="5" fill="#1F6B4C"/>
+      <circle cx="18.5" cy="27.5" r="4.2" fill="#17513C"/>
+      <circle cx="16.2" cy="25.8" r="1.9" fill="#0F3D2E"/>
+      <circle cx="20.6" cy="25.4" r="1.9" fill="#0F3D2E"/>
+      <circle cx="15.6" cy="25.2" r="0.6" fill="#DFF3EC"/>
+      <circle cx="20" cy="24.8" r="0.6" fill="#DFF3EC"/>
+    </svg></div></div>
+    <div class="sta-petals"><div class="sta-petal" style="left:25%;width:6px;height:5px;animation-duration:12s;animation-delay:-1.3s"></div><div class="sta-petal" style="left:42%;width:6px;height:5px;animation-duration:13s;animation-delay:-2.6s"></div><div class="sta-petal" style="left:59%;width:6px;height:5px;animation-duration:14s;animation-delay:-3.9000000000000004s"></div><div class="sta-petal" style="left:76%;width:6px;height:5px;animation-duration:11s;animation-delay:-5.2s"></div><div class="sta-petal" style="left:13%;width:6px;height:5px;animation-duration:12s;animation-delay:-6.5s"></div><div class="sta-petal" style="left:30%;width:6px;height:5px;animation-duration:13s;animation-delay:-7.800000000000001s"></div></div>
+  </div></div>
+        <nav class="mocknav is-opaque"></nav>
+      </div>
+      <div class="ZTP-Xa_sidebarCol" style="background:linear-gradient(to bottom,#EAF7F0 0%,#D8EFE4 20%,#C9E8DA 36%,#BFE2D2 50%,#B4DCCA 62%,#A8D2BE 74%,#9CC9B2 86%,#90C0A8 100%)">
+        <div id="dsh-theme-ambient"><div class="sta">
+    <div class="sta-mountains">
+      <svg viewBox="0 0 223 190" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="dsh-sta-back" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#8FBFAA"/><stop offset="1" stop-color="#74AE96"/>
+          </linearGradient>
+          <linearGradient id="dsh-sta-front" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#3E8A66"/><stop offset="1" stop-color="#2B6E4F"/>
+          </linearGradient>
+        </defs>
+        <path d="M 0 78 Q 30 48 62 66 Q 96 34 128 60 Q 160 40 190 62 Q 208 50 223 58 L 223 190 L 0 190 Z" fill="url(#dsh-sta-back)"/>
+        <path d="M 0 122 Q 36 92 70 110 Q 104 84 140 108 Q 176 90 223 116 L 223 190 L 0 190 Z" fill="url(#dsh-sta-front)"/>
+      </svg>
+    </div>
+    <div class="sta-mist sta-mist-1"></div>
+    <div class="sta-mist sta-mist-2"></div>
+    <div class="sta-pond"><div class="sta-pond-line"></div></div>
+    <div class="sta-ripple" style="left:38%;bottom:5.2%"><span></span><span></span></div>
+    <div class="sta-ripple" style="left:62%;bottom:3.4%"><span></span><span></span></div>
+    <div class="sta-dfly sta-dfly-1"><div class="sta-bob">
+    <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="dsh-sta-dfly-body-1" x1="1" y1="0" x2="0" y2="0">
+        <stop offset="0" stop-color="#1F6B4C"/><stop offset="1" stop-color="#2E8C66"/>
+      </linearGradient></defs>
+      <ellipse cx="36" cy="15" rx="17" ry="4.4" fill="rgba(150,200,222,0.5)" transform="rotate(-40 36 15)"/>
+      <ellipse cx="38" cy="24" rx="15" ry="4" fill="rgba(150,200,222,0.42)" transform="rotate(-14 38 24)"/>
+      <ellipse cx="31" cy="11" rx="19" ry="5" fill="rgba(214,242,248,0.7)" transform="rotate(-30 31 11)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <ellipse cx="34" cy="22" rx="16" ry="4.6" fill="rgba(240,214,242,0.62)" transform="rotate(-6 34 22)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <path d="M 27 32 C 42 39, 60 46, 84 55" stroke="url(#dsh-sta-dfly-body-1)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="84" cy="55" r="1.4" fill="#17513C"/>
+      <ellipse cx="27" cy="30" rx="6.5" ry="5" fill="#1F6B4C"/>
+      <circle cx="18.5" cy="27.5" r="4.2" fill="#17513C"/>
+      <circle cx="16.2" cy="25.8" r="1.9" fill="#0F3D2E"/>
+      <circle cx="20.6" cy="25.4" r="1.9" fill="#0F3D2E"/>
+      <circle cx="15.6" cy="25.2" r="0.6" fill="#DFF3EC"/>
+      <circle cx="20" cy="24.8" r="0.6" fill="#DFF3EC"/>
+    </svg></div></div>
+    <div class="sta-dfly sta-dfly-2"><div class="sta-bob">
+    <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="dsh-sta-dfly-body-2" x1="1" y1="0" x2="0" y2="0">
+        <stop offset="0" stop-color="#1F6B4C"/><stop offset="1" stop-color="#2E8C66"/>
+      </linearGradient></defs>
+      <ellipse cx="36" cy="15" rx="17" ry="4.4" fill="rgba(150,200,222,0.5)" transform="rotate(-40 36 15)"/>
+      <ellipse cx="38" cy="24" rx="15" ry="4" fill="rgba(150,200,222,0.42)" transform="rotate(-14 38 24)"/>
+      <ellipse cx="31" cy="11" rx="19" ry="5" fill="rgba(214,242,248,0.7)" transform="rotate(-30 31 11)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <ellipse cx="34" cy="22" rx="16" ry="4.6" fill="rgba(240,214,242,0.62)" transform="rotate(-6 34 22)" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
+      <path d="M 27 32 C 42 39, 60 46, 84 55" stroke="url(#dsh-sta-dfly-body-2)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="84" cy="55" r="1.4" fill="#17513C"/>
+      <ellipse cx="27" cy="30" rx="6.5" ry="5" fill="#1F6B4C"/>
+      <circle cx="18.5" cy="27.5" r="4.2" fill="#17513C"/>
+      <circle cx="16.2" cy="25.8" r="1.9" fill="#0F3D2E"/>
+      <circle cx="20.6" cy="25.4" r="1.9" fill="#0F3D2E"/>
+      <circle cx="15.6" cy="25.2" r="0.6" fill="#DFF3EC"/>
+      <circle cx="20" cy="24.8" r="0.6" fill="#DFF3EC"/>
+    </svg></div></div>
+    <div class="sta-petals"><div class="sta-petal" style="left:25%;width:6px;height:5px;animation-duration:12s;animation-delay:-1.3s"></div><div class="sta-petal" style="left:42%;width:6px;height:5px;animation-duration:13s;animation-delay:-2.6s"></div><div class="sta-petal" style="left:59%;width:6px;height:5px;animation-duration:14s;animation-delay:-3.9000000000000004s"></div><div class="sta-petal" style="left:76%;width:6px;height:5px;animation-duration:11s;animation-delay:-5.2s"></div><div class="sta-petal" style="left:13%;width:6px;height:5px;animation-duration:12s;animation-delay:-6.5s"></div><div class="sta-petal" style="left:30%;width:6px;height:5px;animation-duration:13s;animation-delay:-7.800000000000001s"></div></div>
+  </div></div>
+        <nav class="mocknav is-opaque"></nav>
+      </div>
+    </div>
+  </figure>
+</body>
+</html>

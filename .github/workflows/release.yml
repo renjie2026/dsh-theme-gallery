@@ -1,0 +1,127 @@
+# 发布产物：每次打 tag，自动构建可安装的 .tgz 并附到 GitHub Release。
+#
+# ── 为什么需要这条工作流 ─────────────────────────────────────────────────────
+#
+# 用户在「设置 → 插件 → 添加插件」里可以接受三种输入：**包名**、**仓库地址**、
+# **本地 `.tgz` 路径**。前两种都有各自的坎：
+#
+#   • **包名**要有 npm 发布；
+#   • **仓库地址**（`github:owner/repo`）拉的是**源码不是构建产物** —— 官方文档明确写着
+#     「没有任何环节运行你的 build 脚本」，且用户必须在 profile 里授权
+#     `allowBuilds: { dsh-theme-gallery: true }`，**等于允许本包代码在他机器上执行**。
+#     很多人会拒绝，而这正是"装完重启即崩"的常见来源。
+#
+# 所以本仓库**同时提供构建产物**：Release 里挂一个 `.tgz`，用户下载后把路径粘进插件界面
+# 即可安装，**不需要任何构建授权**。
+#
+# ── 为什么本仓库的产物是可信的 ───────────────────────────────────────────────
+#
+# 本包的 `lib/` 是**随包分发的源码**（手写 JS，无构建步骤），所以产物 = 仓库内容本身，
+# 不存在"CI 构建出与源码不同的东西"。工作流仍然跑完整套校验，因为产物一旦发出去就收不回：
+# 用户装到的皮肤是**内联在 lib/client.js 里**的，仓库里改了 JSON 而忘记内联时，
+# 发出去的就是旧皮肤。
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  # 允许手动触发，用于验证工作流本身
+  workflow_dispatch:
+
+permissions:
+  contents: write      # 需要写 Release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 皮肤 JSON 必须内联进 lib/client.js —— 这是产物正确性的**前提**，
+      # 不是可选的构建步骤。忘掉它 = 发出旧皮肤，而仓库里看起来是新的。
+      - name: Inline the bundled skins
+        run: node scripts/embed-themes.mjs
+
+      # 内联后再校验一次：如果这一步改动了 lib/client.js，说明作者忘了提交内联结果，
+      # 那这次的产物就与仓库内容不一致 —— 必须失败，而不是静默发出。
+      - name: Fail if the inline step changed a tracked file
+        run: |
+          if ! git diff --quiet -- lib/client.js; then
+            echo "::error::lib/client.js 与仓库不一致：先本地跑 node scripts/embed-themes.mjs 并提交"
+            git diff --stat -- lib/client.js
+            exit 1
+          fi
+
+      - name: Publish-readiness check
+        run: node scripts/publish-check.mjs
+
+      - name: Install dev dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Test suite
+        run: npm test
+
+      # `prepack` 会再跑一次内联（幂等），所以这里拿到的一定是最新的
+      - name: Build the installable tarball
+        run: npm pack
+
+      # 校验和让用户能核对下载到的文件没被动过 —— 非官方渠道来的文件尤其应该核对
+      - name: Checksums
+        run: |
+          sha256sum ./*.tgz > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Attach the tarball to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.tgz
+            SHA256SUMS.txt
+          body: |
+            ## 安装
+
+            **设置 → 插件 → 添加插件**，然后三选一：
+
+            | 方式 | 输入 | 需要构建授权 |
+            |---|---|---|
+            | **下载产物**（推荐） | 本 Release 里的 `.tgz` 文件路径 | 否 |
+            | 包名 | `dsh-theme-gallery` | 否 |
+            | 仓库地址 | 本仓库 URL | **是**（见下） |
+
+            ### 用 Release 里的 .tgz（推荐）
+
+            1. 下载 `dsh-theme-gallery-*.tgz`
+            2. 在插件界面里粘贴该文件的**完整路径**
+            3. 重启应用
+
+            校验下载完整性：
+
+            ```sh
+            sha256sum -c SHA256SUMS.txt
+            ```
+
+            ### 用仓库地址时请注意
+
+            `github:owner/repo` 拉的是**源码不是构建产物**，所以你需要为构建授权：
+            在该 profile 的 `pnpm-workspace.yaml` 里写入
+
+            ```yaml
+            allowBuilds:
+              dsh-theme-gallery: true
+            ```
+
+            **这项授权等于允许本包代码在安装时于你机器上执行。** 请只对可信源码放开，
+            并尽量锁定 commit（`github:owner/repo#<sha>`）。
+
+            ### 装上之后
+
+            左侧栏底部会出现 **主题皮肤** 入口（**不在**「设置 → 通用 → 外观」里）。
+            卸载与回滚方式见仓库 README 的「卸载与回滚」一节。

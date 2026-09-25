@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>DSH 主题皮肤调参台 — 山青婷彩 / 梦海游鱼</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #16171a; color: #e6e7ea; font: 13px/1.5 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
+
+  /* ---------- 台架外壳 ---------- */
+  .shell { display: grid; grid-template-columns: minmax(0, 1180px) minmax(300px, 1fr); gap: 18px; padding: 18px; align-items: start; }
+  .stage { border-radius: 10px; overflow: hidden; box-shadow: 0 18px 48px #000a; }
+  .panel { position: sticky; top: 18px; max-height: calc(100vh - 36px); overflow: auto; padding-right: 6px; }
+  .panel h2 { margin: 0 0 10px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: #8b8f98; }
+  .panel section { margin-bottom: 20px; padding: 12px; border: 1px solid #2a2c32; border-radius: 8px; background: #1b1d22; }
+  .row { display: flex; align-items: center; gap: 8px; margin: 7px 0; }
+  .row label { flex: 0 0 148px; color: #b9bcc4; font-size: 12px; }
+  .row input[type=range] { flex: 1; min-width: 90px; }
+  .row output { flex: 0 0 58px; text-align: right; font-variant-numeric: tabular-nums; color: #7fd4a8; font-size: 12px; }
+  button { font: inherit; padding: 6px 11px; border-radius: 6px; border: 1px solid #383b42; background: #23262c; color: #e6e7ea; cursor: pointer; }
+  button:hover { background: #2c3038; }
+  button.on { background: #2f6f56; border-color: #3d8f6f; }
+  .swatches { display: flex; gap: 6px; margin-top: 8px; }
+  .sw { width: 100%; height: 26px; border-radius: 4px; border: 1px solid #0006; }
+  .params { width: 100%; height: 150px; font: 11px/1.45 ui-monospace, Consolas, monospace; background: #101216; color: #9fe0bd;
+            border: 1px solid #2a2c32; border-radius: 6px; padding: 8px; resize: vertical; white-space: pre; }
+  .hint { color: #7b7f88; font-size: 11px; line-height: 1.6; margin: 6px 0 0; }
+
+  /* ============================================================
+     ↓↓↓ 以下 CSS 变量即"主题移植层"：调参台调什么，这里就导出什么
+     ============================================================ */
+  .dsh {
+    --shell-bg: #0f1115;
+    --chrome-bg: #e7ebe9;
+    --sidebar-bg: linear-gradient(to bottom,#EAF7F0 0%,#D8EFE4 20%,#C9E8DA 36%,#BFE2D2 50%,#B4DCCA 62%,#A8D2BE 74%,#9CC9B2 86%,#90C0A8 100%);
+    --sidebar-text: #2E5C4D;
+    --sidebar-muted: #5C8474;
+    --sidebar-item-bg: rgba(255,255,255,.60);
+    --sidebar-item-hover: rgba(62,155,122,.10);
+    --sidebar-item-active: rgba(232,139,176,.18);
+    --sidebar-item-active-border: #E88BB0;
+    --sidebar-divider: rgba(47,125,94,.18);
+    --accent: #2F7D5E;
+    --accent-2: #E88BB0;
+    --top-bg: linear-gradient(135deg,#2F7D5E 0%,#4C9B78 100%);
+    --top-text: #ffffff;
+    /* 对话阅读区：空对话时是主题渐变；有对话时被 reading-* 取代 */
+    --thread-bg: linear-gradient(170deg,#EAF7F0 0%,#DCEFE5 34%,#CFE7DA 68%,#C2E0D0 100%);
+    --thread-fade: rgba(234,247,240,0);
+    /* 阅读态（有对话时输入框上方区域）：必须保证正文可读 */
+    --reading-bg: rgba(252,254,253,.58);
+    --reading-blur: 0px;
+    --reading-width: 760px;
+    --composer-bg: rgba(255,255,255,.82);
+    --composer-border: rgba(47,125,94,.22);
+    --bubble-user-bg: rgba(47,125,94,.14);
+    --bubble-user-text: #24503F;
+    --text-primary: #1F3A31;
+    --text-secondary: #4C6B5E;
+    --code-bg: rgba(255,255,255,.66);
+    --radius: 14px;
+    --elev: 0 10px 26px rgba(20,60,45,.10);
+    --scroll: rgba(47,125,94,.22);
+  }
+
+  /* ---------- 顶部标题栏 ---------- */
+  .titlebar { height: 34px; display: flex; align-items: center; gap: 10px; padding: 0 12px;
+              background: var(--top-bg); color: var(--top-text); font-size: 12.5px; }
+  .titlebar .dot { width: 11px; height: 11px; border-radius: 50%; background: #ffffff44; }
+  .titlebar .spacer { flex: 1; }
+  .titlebar .brand { font-weight: 600; letter-spacing: .04em; }
+
+  .body { display: grid; grid-template-columns: 258px 1fr 0px; height: 756px; background: var(--shell-bg); }
+  .dsh[data-rightbar="on"] .body { grid-template-columns: 258px 1fr 330px; }
+
+  /* ---------- 左侧栏 ---------- */
+  .sidebar { background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column;
+             border-right: 1px solid var(--sidebar-divider); }
+  .sidebar .top { display: flex; gap: 6px; padding: 10px 10px 6px; }
+  .btn-ghost { flex: 1; text-align: left; padding: 7px 10px; border-radius: 9px; border: 1px solid var(--sidebar-divider);
+               background: var(--sidebar-item-bg); color: inherit; font: inherit; cursor: pointer; }
+  .search { margin: 4px 10px 8px; padding: 6px 10px; border-radius: 9px; background: var(--sidebar-item-bg);
+            border: 1px solid var(--sidebar-divider); color: var(--sidebar-muted); font-size: 12px; }
+  .list { flex: 1; overflow: auto; padding: 0 8px 8px; }
+  .item { padding: 7px 10px; border-radius: 9px; margin-bottom: 3px; font-size: 12.5px;
+          border: 1px solid transparent; cursor: pointer; }
+  .item:hover { background: var(--sidebar-item-hover); border-color: var(--sidebar-divider); }
+  .item.sel { background: var(--sidebar-item-active); border-color: var(--sidebar-item-active-border);
+              color: #B8578A; font-weight: 600; }
+  .item .sub { display: block; color: var(--sidebar-muted); font-size: 11px; font-weight: 400; margin-top: 1px; }
+  .sidebar .foot { padding: 8px 10px; border-top: 1px solid var(--sidebar-divider); display: flex; gap: 6px; font-size: 12px; }
+  .sidebar .foot .g { flex: 1; padding: 6px 10px; border-radius: 9px; background: var(--sidebar-item-bg); text-align: center; }
+
+  /* ---------- 主区 ---------- */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .stage-head { display: flex; align-items: center; gap: 8px; padding: 9px 14px; font-size: 12px;
+                background: var(--chrome-bg); color: var(--text-secondary); border-bottom: 1px solid var(--sidebar-divider); }
+  .stage-head .tag { padding: 2px 8px; border-radius: 999px; background: var(--bubble-user-bg); color: var(--bubble-user-text); }
+  .stage-head .spacer { flex: 1; }
+
+  /* 空对话态：内容居中 */
+  .main[data-state="idle"] .thread { background: var(--thread-bg); display: flex; flex-direction: column;
+                                     align-items: center; justify-content: center; }
+  /* 有对话态：消息在上，输入框下方；输入框上方区域转为阅读态 */
+  .main[data-state="reading"] .thread { background: var(--thread-bg); background-attachment: local; }
+  .thread { flex: 1; overflow: auto; padding: 18px 0 6px; position: relative; }
+  .main[data-state="reading"] .thread { padding: 16px 0 12px; }
+
+  .welcome { text-align: center; padding: 0 24px; }
+  .welcome .mark { width: 62px; height: 62px; margin: 0 auto 14px; border-radius: 18px;
+                   background: var(--top-bg); box-shadow: var(--elev); }
+  .welcome h1 { margin: 0 0 6px; font-size: 22px; color: var(--text-primary); font-weight: 600; }
+  .welcome p { margin: 0; color: var(--text-secondary); font-size: 13px; }
+  .welcome .chips { display: flex; gap: 8px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+  .welcome .chip { padding: 7px 12px; border-radius: 999px; font-size: 12px; color: var(--text-secondary);
+                   background: var(--composer-bg); border: 1px solid var(--composer-border); }
+
+  /* 阅读态：正文区半透明浅底 + 限宽，保证长文可读；四周留出主题渐变 */
+  .reading-layer { margin: 0 auto; width: var(--reading-width); border-radius: var(--radius);
+                   background: var(--reading-bg); backdrop-filter: blur(var(--reading-blur));
+                   border: 1px solid var(--composer-border); box-shadow: var(--elev); padding: 14px 16px; }
+  .main[data-state="reading"] .thread { padding-left: 12px; padding-right: 12px; }
+  .msg { margin-bottom: 12px; }
+  .msg .who { font-size: 11.5px; color: var(--text-secondary); margin-bottom: 3px; }
+  .msg .txt { color: var(--text-primary); }
+  .bubble { display: inline-block; padding: 8px 12px; border-radius: var(--radius);
+            background: var(--bubble-user-bg); color: var(--bubble-user-text); }
+  .msg .code { margin-top: 8px; padding: 10px 12px; border-radius: 10px; background: var(--code-bg);
+               color: var(--text-primary); font: 11.5px/1.5 ui-monospace, Consolas, monospace; }
+  .msg .tools { margin: 8px 0; padding: 8px 10px; border-radius: 10px; font-size: 11.5px;
+                background: rgba(255,255,255,.42); border: 1px solid var(--sidebar-divider); color: var(--text-secondary); }
+
+  /* ---------- 输入框 ---------- */
+  .composer-wrap { padding: 8px 0 14px; display: flex; justify-content: center; }
+  .main[data-state="idle"] .composer-wrap { padding: 18px 0 30px; }
+  .composer { width: var(--reading-width); border-radius: var(--radius); background: var(--composer-bg);
+              border: 1px solid var(--composer-border); box-shadow: var(--elev); padding: 10px 12px;
+              backdrop-filter: blur(var(--reading-blur)); }
+  .composer .ph { color: var(--text-secondary); font-size: 13px; min-height: 22px; }
+  .composer .bar { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .composer .bar .spacer { flex: 1; }
+  .composer .pill { padding: 3px 9px; border-radius: 999px; font-size: 11.5px; background: var(--bubble-user-bg);
+                    color: var(--bubble-user-text); }
+  .composer .send { width: 28px; height: 28px; border-radius: 50%; background: var(--top-bg); }
+
+  /* ---------- 右侧栏 ---------- */
+  .rightbar { background: var(--chrome-bg); border-left: 1px solid var(--sidebar-divider); padding: 10px; font-size: 12px; color: var(--text-secondary); }
+  .rightbar .card { background: var(--composer-bg); border: 1px solid var(--composer-border); border-radius: 10px; padding: 10px; margin-bottom: 8px; }
+  .dsh[data-rightbar="off"] .rightbar { display: none; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="stage">
+    <div class="dsh" id="dsh" data-rightbar="off">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="brand">DeepSeek Harness</span>
+        <span class="spacer"></span>
+        <span id="clock">会话已就绪</span>
+      </div>
+      <div class="body">
+        <aside class="sidebar">
+          <div class="top">
+            <button class="btn-ghost">＋ 新对话</button>
+            <button class="btn-ghost" style="flex:0 0 auto">⇅</button>
+          </div>
+          <div class="search">搜索会话…</div>
+          <div class="list" id="sessions"></div>
+          <div class="foot"><span class="g">⚙ 设置</span><span class="g">👤</span></div>
+        </aside>
+
+        <section class="main" id="main" data-state="idle">
+          <div class="stage-head">
+            <span class="tag" id="stateTag">空对话态</span>
+            <span id="headTitle">新对话</span>
+            <span class="spacer"></span>
+            <span>⌗ 工作区</span><span>⋯</span>
+          </div>
+          <div class="thread" id="thread"></div>
+          <div class="composer-wrap">
+            <div class="composer">
+              <div class="ph">给 DeepSeek 发送消息…（输入框上方区域在「有对话」时会变浅，保证正文可读）</div>
+              <div class="bar">
+                <span class="pill">✦ 深度思考</span><span class="pill">📎</span>
+                <span class="spacer"></span>
+                <span class="send"></span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="rightbar">
+          <div class="card"><b>文件预览</b><br>右侧栏也吃主题</div>
+          <div class="card"><b>变更</b><br>+12 / −3</div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>状态 / 主题</h2>
+    <section>
+      <div class="row"><label>对话状态</label>
+        <button id="bIdle" class="on">空对话</button>
+        <button id="bReading">有对话</button>
+      </div>
+      <div class="row"><label>主题皮肤</label>
+        <button id="tShan" class="on">山青婷彩</button>
+        <button id="tDream">梦海游鱼</button>
+      </div>
+      <div class="row"><label>右侧栏</label>
+        <button id="bRight">显示 / 隐藏</button>
+      </div>
+      <div class="swatches" id="sw"></div>
+    </section>
+
+    <h2>阅读态（有对话时输入框上方）</h2>
+    <section>
+      <div class="row"><label>浅底不透明度</label><input type="range" id="s-read-bg" min="30" max="95" step="1"><output></output></div>
+      <div class="row"><label>毛玻璃模糊 (px)</label><input type="range" id="s-read-blur" min="0" max="20" step="1"><output></output></div>
+      <div class="row"><label>正文限宽 (px)</label><input type="range" id="s-read-width" min="560" max="980" step="10"><output></output></div>
+      <p class="hint">浅底越实、模糊越大，正文越清晰；但主题存在感越弱。这两根滑杆就是本项目的核心取舍。</p>
+    </section>
+
+    <h2>主题强度</h2>
+    <section>
+      <div class="row"><label>输入框不透明度</label><input type="range" id="s-comp-bg" min="0" max="100" step="1"><output></output></div>
+      <div class="row"><label>圆角 (px)</label><input type="range" id="s-radius" min="4" max="24" step="1"><output></output></div>
+      <div class="row"><label>侧栏遮罩亮度</label><input type="range" id="s-veil" min="0" max="100" step="1"><output></output></div>
+      <div class="row"><label>分隔线强度</label><input type="range" id="s-divider" min="0" max="100" step="1"><output></output></div>
+    </section>
+
+    <h2>导出</h2>
+    <section>
+      <textarea class="params" id="out" readonly></textarea>
+      <div class="row" style="margin-top:8px">
+        <button id="bCopy">复制参数行</button>
+        <button id="bReset">恢复默认</button>
+      </div>
+      <p class="hint">参数改动即存 localStorage，刷新不丢。把参数行贴回来即可移植到插件。</p>
+    </section>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   主题数据：直接取自电商新零售系统 admin-modular/src/utils/themes.js
+   ============================================================ */
+const THEMES = {
+  shan: {
+    key: 'shanQingTingCai', name: '山青婷彩', mood: '青山叠翠，蜓舞生姿',
+    accent: '#2F7D5E', accent2: '#E88BB0',
+    sidebarBg: 'linear-gradient(to bottom,#EAF7F0 0%,#D8EFE4 20%,#C9E8DA 36%,#BFE2D2 50%,#B4DCCA 62%,#A8D2BE 74%,#9CC9B2 86%,#90C0A8 100%)',
+    topBg: 'linear-gradient(135deg,#2F7D5E 0%,#4C9B78 100%)',
+    sidebarText: '#2E5C4D', sidebarMuted: '#5C8474',
+    itemBg: 'rgba(255,255,255,.60)', itemHover: 'rgba(62,155,122,.10)',
+    itemActive: 'rgba(232,139,176,.18)', itemActiveBorder: '#E88BB0', itemActiveText: '#B8578A',
+    divider: [47,125,94], dark: false,
+    threadBg: 'linear-gradient(to bottom,#F7FCF9 0%,#EDF7F1 55%,#E4F2EA 100%)',
+    textPrimary: '#1F3A31', textSecondary: '#4C6B5E',
+    bubbleUserBg: 'rgba(47,125,94,.14)', bubbleUserText: '#24503F',
+    codeBg: 'rgba(255,255,255,.66)',
+    reading: 'rgba(252,254,253,.58)',
+    swatches: ['#2F7D5E','#4C9B78','#46926F','#6FB08D','#E88BB0','#D97BA4','#9DCDBA','#EAF7F0']
+  },
+  dream: {
+    key: 'dreamOcean', name: '梦海游鱼', mood: '梦幻海洋，游鱼作伴',
+    accent: '#177CB0', accent2: '#FFD166',
+    sidebarBg: 'linear-gradient(to bottom,#EAF5FF 0%,#DDF0FF 26%,#CDE9FB 52%,#BFE2F6 74%,#B0D9F0 100%)',
+    topBg: 'linear-gradient(135deg,#065279 0%,#177CB0 52%,#4C8DAE 100%)',
+    sidebarText: '#2E4A63', sidebarMuted: '#5A7B96',
+    itemBg: 'rgba(255,255,255,.62)', itemHover: 'rgba(43,116,181,.07)',
+    itemActive: 'rgba(43,116,181,.12)', itemActiveBorder: '#2B74B5', itemActiveText: '#1D5F9E',
+    divider: [43,116,181], dark: false,
+    threadBg: 'linear-gradient(to bottom,#F7FBFF 0%,#EDF5FD 55%,#E2EEFA 100%)',
+    textPrimary: '#1B3348', textSecondary: '#48657E',
+    bubbleUserBg: 'rgba(23,124,176,.15)', bubbleUserText: '#12496B',
+    codeBg: 'rgba(255,255,255,.68)',
+    reading: 'rgba(252,254,255,.58)',
+    swatches: ['#065279','#177CB0','#4C8DAE','#21A675','#DB5A6B','#CA6924','#FFD166','#EAF5FF']
+  }
+};
+
+/* 可调参数默认值（=插件里要用的初值） */
+const DEFAULTS = { readBg: 62, readBlur: 3, readWidth: 640, compBg: 82, radius: 14, veil: 0, divider: 22 };
+const P = Object.assign({}, DEFAULTS);
+const KEY = 'dsh-theme-bench-v1';
+let current = 'shan';
+let state = 'idle';
+
+try { Object.assign(P, JSON.parse(localStorage.getItem(KEY) || '{}').P || {}); } catch {}
+let savedTheme = (() => { try { return JSON.parse(localStorage.getItem(KEY) || '{}').current || 'shan'; } catch { return 'shan'; } })();
+current = savedTheme;
+
+/* ---------- 会话列表（照真实观感造数据） ---------- */
+const SESSIONS = [
+  ['山青婷彩主题复刻', '刚刚 · 主题皮肤'],
+  ['梦海游鱼配色提取', '12 分钟前 · 主题皮肤'],
+  ['dsh-theme-gallery 插件架构', '1 小时前 · 插件开发'],
+  ['阅读态削弱方案', '昨天 · 视觉设计'],
+  ['设置行插槽注册', '昨天 · Cordis'],
+  ['token 清单核对', '2 天前 · 主题皮肤'],
+  ['电商后台主题映射', '3 天前 · 设计'],
+  ['发布到 npm 的流程', '上周 · 发布'],
+  ['版本锁定陷阱', '上周 · 依赖'],
+  ['CSS 注入的生命周期', '上周 · 插件开发'],
+];
+document.getElementById('sessions').innerHTML = SESSIONS.map(([t, s], i) =>
+  `<div class="item${i === 0 ? ' sel' : ''}">${t}<span class="sub">${s}</span></div>`).join('');
+
+/* ---------- 两种状态的内容 ---------- */
+const IDLE_HTML = `
+  <div class="welcome">
+    <div class="mark"></div>
+    <h1>今天晚上想让我做点什么？</h1>
+    <p>${'空对话态'}：整屏都是主题皮肤，左侧栏、顶部标题栏、中间留白全部铺满。</p>
+    <div class="chips">
+      <span class="chip">复刻一个主题皮肤</span>
+      <span class="chip">检查我的插件结构</span>
+      <span class="chip">把配色导出成 JSON</span>
+    </div>
+  </div>`;
+
+const MSG_HTML = `
+  <div class="reading-layer">
+    <div class="msg"><div class="who">你</div>
+      <div class="bubble">把山青婷彩和梦海游鱼复刻成 DSH 主题皮肤，有对话的时候输入框上方要变浅，不能影响读字。</div></div>
+    <div class="msg"><div class="who">DeepSeek</div>
+      <div class="txt">明白。两个主题的配色我已经从 <b>admin-modular/src/utils/themes.js</b> 抽出来了：
+        山青婷彩主色 <span style="color:#2F7D5E">#2F7D5E</span>、强调色 <span style="color:#D97BA4">#E88BB0</span>；
+        梦海游鱼主色 <span style="color:#177CB0">#177CB0</span>、强调色 <span style="color:#B8860B">#FFD166</span>。</div>
+      <div class="tools">▸ 读取 themes.js · 6 个主题定义 · 2 个目标主题</div></div>
+    <div class="msg"><div class="who">DeepSeek</div>
+      <div class="txt">「有对话就变浅」是这样实现的：检测到会话有消息后，给 body 打一个状态标记，
+        阅读层换成半透明浅底，正文限宽居中，背景由主题渐变退到后面。</div>
+      <div class="code">body[data-theme-reading] .reading-layer {
+  background: var(--reading-bg);
+  backdrop-filter: blur(var(--reading-blur));
+}</div></div>
+    <div class="msg"><div class="who">DeepSeek</div>
+      <div class="txt">注意这段文字是<b>验收基准</b>：无论哪套主题、哪种状态，这行字都必须清晰可读。
+        右侧栏、输入框、工具行同样吃主题变量，不会出现半截默认色。</div></div>
+  </div>`;
+
+const thread = document.getElementById('thread');
+
+/* URL 参数：?theme=dream&state=reading&right=on&readBg=62&readWidth=640&readBlur=4
+   —— 用于确定性批量截图走查；显式给出的参数覆盖 localStorage。 */
+const Q = new URLSearchParams(location.search);
+if (Q.get('theme') === 'dream' || Q.get('theme') === 'shan') current = Q.get('theme');
+if (Q.get('state') === 'reading' || Q.get('state') === 'idle') state = Q.get('state');
+for (const [qk, pk] of [['readBg','readBg'], ['readBlur','readBlur'], ['readWidth','readWidth'],
+                        ['compBg','compBg'], ['radius','radius'], ['veil','veil'], ['divider','divider']]) {
+  const v = Q.get(qk);
+  if (v !== null && v !== '' && Number.isFinite(+v)) P[pk] = +v;
+}
+
+/* ---------- 应用主题 + 参数 ---------- */
+function applyVars() {
+  const t = THEMES[current];
+  const d = document.getElementById('dsh').style;
+  d.setProperty('--sidebar-bg', t.sidebarBg);
+  d.setProperty('--top-bg', t.topBg);
+  d.setProperty('--sidebar-text', t.sidebarText);
+  d.setProperty('--sidebar-muted', t.sidebarMuted);
+  d.setProperty('--sidebar-item-bg', t.itemBg);
+  d.setProperty('--sidebar-item-hover', t.itemHover);
+  d.setProperty('--sidebar-item-active', t.itemActive);
+  d.setProperty('--sidebar-item-active-border', t.itemActiveBorder);
+  d.setProperty('--accent', t.accent);
+  d.setProperty('--accent-2', t.accent2);
+  d.setProperty('--thread-bg', t.threadBg);
+  d.setProperty('--text-primary', t.textPrimary);
+  d.setProperty('--text-secondary', t.textSecondary);
+  d.setProperty('--bubble-user-bg', t.bubbleUserBg);
+  d.setProperty('--bubble-user-text', t.bubbleUserText);
+  d.setProperty('--code-bg', t.codeBg);
+  const [r, g, b] = t.divider;
+  d.setProperty('--sidebar-divider', `rgba(${r},${g},${b},${(P.divider / 100).toFixed(2)})`);
+  // 阅读态浅底：把主题的 reading 基色按滑杆换算成 rgba
+  const m = /rgba\((\d+),(\d+),(\d+),([\d.]+)\)/.exec(t.reading);
+  d.setProperty('--reading-bg', m ? `rgba(${m[1]},${m[2]},${m[3]},${(P.readBg / 100).toFixed(2)})` : t.reading);
+  d.setProperty('--reading-blur', P.readBlur + 'px');
+  d.setProperty('--reading-width', P.readWidth + 'px');
+  d.setProperty('--radius', P.radius + 'px');
+  d.setProperty('--composer-bg', `rgba(255,255,255,${(P.compBg / 100).toFixed(2)})`);
+  d.setProperty('--composer-border', `rgba(${r},${g},${b},${(Math.max(P.divider, 14) / 100).toFixed(2)})`);
+  d.setProperty('--chrome-bg', t.dark ? '#1b1f24' : `rgba(255,255,255,${(0.55 + P.veil / 200).toFixed(2)})`);
+  // 左侧栏遮罩（veil>0 时压一层浅色，让主题更"轻"）
+  document.querySelector('.sidebar').style.boxShadow = P.veil > 0 ? `inset 0 0 0 9999px rgba(255,255,255,${(P.veil / 100).toFixed(2)})` : 'none';
+}
+
+function applySliders() {
+  for (const [id, val] of [['s-read-bg', P.readBg], ['s-read-blur', P.readBlur], ['s-read-width', P.readWidth],
+                           ['s-comp-bg', P.compBg], ['s-radius', P.radius], ['s-veil', P.veil], ['s-divider', P.divider]]) {
+    const el = document.getElementById(id);
+    el.value = val;
+    el.parentElement.querySelector('output').textContent = val;
+  }
+}
+
+function render() {
+  applyVars();
+  const t = THEMES[current];
+  document.getElementById('main').dataset.state = state;
+  document.getElementById('stateTag').textContent = state === 'idle' ? '空对话态' : '有对话态（阅读态）';
+  document.getElementById('headTitle').textContent = state === 'idle' ? '新对话' : '山青婷彩主题复刻';
+  thread.innerHTML = state === 'idle' ? IDLE_HTML : MSG_HTML;
+  thread.scrollTop = 0;
+  document.getElementById('sw').innerHTML = t.swatches.map(c => `<span class="sw" style="background:${c}"></span>`).join('');
+  document.getElementById('tShan').classList.toggle('on', current === 'shan');
+  document.getElementById('tDream').classList.toggle('on', current === 'dream');
+  document.getElementById('bIdle').classList.toggle('on', state === 'idle');
+  document.getElementById('bReading').classList.toggle('on', state === 'reading');
+  document.getElementById('out').value = exportText();
+  localStorage.setItem(KEY, JSON.stringify({ P, current }));
+}
+
+function exportText() {
+  const t = THEMES[current];
+  return [
+    `主题=${t.name}(${t.key})  状态=${state === 'idle' ? '空对话' : '有对话'}`,
+    `阅读态浅底透明度=${P.readBg}% · 模糊=${P.readBlur}px · 正文限宽=${P.readWidth}px`,
+    `输入框不透明度=${P.compBg}% · 圆角=${P.radius}px`,
+    `侧栏遮罩=${P.veil}% · 分隔线强度=${P.divider}%`,
+    `主色=${t.accent} · 强调色=${t.accent2}`,
+  ].join('\n');
+}
+
+/* ---------- 交互 ---------- */
+function bindSlider(id, key) {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    P[key] = +el.value;
+    el.parentElement.querySelector('output').textContent = el.value;
+    applyVars();
+    document.getElementById('out').value = exportText();
+    localStorage.setItem(KEY, JSON.stringify({ P, current }));
+  });
+}
+bindSlider('s-read-bg', 'readBg');
+bindSlider('s-read-blur', 'readBlur');
+bindSlider('s-read-width', 'readWidth');
+bindSlider('s-comp-bg', 'compBg');
+bindSlider('s-radius', 'radius');
+bindSlider('s-veil', 'veil');
+bindSlider('s-divider', 'divider');
+
+document.getElementById('bIdle').onclick = () => { state = 'idle'; render(); };
+document.getElementById('bReading').onclick = () => { state = 'reading'; render(); };
+document.getElementById('tShan').onclick = () => { current = 'shan'; render(); };
+document.getElementById('tDream').onclick = () => { current = 'dream'; render(); };
+document.getElementById('bRight').onclick = () => {
+  const el = document.getElementById('dsh');
+  el.dataset.rightbar = el.dataset.rightbar === 'on' ? 'off' : 'on';
+};
+document.getElementById('bReset').onclick = () => {
+  Object.assign(P, DEFAULTS); applySliders(); render();
+};
+document.getElementById('bCopy').onclick = async () => {
+  const ta = document.getElementById('out');
+  try { await navigator.clipboard.writeText(ta.value); } catch { ta.select(); document.execCommand('copy'); }
+  const b = document.getElementById('bCopy'); b.textContent = '已复制 ✓'; setTimeout(() => { b.textContent = '复制参数行'; }, 1200);
+};
+
+applySliders();
+render();
+if (Q.get('right') === 'on') document.getElementById('dsh').dataset.rightbar = 'on';
+</script>
+</body>
+</html>

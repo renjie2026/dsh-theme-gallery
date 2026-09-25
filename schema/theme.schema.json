@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dsh-community/dsh-theme-gallery/schema/theme.schema.json",
+  "title": "DSH theme gallery",
+  "description": "A list of selectable DeepSeek Harness themes. Each theme is a per-scheme override layer over the official base palettes: 'light' and 'dark' are built in, and every third-party theme overrides same-named --dsw-alias-* semantic variables, plus --dsw-specific-* for the surfaces the alias layer cannot express.",
+  "type": "array",
+  "minItems": 1,
+  "items": { "$ref": "#/$defs/theme" },
+  "$defs": {
+    "theme": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "description", "colorScheme", "tokens"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "minLength": 2,
+          "maxLength": 40,
+          "description": "Stable theme id, also the string passed to ctx.theme.setTheme. Lowercase, digits and dashes only. 'system' is reserved (it is a preference, not a theme) and must not be used."
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "Human-readable name shown on the theme button in Settings."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "One-line description shown as the button's tooltip."
+        },
+        "colorScheme": {
+          "enum": ["light", "dark"],
+          "description": "Which base palette the overrides sit on top of. This field — never the id — decides whether body[data-ds-dark-theme] is set. Pick the scheme your tokens were designed for; tokens still need values for both schemes so the theme stays legible if the user's OS flips."
+        },
+        "tokens": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "pattern": "^--dsw-(alias|specific)-[a-z0-9-]+$" },
+          "additionalProperties": { "$ref": "#/$defs/modes" },
+          "description": "Token overrides. --dsw-alias-* is the semantic alias layer; --dsw-specific-* is the companion layer the shell reads for surfaces the alias layer cannot express. Notably --dsw-specific-sidebar-fill paints the sidebar column AND the Windows caption row, so setting it to a gradient is how a theme covers the whole screen with no injected CSS. Any token you omit keeps the base palette's value, so a partial set is safe — but see x-required-tokens for the ones that decide whether a theme reads as deliberate."
+        },
+        "reading": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["colorScheme", "bg", "alpha", "blur", "maxWidth"],
+          "description": "How the theme recedes once a conversation has messages: the transcript sits on a card built from `bg` lightened toward white at `alpha`, so the skin stops competing with the text. Omit it and the theme never lightens.",
+          "properties": {
+            "colorScheme": {
+              "enum": ["light", "dark"],
+              "description": "Color scheme the transcript card is rendered in."
+            },
+            "bg": { "$ref": "#/$defs/cssValue", "description": "Card base color; lightened toward white at `alpha`." },
+            "alpha": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "How opaque the card is over the theme fill. Higher reads better; lower keeps the skin visible. 0.6 is a good starting point."
+            },
+            "blur": { "type": "number", "minimum": 0, "maximum": 40, "description": "Backdrop blur in px behind the card." },
+            "maxWidth": { "type": "number", "minimum": 320, "maximum": 1600, "description": "Transcript column width in px while reading. 640 keeps a comfortable measure." }
+          }
+        },
+        "accent": {
+          "$ref": "#/$defs/cssValue",
+          "description": "The theme's marker colour, used for the states that say WHICH workspace or conversation is active. Taken from the theme's own characteristic colour - the source admin system's design rules forbid introducing a hue that does not already exist in the skin. It is stacked as an overrideTokens layer over --dsw-alias-button-ghost-active-fill/-border/-hover, the family the sidebar entry and the selected conversation row read. Omit it and the theme keeps the base palette's selection colour."
+        },
+        "ambient": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "description": "Scenery drawn inside the sidebar column, ported from the source admin system where each theme mounted its own animation component behind the left menu. Only the two kinds this plugin ships artwork for are accepted; a theme without this field gets no scenery.",
+          "properties": {
+            "kind": {
+              "enum": ["shan", "dream"],
+              "description": "Which ported scene to draw: 'shan' is 山青婷彩 (mountains, mist, water, ripples, dragonflies, falling petals); 'dream' is 梦海游鱼 (corner glow, light washes, rising bubbles, glowing motes, swimming cartoon fish, swaying seaweed)."
+            },
+            "petals": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20,
+              "description": "'shan' only: how many petals to seed. Each gets its own size, duration and phase from a deterministic formula, so the count is the only knob."
+            },
+            "bubbles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 24,
+              "description": "'dream' only: how many pale outlined bubbles to seed."
+            },
+            "motes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 24,
+              "description": "'dream' only: how many light-blue glowing motes to seed. A SEPARATE effect from the bubbles — both are drawn at once, so the two counts are independent."
+            },
+            "fish": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6,
+              "description": "'dream' only: how many cartoon fish to swim across the water. A third independent effect, ported from the source system's FishAnimation component."
+            }
+          }
+        }
+      }
+    },
+    "modes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["light", "dark"],
+      "properties": {
+        "light": { "$ref": "#/$defs/cssValue" },
+        "dark": { "$ref": "#/$defs/cssValue" }
+      },
+      "description": "The AUTHORING format for one token, and it applies to this JSON only. At registration time the loader flattens each pair to the theme's own `colorScheme`, because `register()` consumes `Record<string, string>` and stores the definition by reference - handing it a pair writes the literal string '[object Object]' into the CSS variable. The pair shape is what the runtime's `overrideTokens()` layers require, which is why the two must not be confused."
+    },
+    "cssValue": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "description": "Any CSS value: a literal (#f7f3ea, rgba(...)), or a reference to a shipped palette token such as var(--dsw-static-neutral-bluish-900). Prefer the var() form for anything that should follow the product palette."
+    }
+  },
+  "$comment": "Required token set, sourced from @deepseek-ai/dsh-client-ui-theme's BUILTIN_INSPECT_TOKENS entries that declare requiresLightAndDark: true. The runtime does not validate completeness — an incomplete override set is accepted and silently looks wrong — so this schema, not the runtime, is where that check lives.",
+  "x-required-tokens": [
+    "--dsw-alias-bg-base",
+    "--dsw-alias-bg-layer-1",
+    "--dsw-alias-bg-layer-2",
+    "--dsw-alias-bg-overlay",
+    "--dsw-alias-border-l1",
+    "--dsw-alias-border-l2",
+    "--dsw-alias-brand-primary",
+    "--dsw-alias-label-primary",
+    "--dsw-alias-label-secondary",
+    "--dsw-alias-state-error-primary",
+    "--dsw-alias-state-success-primary",
+    "--dsw-alias-state-warn-primary"
+  ],
+  "x-recommended-tokens": [
+    "--dsw-alias-bg-layer-3",
+    "--dsw-alias-border-l3",
+    "--dsw-alias-border-l4",
+    "--dsw-alias-label-tertiary",
+    "--dsw-alias-label-caption",
+    "--dsw-alias-link",
+    "--dsw-alias-interactive-bg-hover",
+    "--dsw-alias-interactive-bg-active",
+    "--dsw-alias-button-primary-fill",
+    "--dsw-alias-button-primary-hover",
+    "--dsw-alias-markdown-code-block",
+    "--dsw-alias-markdown-inline-code",
+    "--dsw-alias-scrollbar-bg-l1",
+    "--dsw-alias-scrollbar-bg-l2",
+    "--dsw-alias-scrollbar-hover-l1",
+    "--dsw-alias-scrollbar-hover-l2"
+  ],
+  "x-all-tokens-note": "The full alias surface is 81 variables; the authoritative list lives in packages/client/ui-theme/src/styles/design-platform.css in the official repository."
+}

@@ -1,0 +1,48 @@
+# The layer this bundle contributes to whichever profile selects it.
+#
+# One row, one package name. The client module system mounts this package's
+# browser half (./client) when the row is enabled, and that half registers the
+# themes through the `theme` service provided by @deepseek-ai/dsh-client-ui-theme.
+#
+# ── NO `modifies` HERE ───────────────────────────────────────────────────────
+#
+# This row used to declare `modifies: [ui-theme]`, meaning "I modify the row that
+# owns the theme service". That is a CYCLE, and it hung the whole application.
+#
+# The client half already lists `theme` in its `inject` array, which is what
+# actually orders activation: the consumer is mounted once the provider has
+# offered the service. Adding `modifies` on top told the loader the opposite as
+# well — that this row must be brought up BEFORE ui-theme — so ui-theme waited for
+# us and we waited for ui-theme, both fibers stayed pending, and the desktop app
+# stopped at "Loading plugins..." with no exception and no crash log.
+#
+# Consuming a service through `inject` is sufficient and correct. Never declare
+# `modifies` for a row whose service this plugin consumes.
+#
+# ── THE KILL SWITCH (`config.ambient`) ───────────────────────────────────────
+#
+# `config: { ambient: false }` stops BOTH of this plugin's active layers: the
+# sidebar scenery and the skin restore.
+#
+# It exists because the only lever available when the plugin misbehaved was
+# removing it from `dsh.profile.bundles` — and on the desktop that list is NOT
+# hand-maintained. The application re-derives it from `dependencies` whenever a
+# package is installed, enabled or optimised, so a package declaring
+# `dsh.bundle.patch` is written straight back and the plugin returns on its own.
+# There was no brake on the plugin's side at all.
+#
+# To defuse a misbehaving skin without fighting the installer, set it to `false` in
+# the PROFILE's own `cordis.patch.yml` (the durable place):
+#
+#     - id: theme-gallery
+#       name: dsh-theme-gallery
+#       config:
+#         ambient: false
+#
+# Anything other than an explicit `false` leaves both layers on, so an absent
+# `config` behaves exactly as before.
+- insert:
+    - id: theme-gallery
+      name: dsh-theme-gallery
+      config:
+        ambient: true
