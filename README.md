@@ -17,6 +17,16 @@
 
 每个皮肤 67 个 token，覆盖整屏。
 
+## 效果预览
+
+| 山青婷彩 `shan-qing-ting-cai` | 梦海游鱼 `meng-hai-you-yu` |
+|---|---|
+| ![山青婷彩：青山两层、云雾、蜻蜓与落花，侧栏水塘收底](https://raw.githubusercontent.com/renjie2026/dsh-theme-gallery/main/screenshots/shan-qing-ting-cai.png) | ![梦海游鱼：左上柔光辉、上浮气泡与光点、蓝色小鱼、水草与水底渐变](https://raw.githubusercontent.com/renjie2026/dsh-theme-gallery/main/screenshots/meng-hai-you-yu.png) |
+
+截图取自桌面版 0.1.7-rc.2 实机。图片用**绝对地址**引用而不是相对路径，是为了让同一份 README 在
+GitHub、npm 与社区市场三处都能显示（npm 不会把相对路径解析到仓库）。原图在
+[`screenshots/`](screenshots/) 下，不在 npm 包内（`package.json` 的 `files` 白名单只含运行必需文件）。
+
 ---
 
 ## 为什么是「一个插件 + 数据」，而不是「一个皮肤一个插件」
