@@ -372,8 +372,11 @@ check('the fish carries tail, dorsal and pectoral fins',
     && fishMarkupOut.includes('M35 9 L40 12 L45 9'))
 check('the fish carries the three-part eye',
   (fishMarkupOut.match(/<circle/g) ?? []).length === 3)
-check('the fish uses the source blues',
-  fishMarkupOut.includes('#38bdf8') && fishMarkupOut.includes('#1d4ed8'))
+check('the fish use the theme blue family (the source sticker blues are gone)',
+  fishMarkupOut.includes('#5FA5D6') && fishMarkupOut.includes('#2B6E9E')
+    && !fishMarkupOut.includes('#38bdf8') && !fishMarkupOut.includes('#1d4ed8'))
+check('the fish render slightly translucent so they read as underwater',
+  /class="dof-fish" style="position:absolute;left:0;opacity:\.94/.test(fishMarkupOut))
 check('the fish swims on its own keyframes', /animation:dsh-amb-swim /.test(fishMarkupOut))
 check('a mirrored fish swims back with the opposite animation',
   /animation:dsh-amb-swim-back /.test(api.fishMarkup('2', 1.7, 52, 46, -18, true)))
@@ -390,6 +393,55 @@ check('all three dream effects are drawn together',
 check('the fish layer sits above the water plants',
   /class="dof-fish-layer" style="position:absolute;inset:0;z-index:6/.test(dreamMarkup)
     && /dof-seaweed\{[^}]*z-index:5\}/.test(source))
+
+// ── the water-floor band (integration with the sidebar gradient) ─────────────
+//
+// The shan scene reads as one piece because its mountains fill the band and meet
+// the sidebar gradient with colours from the same family. The dream scene used to
+// float loose blades over a transparent background, which read as stickers. The
+// floor band is the dream equivalent of shan's pond: it starts fully transparent —
+// so the sidebar's own gradient shows through at the junction — and deepens
+// downward, with the seaweed layered on top of it.
+check('the dream scene grounds the seaweed on a water-floor band',
+  /class="dof-floor"/.test(dreamMarkup))
+check('the floor starts fully transparent so the junction is seamless',
+  /class="dof-floor" style="[^"]*rgba\(126,184,222,0\)/.test(dreamMarkup))
+check('the floor sits below the seaweed so the blades root in it',
+  /class="dof-floor" style="[^"]*z-index:4/.test(dreamMarkup)
+    && /class="dof-seaweed" style="[^"]*z-index:5/.test(dreamMarkup))
+check('the seaweed gradients stay in the theme blue family',
+  api.seaweedMarkup().includes('#1E6E93') && api.seaweedMarkup().includes('#4A78A8')
+    && !api.seaweedMarkup().includes('#5568AC'))
+// The preview mounts the scene into a `#dsh-theme-ambient` seat, while the live
+// layer uses `.dsh-amb-control-scene`. The fish classes are styled in the live
+// section only — without matching preview-seat rules, the preview draws fish that
+// never mirror, bob or beat their tails: a lying preview.
+check('the preview seat section styles the fish too',
+  /#dsh-theme-ambient \.dof-fish-flip/.test(source)
+    && /#dsh-theme-ambient \.dof-fish-bob/.test(source)
+    && /#dsh-theme-ambient \.dof-fish-tail/.test(source))
+
+// ── the light must not stop at the band edge ─────────────────────────────────
+//
+// The corner glow used to be centred ON the band's top edge at full brightness, so
+// the scene box's overflow clip cut it into a hard white line against the un-lit
+// middle of the sidebar — the boundary the user reported. Now it is dimmer, starts
+// AT the edge, and is masked to zero there, while the theme's sidebar gradient
+// carries a light-pool stop that continues the bloom above the edge, and the
+// drifting washes fade at their own top and bottom edges instead of ending hard.
+check('the corner glow is dimmed and masked to zero at the band edge',
+  /dof-corner" style="[^"]*rgba\(255,255,255,\.55\)[^"]*mask-image:linear-gradient\(to bottom,transparent 0,#000 45%\)/
+    .test(dreamMarkup))
+check('the light washes fade at their own top and bottom edges',
+  // Each wash carries the mask twice (-webkit- prefixed and plain), and the
+  // prefixed form contains the plain one as a substring — hence four matches.
+  (dreamMarkup.match(/mask-image:linear-gradient\(to bottom,transparent,#000 22%,#000 78%,transparent\)/g) ?? [])
+    .length === 4)
+check('the sidebar gradient carries the light-pool stop bridging the band edge',
+  /#CDEEFC 70%/.test(source))
+check('the bubbles and motes die before they can clip at the band top',
+  /@keyframes dsh-amb-rise[\s\S]{0,200}-12\.5em[\s\S]{0,60}opacity:0/.test(source)
+    && /@keyframes dsh-amb-mote[\s\S]{0,200}-13em[\s\S]{0,60}opacity:0/.test(source))
 
 // ── the layer is synced from a body-wide observer, so repainting must be conditional ──
 //

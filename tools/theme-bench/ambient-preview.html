@@ -47,22 +47,44 @@ box-shadow:0 0 3px rgba(217,123,164,.45)}
 100%{transform:translate(-.5em,15em) rotate(380deg);opacity:0}}
 @keyframes dsh-amb-mist{from{transform:translateX(0)}to{transform:translateX(11%)}}
 .dsh-amb-control-scene .dof-glow{position:absolute;inset:0;z-index:2}
-.dsh-amb-control-scene .dof-corner{position:absolute;top:-14%;left:-30%;width:150%;height:46%;
-background:radial-gradient(ellipse at 30% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 62%);
-filter:blur(10px);animation:dsh-amb-wash 18s ease-in-out infinite alternate}
+.dsh-amb-control-scene .dof-corner{position:absolute;top:0;left:-30%;width:150%;height:40%;
+background:radial-gradient(ellipse at 32% 50%,rgba(255,255,255,.55),rgba(255,255,255,0) 62%);
+filter:blur(12px);-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 45%);
+mask-image:linear-gradient(to bottom,transparent 0,#000 45%);
+animation:dsh-amb-wash 18s ease-in-out infinite alternate}
 .dsh-amb-control-scene .dof-wash{position:absolute;left:-20%;width:140%;height:30%;filter:blur(12px);
 opacity:.5;background:linear-gradient(100deg,transparent,rgba(255,255,255,.8),transparent);
+-webkit-mask-image:linear-gradient(to bottom,transparent,#000 22%,#000 78%,transparent);
+mask-image:linear-gradient(to bottom,transparent,#000 22%,#000 78%,transparent);
 animation:dsh-amb-wash 24s ease-in-out infinite alternate}
 .dsh-amb-control-scene .dof-wash-1{top:14%}
 .dsh-amb-control-scene .dof-wash-2{top:34%;opacity:.34;animation-duration:31s;animation-delay:-8s}
 @keyframes dsh-amb-wash{from{transform:translateX(0)}to{transform:translateX(9%)}}
 .dsh-amb-control-scene .dof-bubbles{position:absolute;inset:0;z-index:6;pointer-events:none}
 .dsh-amb-control-scene .dof-bubble{position:absolute;bottom:-1em;border-radius:50%;
-background:radial-gradient(circle at 34% 30%,#FFFFFF 0%,#D6F1FF 38%,rgba(122,205,255,.55) 70%,rgba(122,205,255,0) 100%);
+background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.95),rgba(190,232,246,.55));
+box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);animation:dsh-amb-rise linear infinite}
+@keyframes dsh-amb-rise{0%{transform:translate(0,0) scale(.6);opacity:0}12%{opacity:.85}
+55%{transform:translate(1em,-7em) scale(1)}100%{transform:translate(-.6em,-12.5em) scale(.8);opacity:0}}
+.dsh-amb-control-scene .dof-motes{position:absolute;inset:0;z-index:7;pointer-events:none}
+.dsh-amb-control-scene .dof-mote{position:absolute;bottom:-1em;border-radius:50%;
+background:radial-gradient(circle at 34% 30%,#FFFFFF 0%,#D6F1FF 40%,rgba(122,205,255,.5) 72%,rgba(122,205,255,0) 100%);
 box-shadow:0 0 10px 3px rgba(122,205,255,.55),0 0 22px 6px rgba(122,205,255,.22);
-animation:dsh-amb-rise linear infinite}
-@keyframes dsh-amb-rise{0%{transform:translate(0,0) scale(.55);opacity:0}12%{opacity:.9}
-55%{transform:translate(1em,-11em) scale(1)}100%{transform:translate(-.6em,-23em) scale(.8);opacity:0}}
+animation:dsh-amb-mote linear infinite}
+@keyframes dsh-amb-mote{0%{transform:translate(0,0) scale(.5);opacity:0}10%{opacity:.95}
+50%{transform:translate(-.8em,-8em) scale(1)}100%{transform:translate(.5em,-13em) scale(.85);opacity:0}}
+.dsh-amb-control-scene .dof-fish{position:absolute;left:0;z-index:6;pointer-events:none;
+will-change:transform}
+.dsh-amb-control-scene .dof-fish svg{display:block;width:100%;height:auto}
+.dsh-amb-control-scene .dof-fish-flip svg{transform:scaleX(-1)}
+.dsh-amb-control-scene .dof-fish-bob{animation:dsh-amb-fish-bob 2.4s ease-in-out infinite}
+.dsh-amb-control-scene .dof-fish-tail{transform-origin:10px 10px;
+animation:dsh-amb-fish-tail .9s ease-in-out infinite alternate}
+@keyframes dsh-amb-swim{0%{transform:translateX(-6em)}100%{transform:translateX(24em)}}
+@keyframes dsh-amb-swim-back{0%{transform:translateX(24em)}100%{transform:translateX(-6em)}}
+@keyframes dsh-amb-fish-bob{0%,100%{transform:translateY(0) rotate(0)}
+50%{transform:translateY(-3px) rotate(-1.6deg)}}
+@keyframes dsh-amb-fish-tail{from{transform:rotate(-9deg)}to{transform:rotate(9deg)}}
 .dsh-amb-control-scene .dof-seaweed{position:absolute;left:0;right:0;bottom:0;height:34%;z-index:5}
 .dsh-amb-control-scene .dof-seaweed svg{display:block;width:100%;height:100%}
 .dsh-amb-control-scene .dof-blade{transform-origin:50% 100%;
@@ -110,11 +132,15 @@ background:linear-gradient(135deg,#F9A8C8 0%,#E88BB0 55%,#CF6B96 100%);opacity:.
 35%{transform:translate(-1.5em,10em) rotate(140deg)}70%{transform:translate(1.1em,20em) rotate(280deg)}
 100%{transform:translate(-.6em,30em) rotate(380deg);opacity:0}}
 #dsh-theme-ambient .dof-glow{position:absolute;inset:0;z-index:2}
-#dsh-theme-ambient .dof-corner{position:absolute;top:-14%;left:-30%;width:150%;height:46%;
-background:radial-gradient(ellipse at 30% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 62%);
-filter:blur(10px);animation:dsh-amb-wash 18s ease-in-out infinite alternate}
+#dsh-theme-ambient .dof-corner{position:absolute;top:0;left:-30%;width:150%;height:40%;
+background:radial-gradient(ellipse at 32% 50%,rgba(255,255,255,.55),rgba(255,255,255,0) 62%);
+filter:blur(12px);-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 45%);
+mask-image:linear-gradient(to bottom,transparent 0,#000 45%);
+animation:dsh-amb-wash 18s ease-in-out infinite alternate}
 #dsh-theme-ambient .dof-wash{position:absolute;left:-20%;width:140%;height:30%;filter:blur(12px);opacity:.5;
 background:linear-gradient(100deg,transparent,rgba(255,255,255,.8),transparent);
+-webkit-mask-image:linear-gradient(to bottom,transparent,#000 22%,#000 78%,transparent);
+mask-image:linear-gradient(to bottom,transparent,#000 22%,#000 78%,transparent);
 animation:dsh-amb-wash 24s ease-in-out infinite alternate}
 #dsh-theme-ambient .dof-wash-1{top:14%}
 #dsh-theme-ambient .dof-wash-2{top:34%;opacity:.34;animation-duration:31s;animation-delay:-8s}
@@ -124,7 +150,7 @@ animation:dsh-amb-wash 24s ease-in-out infinite alternate}
 background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.95),rgba(190,232,246,.55));
 box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);animation:dsh-amb-rise linear infinite}
 @keyframes dsh-amb-rise{0%{transform:translate(0,0) scale(.6);opacity:0}12%{opacity:.85}
-55%{transform:translate(1em,-11em) scale(1)}100%{transform:translate(-.6em,-23em) scale(.8);opacity:0}}
+55%{transform:translate(1em,-7em) scale(1)}100%{transform:translate(-.6em,-12.5em) scale(.8);opacity:0}}
 #dsh-theme-ambient .dof-seaweed{position:absolute;left:0;right:0;bottom:0;height:38%;z-index:5}
 #dsh-theme-ambient .dof-seaweed svg{display:block;width:100%;height:100%}
 #dsh-theme-ambient .dof-blade{transform-origin:50% 100%;animation:dsh-amb-sway 6s ease-in-out infinite alternate}
@@ -133,6 +159,17 @@ box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);animation:dsh-amb-rise linear in
 #dsh-theme-ambient .dof-blade-4{animation-duration:8.1s;animation-delay:-.9s}
 #dsh-theme-ambient .dof-blade-5{animation-duration:6.6s;animation-delay:-3.4s}
 @keyframes dsh-amb-sway{from{transform:rotate(-3.5deg)}to{transform:rotate(3.5deg)}}
+#dsh-theme-ambient .dof-fish{position:absolute;left:0;z-index:6;pointer-events:none;
+will-change:transform}
+#dsh-theme-ambient .dof-fish svg{display:block;width:100%;height:auto}
+#dsh-theme-ambient .dof-fish-flip svg{transform:scaleX(-1)}
+#dsh-theme-ambient .dof-fish-bob{animation:dsh-amb-fish-bob 2.4s ease-in-out infinite}
+#dsh-theme-ambient .dof-fish-tail{transform-origin:10px 10px;
+animation:dsh-amb-fish-tail .9s ease-in-out infinite alternate}
+#dsh-theme-ambient .dof-mote{position:absolute;bottom:-1em;border-radius:50%;
+background:radial-gradient(circle at 34% 30%,#FFFFFF 0%,#D6F1FF 40%,rgba(122,205,255,.5) 72%,rgba(122,205,255,0) 100%);
+box-shadow:0 0 10px 3px rgba(122,205,255,.55),0 0 22px 6px rgba(122,205,255,.22);
+animation:dsh-amb-mote linear infinite}
 @media (prefers-reduced-motion:reduce){#dsh-theme-ambient *{animation:none!important}}
 
   /* ── preview chrome only ───────────────────────────────────────────── */
@@ -324,7 +361,7 @@ box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);animation:dsh-amb-rise linear in
   <figure class="pane">
     <figcaption>
       <strong>梦海游鱼 · dream</strong>
-      <span>左上柔光辉 + 气泡上浮 + 水草摇摆（原系统另有独立卡通小鱼组件，未含在此）</span>
+      <span>柔光辉 + 光洗 + 气泡 + 光点 + 蓝色小鱼 + 水草，水底渐变承接（配色已并入主题蓝系）</span>
     </figcaption>
     <div class="colwrap">
       <div class="ZTP-Xa_sidebarCol" style="background:linear-gradient(to bottom,#EAF5FF 0%,#DDF0FF 26%,#CDE9FB 52%,#BFE2F6 74%,#B0D9F0 100%)">
@@ -335,17 +372,20 @@ box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);animation:dsh-amb-rise linear in
       <div class="dof-wash dof-wash-2"></div>
     </div>
     <div class="dof-bubbles"><div class="dof-bubble" style="left:29%;width:3px;height:3px;animation-duration:15s;animation-delay:-1.7s"></div><div class="dof-bubble" style="left:52%;width:3px;height:3px;animation-duration:14s;animation-delay:-3.4s"></div><div class="dof-bubble" style="left:75%;width:3px;height:3px;animation-duration:13s;animation-delay:-5.1s"></div><div class="dof-bubble" style="left:12%;width:3px;height:3px;animation-duration:12s;animation-delay:-6.8s"></div><div class="dof-bubble" style="left:35%;width:3px;height:3px;animation-duration:11s;animation-delay:-8.5s"></div><div class="dof-bubble" style="left:58%;width:3px;height:3px;animation-duration:10s;animation-delay:-10.2s"></div><div class="dof-bubble" style="left:81%;width:3px;height:3px;animation-duration:9s;animation-delay:-11.9s"></div><div class="dof-bubble" style="left:18%;width:3px;height:3px;animation-duration:8s;animation-delay:-13.6s"></div><div class="dof-bubble" style="left:41%;width:3px;height:3px;animation-duration:15s;animation-delay:-15.299999999999999s"></div></div>
+    <div class="dof-fish-layer"><div class="dof-fish" style="position:absolute;left:0;opacity:.94;top:26%;width:2.4em;animation:dsh-amb-swim 34s linear infinite;animation-delay:-4s"><div class="dof-fish-bob" style="animation-duration:4.25s"><svg viewBox="0 0 50 18" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:auto;overflow:visible"><path d="M10 10 C20 5 35 5 45 10 C40 15 25 15 10 10 Z" fill="#5FA5D6" stroke="#2B6E9E" stroke-width="1"/><path d="M10 10 L5 7 L5 13 Z" fill="#2B6E9E" stroke="#2B6E9E" stroke-width="1" class="dof-fish-tail"/><path d="M20 7 L25 3 L30 7" fill="#2B6E9E" stroke="#2B6E9E" stroke-width="1"/><path d="M35 9 L40 12 L45 9" fill="#5FA5D6" stroke="#2B6E9E" stroke-width="1"/><circle cx="40" cy="8" r="2" fill="#FFFFFF"/><circle cx="41" cy="8" r="1" fill="#16384F"/><circle cx="40.5" cy="7.5" r="0.5" fill="#FFFFFF"/></svg></div></div><div class="dof-fish dof-fish-flip" style="position:absolute;left:0;opacity:.94;top:52%;width:1.7em;animation:dsh-amb-swim-back 46s linear infinite;animation-delay:-18s"><div class="dof-fish-bob" style="animation-duration:5.75s"><svg viewBox="0 0 50 18" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:auto;overflow:visible"><path d="M10 10 C20 5 35 5 45 10 C40 15 25 15 10 10 Z" fill="#5FA5D6" stroke="#2B6E9E" stroke-width="1"/><path d="M10 10 L5 7 L5 13 Z" fill="#2B6E9E" stroke="#2B6E9E" stroke-width="1" class="dof-fish-tail"/><path d="M20 7 L25 3 L30 7" fill="#2B6E9E" stroke="#2B6E9E" stroke-width="1"/><path d="M35 9 L40 12 L45 9" fill="#5FA5D6" stroke="#2B6E9E" stroke-width="1"/><circle cx="40" cy="8" r="2" fill="#FFFFFF"/><circle cx="41" cy="8" r="1" fill="#16384F"/><circle cx="40.5" cy="7.5" r="0.5" fill="#FFFFFF"/></svg></div></div><div class="dof-fish" style="position:absolute;left:0;opacity:.94;top:71%;width:1.3em;animation:dsh-amb-swim 40s linear infinite;animation-delay:-29s"><div class="dof-fish-bob" style="animation-duration:5.00s"><svg viewBox="0 0 50 18" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:auto;overflow:visible"><path d="M10 10 C20 5 35 5 45 10 C40 15 25 15 10 10 Z" fill="#5FA5D6" stroke="#2B6E9E" stroke-width="1"/><path d="M10 10 L5 7 L5 13 Z" fill="#2B6E9E" stroke="#2B6E9E" stroke-width="1" class="dof-fish-tail"/><path d="M20 7 L25 3 L30 7" fill="#2B6E9E" stroke="#2B6E9E" stroke-width="1"/><path d="M35 9 L40 12 L45 9" fill="#5FA5D6" stroke="#2B6E9E" stroke-width="1"/><circle cx="40" cy="8" r="2" fill="#FFFFFF"/><circle cx="41" cy="8" r="1" fill="#16384F"/><circle cx="40.5" cy="7.5" r="0.5" fill="#FFFFFF"/></svg></div></div></div>
+    <div class="dof-motes"><div class="dof-mote" style="left:39%;width:8px;height:8px;animation-duration:14s;animation-delay:-2.1s"></div><div class="dof-mote" style="left:70%;width:7px;height:7px;animation-duration:12s;animation-delay:-4.2s"></div><div class="dof-mote" style="left:17%;width:6px;height:6px;animation-duration:10s;animation-delay:-6.300000000000001s"></div><div class="dof-mote" style="left:48%;width:5px;height:5px;animation-duration:15s;animation-delay:-8.4s"></div><div class="dof-mote" style="left:79%;width:8px;height:8px;animation-duration:13s;animation-delay:-10.5s"></div></div>
+    <div class="dof-floor" style="position:absolute;left:0;right:0;bottom:0;height:20%;z-index:4;background:linear-gradient(to bottom,rgba(126,184,222,0) 0%,rgba(126,184,222,.4) 46%,rgba(84,152,199,.62) 100%)"></div>
     <div class="dof-seaweed">
       <svg viewBox="0 0 140 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="dsh-dof-weed-a" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0" stop-color="#1F6B57"/><stop offset="0.55" stop-color="#3E9C82"/><stop offset="1" stop-color="#9FE3D2" stop-opacity="0.85"/>
+            <stop offset="0" stop-color="#1E6E93"/><stop offset="0.55" stop-color="#3E93BC"/><stop offset="1" stop-color="#A5DEF0" stop-opacity="0.85"/>
           </linearGradient>
           <linearGradient id="dsh-dof-weed-b" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0" stop-color="#2B7C87"/><stop offset="0.6" stop-color="#4FA9B1"/><stop offset="1" stop-color="#B3E8EC" stop-opacity="0.85"/>
+            <stop offset="0" stop-color="#2B7FA6"/><stop offset="0.6" stop-color="#4FA3C6"/><stop offset="1" stop-color="#B8E2F2" stop-opacity="0.85"/>
           </linearGradient>
           <linearGradient id="dsh-dof-weed-c" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0" stop-color="#5568AC"/><stop offset="0.6" stop-color="#7B92CA"/><stop offset="1" stop-color="#CFD9F2" stop-opacity="0.8"/>
+            <stop offset="0" stop-color="#4A78A8"/><stop offset="0.6" stop-color="#7FA9CE"/><stop offset="1" stop-color="#CBE2F4" stop-opacity="0.8"/>
           </linearGradient>
         </defs>
         <g class="dof-blade dof-blade-1"><path d="M 22 120 C 12 96, 26 74, 18 48 C 15 38, 18 28, 24 20 C 20 34, 24 44, 30 60 C 36 80, 30 100, 32 120 Z" fill="url(#dsh-dof-weed-a)" stroke="url(#dsh-dof-weed-a)" stroke-width="2.2" opacity="0.95"/></g>
@@ -385,17 +425,20 @@ box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);animation:dsh-amb-rise linear in
       <div class="dof-wash dof-wash-2"></div>
     </div>
     <div class="dof-bubbles"><div class="dof-bubble" style="left:29%;width:3px;height:3px;animation-duration:15s;animation-delay:-1.7s"></div><div class="dof-bubble" style="left:52%;width:3px;height:3px;animation-duration:14s;animation-delay:-3.4s"></div><div class="dof-bubble" style="left:75%;width:3px;height:3px;animation-duration:13s;animation-delay:-5.1s"></div><div class="dof-bubble" style="left:12%;width:3px;height:3px;animation-duration:12s;animation-delay:-6.8s"></div><div class="dof-bubble" style="left:35%;width:3px;height:3px;animation-duration:11s;animation-delay:-8.5s"></div><div class="dof-bubble" style="left:58%;width:3px;height:3px;animation-duration:10s;animation-delay:-10.2s"></div><div class="dof-bubble" style="left:81%;width:3px;height:3px;animation-duration:9s;animation-delay:-11.9s"></div><div class="dof-bubble" style="left:18%;width:3px;height:3px;animation-duration:8s;animation-delay:-13.6s"></div><div class="dof-bubble" style="left:41%;width:3px;height:3px;animation-duration:15s;animation-delay:-15.299999999999999s"></div></div>
+    <div class="dof-fish-layer"><div class="dof-fish" style="position:absolute;left:0;opacity:.94;top:26%;width:2.4em;animation:dsh-amb-swim 34s linear infinite;animation-delay:-4s"><div class="dof-fish-bob" style="animation-duration:4.25s"><svg viewBox="0 0 50 18" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:auto;overflow:visible"><path d="M10 10 C20 5 35 5 45 10 C40 15 25 15 10 10 Z" fill="#5FA5D6" stroke="#2B6E9E" stroke-width="1"/><path d="M10 10 L5 7 L5 13 Z" fill="#2B6E9E" stroke="#2B6E9E" stroke-width="1" class="dof-fish-tail"/><path d="M20 7 L25 3 L30 7" fill="#2B6E9E" stroke="#2B6E9E" stroke-width="1"/><path d="M35 9 L40 12 L45 9" fill="#5FA5D6" stroke="#2B6E9E" stroke-width="1"/><circle cx="40" cy="8" r="2" fill="#FFFFFF"/><circle cx="41" cy="8" r="1" fill="#16384F"/><circle cx="40.5" cy="7.5" r="0.5" fill="#FFFFFF"/></svg></div></div><div class="dof-fish dof-fish-flip" style="position:absolute;left:0;opacity:.94;top:52%;width:1.7em;animation:dsh-amb-swim-back 46s linear infinite;animation-delay:-18s"><div class="dof-fish-bob" style="animation-duration:5.75s"><svg viewBox="0 0 50 18" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:auto;overflow:visible"><path d="M10 10 C20 5 35 5 45 10 C40 15 25 15 10 10 Z" fill="#5FA5D6" stroke="#2B6E9E" stroke-width="1"/><path d="M10 10 L5 7 L5 13 Z" fill="#2B6E9E" stroke="#2B6E9E" stroke-width="1" class="dof-fish-tail"/><path d="M20 7 L25 3 L30 7" fill="#2B6E9E" stroke="#2B6E9E" stroke-width="1"/><path d="M35 9 L40 12 L45 9" fill="#5FA5D6" stroke="#2B6E9E" stroke-width="1"/><circle cx="40" cy="8" r="2" fill="#FFFFFF"/><circle cx="41" cy="8" r="1" fill="#16384F"/><circle cx="40.5" cy="7.5" r="0.5" fill="#FFFFFF"/></svg></div></div><div class="dof-fish" style="position:absolute;left:0;opacity:.94;top:71%;width:1.3em;animation:dsh-amb-swim 40s linear infinite;animation-delay:-29s"><div class="dof-fish-bob" style="animation-duration:5.00s"><svg viewBox="0 0 50 18" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:auto;overflow:visible"><path d="M10 10 C20 5 35 5 45 10 C40 15 25 15 10 10 Z" fill="#5FA5D6" stroke="#2B6E9E" stroke-width="1"/><path d="M10 10 L5 7 L5 13 Z" fill="#2B6E9E" stroke="#2B6E9E" stroke-width="1" class="dof-fish-tail"/><path d="M20 7 L25 3 L30 7" fill="#2B6E9E" stroke="#2B6E9E" stroke-width="1"/><path d="M35 9 L40 12 L45 9" fill="#5FA5D6" stroke="#2B6E9E" stroke-width="1"/><circle cx="40" cy="8" r="2" fill="#FFFFFF"/><circle cx="41" cy="8" r="1" fill="#16384F"/><circle cx="40.5" cy="7.5" r="0.5" fill="#FFFFFF"/></svg></div></div></div>
+    <div class="dof-motes"><div class="dof-mote" style="left:39%;width:8px;height:8px;animation-duration:14s;animation-delay:-2.1s"></div><div class="dof-mote" style="left:70%;width:7px;height:7px;animation-duration:12s;animation-delay:-4.2s"></div><div class="dof-mote" style="left:17%;width:6px;height:6px;animation-duration:10s;animation-delay:-6.300000000000001s"></div><div class="dof-mote" style="left:48%;width:5px;height:5px;animation-duration:15s;animation-delay:-8.4s"></div><div class="dof-mote" style="left:79%;width:8px;height:8px;animation-duration:13s;animation-delay:-10.5s"></div></div>
+    <div class="dof-floor" style="position:absolute;left:0;right:0;bottom:0;height:20%;z-index:4;background:linear-gradient(to bottom,rgba(126,184,222,0) 0%,rgba(126,184,222,.4) 46%,rgba(84,152,199,.62) 100%)"></div>
     <div class="dof-seaweed">
       <svg viewBox="0 0 140 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="dsh-dof-weed-a" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0" stop-color="#1F6B57"/><stop offset="0.55" stop-color="#3E9C82"/><stop offset="1" stop-color="#9FE3D2" stop-opacity="0.85"/>
+            <stop offset="0" stop-color="#1E6E93"/><stop offset="0.55" stop-color="#3E93BC"/><stop offset="1" stop-color="#A5DEF0" stop-opacity="0.85"/>
           </linearGradient>
           <linearGradient id="dsh-dof-weed-b" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0" stop-color="#2B7C87"/><stop offset="0.6" stop-color="#4FA9B1"/><stop offset="1" stop-color="#B3E8EC" stop-opacity="0.85"/>
+            <stop offset="0" stop-color="#2B7FA6"/><stop offset="0.6" stop-color="#4FA3C6"/><stop offset="1" stop-color="#B8E2F2" stop-opacity="0.85"/>
           </linearGradient>
           <linearGradient id="dsh-dof-weed-c" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0" stop-color="#5568AC"/><stop offset="0.6" stop-color="#7B92CA"/><stop offset="1" stop-color="#CFD9F2" stop-opacity="0.8"/>
+            <stop offset="0" stop-color="#4A78A8"/><stop offset="0.6" stop-color="#7FA9CE"/><stop offset="1" stop-color="#CBE2F4" stop-opacity="0.8"/>
           </linearGradient>
         </defs>
         <g class="dof-blade dof-blade-1"><path d="M 22 120 C 12 96, 26 74, 18 48 C 15 38, 18 28, 24 20 C 20 34, 24 44, 30 60 C 36 80, 30 100, 32 120 Z" fill="url(#dsh-dof-weed-a)" stroke="url(#dsh-dof-weed-a)" stroke-width="2.2" opacity="0.95"/></g>

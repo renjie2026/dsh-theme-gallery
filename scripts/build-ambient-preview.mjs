@@ -104,7 +104,10 @@ function shanScene(petals) {
 }
 
 /**
- * The 梦海游鱼 scene, mirroring `dreamAmbientScene()` in the bundle.
+ * The 梦海游鱼 scene, mirroring `dreamAmbientScene()` in the bundle: glow, washes,
+ * bubbles, glowing motes, cartoon fish and seaweed, grounded on the water-floor
+ * band, with the theme-blue recolour. Markup is repeated rather than imported —
+ * keep it in step with the bundle, or the preview lies.
  * @param bubbles - how many bubbles to seed.
  * @returns the scene markup.
  */
@@ -116,8 +119,34 @@ function dreamScene(bubbles) {
       + `width:${size}px;height:${size}px;`
       + `animation-duration:${8 + ((n * 7) % 8)}s;animation-delay:${-(n * 1.7)}s"></div>`
   }
+  // The glowing motes, mirrored from `dreamAmbientScene` (five seeded).
+  let moteMarkup = ''
+  for (let n = 1; n <= 5; n += 1) {
+    const size = 5 + ((n * 3) % 4)
+    moteMarkup += `<div class="dof-mote" style="left:${((n * 31) % 84) + 8}%;`
+      + `width:${size}px;height:${size}px;`
+      + `animation-duration:${9 + ((n * 5) % 7)}s;animation-delay:${-(n * 2.1)}s"></div>`
+  }
   const blade = (key, d, gradient, width, opacity) => `<g class="dof-blade dof-blade-${key}">`
     + `<path d="${d}" fill="url(#${gradient})" stroke="url(#${gradient})" stroke-width="${width}" opacity="${opacity}"/></g>`
+  // The cartoon fish, mirrored from `fishMarkup` with the theme-blue recolour.
+  const fish = (size, top, duration, delay, flip) => {
+    const anim = flip ? 'dsh-amb-swim-back' : 'dsh-amb-swim'
+    return `<div class="dof-fish${flip ? ' dof-fish-flip' : ''}" style="position:absolute;left:0;opacity:.94;`
+      + `top:${top}%;width:${size}em;animation:${anim} ${duration}s linear infinite;animation-delay:${delay}s">`
+      + `<div class="dof-fish-bob" style="animation-duration:${(duration / 8).toFixed(2)}s">`
+      + `<svg viewBox="0 0 50 18" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:auto;overflow:visible">`
+      + `<path d="M10 10 C20 5 35 5 45 10 C40 15 25 15 10 10 Z" fill="#5FA5D6" stroke="#2B6E9E" stroke-width="1"/>`
+      + `<path d="M10 10 L5 7 L5 13 Z" fill="#2B6E9E" stroke="#2B6E9E" stroke-width="1" class="dof-fish-tail"/>`
+      + `<path d="M20 7 L25 3 L30 7" fill="#2B6E9E" stroke="#2B6E9E" stroke-width="1"/>`
+      + `<path d="M35 9 L40 12 L45 9" fill="#5FA5D6" stroke="#2B6E9E" stroke-width="1"/>`
+      + `<circle cx="40" cy="8" r="2" fill="#FFFFFF"/><circle cx="41" cy="8" r="1" fill="#16384F"/>`
+      + `<circle cx="40.5" cy="7.5" r="0.5" fill="#FFFFFF"/>`
+      + `</svg></div></div>`
+  }
+  // Three depths, sizes and speeds, mirroring `FISH_PLAN` with `fish: 3`.
+  const FISH_PLAN = [[2.4, 26, 34, -4, false], [1.7, 52, 46, -18, true], [1.3, 71, 40, -29, false]]
+  const fishMarkup = FISH_PLAN.map((p) => fish(...p)).join('')
 
   return `<div class="dof">
     <div class="dof-glow">
@@ -126,17 +155,20 @@ function dreamScene(bubbles) {
       <div class="dof-wash dof-wash-2"></div>
     </div>
     <div class="dof-bubbles">${bubbleMarkup}</div>
+    <div class="dof-fish-layer">${fishMarkup}</div>
+    <div class="dof-motes">${moteMarkup}</div>
+    <div class="dof-floor" style="position:absolute;left:0;right:0;bottom:0;height:20%;z-index:4;background:linear-gradient(to bottom,rgba(126,184,222,0) 0%,rgba(126,184,222,.4) 46%,rgba(84,152,199,.62) 100%)"></div>
     <div class="dof-seaweed">
       <svg viewBox="0 0 140 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="dsh-dof-weed-a" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0" stop-color="#1F6B57"/><stop offset="0.55" stop-color="#3E9C82"/><stop offset="1" stop-color="#9FE3D2" stop-opacity="0.85"/>
+            <stop offset="0" stop-color="#1E6E93"/><stop offset="0.55" stop-color="#3E93BC"/><stop offset="1" stop-color="#A5DEF0" stop-opacity="0.85"/>
           </linearGradient>
           <linearGradient id="dsh-dof-weed-b" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0" stop-color="#2B7C87"/><stop offset="0.6" stop-color="#4FA9B1"/><stop offset="1" stop-color="#B3E8EC" stop-opacity="0.85"/>
+            <stop offset="0" stop-color="#2B7FA6"/><stop offset="0.6" stop-color="#4FA3C6"/><stop offset="1" stop-color="#B8E2F2" stop-opacity="0.85"/>
           </linearGradient>
           <linearGradient id="dsh-dof-weed-c" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0" stop-color="#5568AC"/><stop offset="0.6" stop-color="#7B92CA"/><stop offset="1" stop-color="#CFD9F2" stop-opacity="0.8"/>
+            <stop offset="0" stop-color="#4A78A8"/><stop offset="0.6" stop-color="#7FA9CE"/><stop offset="1" stop-color="#CBE2F4" stop-opacity="0.8"/>
           </linearGradient>
         </defs>
         ${blade('1', 'M 22 120 C 12 96, 26 74, 18 48 C 15 38, 18 28, 24 20 C 20 34, 24 44, 30 60 C 36 80, 30 100, 32 120 Z', 'dsh-dof-weed-a', '2.2', '0.95')}
@@ -171,7 +203,7 @@ const panes = [
   },
   {
     title: '梦海游鱼 · dream',
-    note: '左上柔光辉 + 气泡上浮 + 水草摇摆（原系统另有独立卡通小鱼组件，未含在此）',
+    note: '柔光辉 + 光洗 + 气泡 + 光点 + 蓝色小鱼 + 水草，水底渐变承接（配色已并入主题蓝系）',
     fill: 'linear-gradient(to bottom,#EAF5FF 0%,#DDF0FF 26%,#CDE9FB 52%,#BFE2F6 74%,#B0D9F0 100%)',
     scene: dreamScene(9),
   },

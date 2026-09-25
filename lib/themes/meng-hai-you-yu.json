@@ -270,8 +270,8 @@
         "dark": "#4C8DAE"
       },
       "--dsw-specific-sidebar-fill": {
-        "light": "linear-gradient(to bottom,#EAF5FF 0%,#DDF0FF 26%,#CDE9FB 52%,#BFE2F6 74%,#B0D9F0 100%)",
-        "dark": "linear-gradient(to bottom,#EAF5FF 0%,#DDF0FF 26%,#CDE9FB 52%,#BFE2F6 74%,#B0D9F0 100%)"
+        "light": "linear-gradient(to bottom,#EAF5FF 0%,#DDF0FF 26%,#CDE9FB 52%,#C7E7FA 62%,#CDEEFC 70%,#C4E7FA 80%,#B9DCF3 90%,#B0D9F0 100%)",
+        "dark": "linear-gradient(to bottom,#EAF5FF 0%,#DDF0FF 26%,#CDE9FB 52%,#C7E7FA 62%,#CDEEFC 70%,#C4E7FA 80%,#B9DCF3 90%,#B0D9F0 100%)"
       }
     },
     "reading": {
