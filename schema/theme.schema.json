@@ -71,11 +71,11 @@
           "type": "object",
           "additionalProperties": false,
           "required": ["kind"],
-          "description": "Scenery drawn inside the sidebar column, ported from the source admin system where each theme mounted its own animation component behind the left menu. Only the two kinds this plugin ships artwork for are accepted; a theme without this field gets no scenery.",
+          "description": "Scenery drawn inside the sidebar column, ported from the source admin system where each theme mounted its own animation component behind the left menu. Only the kinds this plugin ships artwork for are accepted; a theme without this field gets no scenery.",
           "properties": {
             "kind": {
-              "enum": ["shan", "dream"],
-              "description": "Which ported scene to draw: 'shan' is 山青婷彩 (mountains, mist, water, ripples, dragonflies, falling petals); 'dream' is 梦海游鱼 (corner glow, light washes, rising bubbles, glowing motes, swimming cartoon fish, swaying seaweed)."
+              "enum": ["shan", "dream", "caiyun", "dongyun", "junyue", "jiexin", "fengchen"],
+              "description": "Which ported scene to draw: 'shan' is 山青婷彩 (mountains, mist, water, ripples, dragonflies, falling petals); 'dream' is 梦海游鱼 (corner glow, light washes, rising bubbles, glowing motes, swimming cartoon fish, swaying seaweed); 'caiyun' is 营慕彩云 (dusk glow, warm stars, drifting clouds, two marquee cloud-seas, hot-air balloons); 'dongyun' is 江畔冬云 (winter moon, drifting clouds, snow, river with moonlight, ripples, glints, a sampan, reeds); 'junyue' is 徐山军月 (brass stars, full moon, night clouds, meteor, mountain ridges, pines); 'jiexin' is 佩安杰心 (misty hills, zen enso and meditator, incense smoke, dust motes); 'fengchen' is 光彩凤晨 (dawn rays, falling feathers, a flying brush-stroke phoenix, dew)."
             },
             "petals": {
               "type": "integer",
@@ -100,6 +100,36 @@
               "minimum": 0,
               "maximum": 6,
               "description": "'dream' only: how many cartoon fish to swim across the water. A third independent effect, ported from the source system's FishAnimation component."
+            },
+            "stars": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 30,
+              "description": "'caiyun' and 'junyue' only: how many stars to seed. Each gets its own position, size and twinkle phase from a deterministic formula."
+            },
+            "snow": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 30,
+              "description": "'dongyun' only: how many snowflakes to seed."
+            },
+            "dust": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20,
+              "description": "'jiexin' only: how many drifting incense dust motes to seed."
+            },
+            "feathers": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 16,
+              "description": "'fengchen' only: how many falling phoenix feathers to seed. A separate effect from the dew."
+            },
+            "dew": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 30,
+              "description": "'fengchen' only: how many twinkling dew drops to seed."
             }
           }
         }

@@ -46,7 +46,26 @@ const problems = []
  * scene that exists. Keeping the list here means a typo fails the build instead of
  * silently drawing nothing at runtime.
  */
-const AMBIENT_KINDS = ['shan', 'dream']
+const AMBIENT_KINDS = ['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen']
+
+/**
+ * Validated ranges for each scene's seed-count option.
+ *
+ * Each kind names its own count knob (petals for shan, stars for caiyun and
+ * junyue, …); a count outside its range fails the build instead of silently
+ * seeding nothing or flooding the band at runtime.
+ */
+const AMBIENT_COUNTS = {
+  petals: [0, 20],
+  bubbles: [0, 24],
+  motes: [0, 24],
+  fish: [0, 6],
+  stars: [0, 30],
+  snow: [0, 30],
+  dust: [0, 20],
+  feathers: [0, 16],
+  dew: [0, 30],
+}
 
 /**
  * Record one validation failure.
@@ -108,11 +127,10 @@ function checkTheme(theme, where, required) {
       if (!AMBIENT_KINDS.includes(a.kind)) {
         fail(where, `ambient.kind must be one of ${AMBIENT_KINDS.join(', ')} (only these have ported artwork)`)
       }
-      if (a.petals !== undefined && (!Number.isInteger(a.petals) || a.petals < 0 || a.petals > 20)) {
-        fail(where, 'ambient.petals must be an integer in 0..20')
-      }
-      if (a.bubbles !== undefined && (!Number.isInteger(a.bubbles) || a.bubbles < 0 || a.bubbles > 24)) {
-        fail(where, 'ambient.bubbles must be an integer in 0..24')
+      for (const [field, [min, max]] of Object.entries(AMBIENT_COUNTS)) {
+        if (a[field] !== undefined && (!Number.isInteger(a[field]) || a[field] < min || a[field] > max)) {
+          fail(where, `ambient.${field} must be an integer in ${min}..${max}`)
+        }
       }
     }
   }

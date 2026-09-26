@@ -11,12 +11,14 @@
 | 自己做皮肤（或让 AI 做） | 在 `lib/themes/` 加 JSON 后重跑 `npm run embed-themes`，或装 `dsh-theme-skin-author` 技能让 AI 生成 |
 | 贡献一个皮肤给所有人 | 在 `lib/themes/` 放一个 JSON，提 PR |
 
-内置两个皮肤，均复刻自电商新零售系统管理后台（`admin-modular/src/utils/themes.js`）：
+内置四个皮肤，均复刻自电商新零售系统管理后台（`admin-modular/src/utils/themes.js`）：
 
 | id | 名称 | 主色 | 强调色 |
 |---|---|---|---|
 | `shan-qing-ting-cai` | **山青婷彩** | `#2F7D5E` 青山绿 | `#E88BB0` 蜻蜓粉 |
 | `meng-hai-you-yu` | **梦海游鱼** | `#177CB0` 靛青 | `#FFD166` 琥珀金 |
+| `ying-mu-cai-yun` | **营慕彩云** | `#2D5A3D` 林间深绿 | `#FFB347` 琥珀 |
+| `pei-an-jie-xin` | **佩安杰心** | `#7A5C3E` 暖檀褐 | `#B4653A` 赭陶 |
 
 每个皮肤 67 个 token，覆盖整屏。
 
@@ -26,9 +28,17 @@
 |---|---|
 | ![山青婷彩：青山两层、云雾、蜻蜓与落花，侧栏水塘收底](https://raw.githubusercontent.com/renjie2026/dsh-theme-gallery/main/screenshots/shan-qing-ting-cai.png) | ![梦海游鱼：左上柔光辉、上浮气泡与光点、蓝色小鱼、水草与水底渐变](https://raw.githubusercontent.com/renjie2026/dsh-theme-gallery/main/screenshots/meng-hai-you-yu.png) |
 
+| 营慕彩云 `ying-mu-cai-yun` | 佩安杰心 `pei-an-jie-xin` |
+|---|---|
+| ![营慕彩云：暮色暖光、三层彩云与前后两层漂移云海，两只热气球往返漫游](https://raw.githubusercontent.com/renjie2026/dsh-theme-gallery/main/screenshots/ying-mu-cai-yun.png) | ![佩安杰心：雾山远衬、禅意圆相与坐禅人影、香炉两缕青烟与浮尘，底部禅语](https://raw.githubusercontent.com/renjie2026/dsh-theme-gallery/main/screenshots/pei-an-jie-xin.png) |
+
 截图取自桌面版 0.1.7-rc.2 实机。图片用**绝对地址**引用而不是相对路径，是为了让同一份 README 在
 GitHub、npm 与社区市场三处都能显示（npm 不会把相对路径解析到仓库）。原图在
 [`screenshots/`](screenshots/) 下，不在 npm 包内（`package.json` 的 `files` 白名单只含运行必需文件）。
+
+侧栏装饰还可以先看后装：仓库内的
+[`tools/theme-bench/ambient-preview.html`](tools/theme-bench/ambient-preview.html) 以宽窄两种侧栏宽度
+并排渲染全部皮肤（该页把 CSS 与场景标记直接读自 `lib/client.js`，不会与出货版本漂移）。
 
 ---
 
@@ -340,7 +350,7 @@ if (active === void 0) throw new Error(`theme registry lost "${resolvedId}"`)
 
 ## 侧栏素材与激活标记（region 1 复刻）
 
-两个皮肤不只是配色，还把原系统**左侧菜单区的元素素材**复刻了过来，并给"正在使用"的状态加了标记色。
+皮肤不只是配色，还把原系统**左侧菜单区的元素素材**复刻了过来，并给"正在使用"的状态加了标记色。
 
 ### 侧栏氛围装饰 `ambient`
 
@@ -348,15 +358,18 @@ if (active === void 0) throw new Error(`theme registry lost "${resolvedId}"`)
 |---|---|
 | 山青婷彩 `kind: "shan"` | 青山两层 + 山间云雾 + 山脚水面与点水涟漪 + 两只悬停蜻蜓 + 花瓣飘落 |
 | 梦海游鱼 `kind: "dream"` | 左上柔光辉 + 两道弥散光洗 + 上浮气泡 + 五叶水草摇摆 |
+| 营慕彩云 `kind: "caiyun"` | 暮色暖光 + 暖金光点 + 三层模糊彩云 + 前后两层漂移云海 + 两只往返漫游的热气球 |
+| 佩安杰心 `kind: "jiexin"` | 雾山远衬 + 禅意圆相与坐禅人影 + 香炉两缕青烟 + 浮尘光点 + 禅语「自在 · 安顿」 |
 
-素材逐像素复刻自 `ShanQingTingCaiAnimation.vue` 与 `DreamOceanAmbient.vue`。与原系统**有意偏离**两处：
+素材逐像素复刻自源系统对应的主题动画组件（`ShanQingTingCaiAnimation.vue`、
+`DreamOceanAmbient.vue`、`YingMuCaiYunAnimation.vue`、`PeiAnJieXinAnimation.vue`）。与原系统**有意偏离**两处：
 
 1. **尺寸改为百分比 / em**。原系统写死 223px 侧栏宽；DSH 侧栏可拖拽，固定像素在窄侧栏会截断。
 2. **`pointer-events:none` 且置于导航之下**。原系统文档记有一条 bug：不透明山形贴在侧栏底部会遮挡最下方菜单项。
 
 `kind` 是**数据键而非素材路径**——插件只为它真正画得出的场景提供键，写错会在构建期失败，而不是运行时静默不画。
 
-装饰挂在侧栏列里的 `#dsh-theme-ambient`。这是本插件**唯一**直接操作外壳 DOM 的地方（侧栏没有装饰插槽，插槽组件会成为列的兄弟而非其背后的图层），因此单独隔离、整体 try/catch：**装饰是修饰，绝不能成为故障原因**。侧栏定位用三级回退，因为外壳类名是 CSS-module 哈希、不是稳定契约。
+装饰挂在 `document.body` 上的全屏 `.dsh-amb-control` 图层里，场景盒再按侧栏几何绝对定位在图层内部——**图层与场景盒必须拆成两层**，这是本项目花了二十多轮才找到的结论（压在一个元素上时两种形态都不绘制）。这是本插件**唯一**直接操作外壳 DOM 的地方（侧栏没有装饰插槽，插槽组件会成为列的兄弟而非其背后的图层），因此单独隔离、整体 try/catch：**装饰是修饰，绝不能成为故障原因**。侧栏定位用三级回退，因为外壳类名是 CSS-module 哈希、不是稳定契约。
 
 先看效果再装：`npm run preview:ambient` 生成的预览页**把 CSS 直接读自 `lib/client.js`**，因此不会与出货版本漂移；两种侧栏宽度并排。
 
@@ -370,6 +383,8 @@ if (active === void 0) throw new Error(`theme registry lost "${resolvedId}"`)
 |---|---|---|
 | 山青婷彩 | `#E88BB0` | 蜻蜓粉 |
 | 梦海游鱼 | `#FFD166` | 夕照金 |
+| 营慕彩云 | `#FFB347` | 云霞琥珀 |
+| 佩安杰心 | `#B4653A` | 赭陶 |
 
 **不是所有主题一律粉**——那样恰好违反来源项目自己的规范。两条约束由代码强制：叠加**只对活跃主题**生效、切走即撤除；**不动 `brand-primary`**（否则链接、主按钮、状态徽标会被一起改掉）。
 

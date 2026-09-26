@@ -42,13 +42,22 @@ export const ReadingSchema = z.object({
 
 /** 侧栏氛围装饰：主题可选请求的场景（只有插件实际带素材的几种可寻址）。 */
 export const AmbientSchema = z.object({
-  kind: z.union(['shan', 'dream']).required(),
+  kind: z.union(['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen']).required(),
   petals: z.number().min(0).max(20),
   bubbles: z.number().min(0).max(24),
   // 淡蓝荧光光点：与气泡是不同的特效，两者同时绘制，故各自独立计数。
   motes: z.number().min(0).max(24),
   // 游动的蓝色卡通小鱼：第三种独立特效（源自原系统的 FishAnimation 组件）。
   fish: z.number().min(0).max(6),
+  // 营慕彩云 / 徐山军月的星光。
+  stars: z.number().min(0).max(30),
+  // 江畔冬云的细雪。
+  snow: z.number().min(0).max(30),
+  // 佩安杰心的浮尘光点。
+  dust: z.number().min(0).max(20),
+  // 光彩凤晨的凤羽与晨露：两种独立特效，各自计数。
+  feathers: z.number().min(0).max(16),
+  dew: z.number().min(0).max(30),
 })
 
 /** 一个可选主题。 */

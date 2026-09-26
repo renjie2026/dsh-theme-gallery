@@ -32,11 +32,33 @@ function check(label, condition) {
   console.log(`${condition ? 'ok  ' : 'FAIL'} ${label}`)
 }
 
-/** Grab `function name(...) { ... }` by brace matching. */
+/**
+ * Grab `function name(...) { ... }` by brace matching.
+ *
+ * The PARAMETER LIST is skipped before looking for the body's brace. A destructured
+ * parameter (`function page({ t, ... }) {`) carries braces of its own, and taking the
+ * first `{` after the name ended the "body" at the parameter list — a 69-character
+ * fragment that made every assertion about that function read nothing while still being
+ * able to pass. That is the same silent-truncation class this file exists to catch, so
+ * the extractor has an assertion of its own (see the panel section below).
+ * @param name - the function to extract.
+ * @returns the function's source text.
+ */
 function block(name) {
   const start = source.indexOf(`    function ${name}(`)
   if (start < 0) throw new Error(`lib/client.js: function ${name} not found`)
-  const open = source.indexOf('{', start)
+  // Balanced-paren scan to the end of the signature, then the body's opening brace.
+  let parens = 0
+  let close = -1
+  for (let i = source.indexOf('(', start); i < source.length; i += 1) {
+    if (source[i] === '(') parens += 1
+    else if (source[i] === ')') {
+      parens -= 1
+      if (parens === 0) { close = i; break }
+    }
+  }
+  if (close < 0) throw new Error(`could not find the parameter list of ${name}`)
+  const open = source.indexOf('{', close)
   let depth = 0
   for (let i = open; i < source.length; i += 1) {
     if (source[i] === '{') depth += 1
@@ -60,10 +82,20 @@ const builderSource = [
   block('fishMarkup'),
   block('dreamAmbientScene'),
   block('seaweedMarkup'),
+  block('ymSeaSvg'),
+  block('ymBalloonMarkup'),
+  block('caiyunAmbientScene'),
+  block('jpBoatMarkup'),
+  block('dongyunAmbientScene'),
+  block('xsPineMarkup'),
+  block('junyueAmbientScene'),
+  block('jiexinAmbientScene'),
+  block('gcFeatherMarkup'),
+  block('fengchenAmbientScene'),
 ].join('\n\n')
 
 // eslint-disable-next-line no-new-func
-const api = new Function(`${builderSource}\nreturn { shanAmbientScene, dragonflyMarkup, dreamAmbientScene, seaweedMarkup, rippleMarkup, dragonflyBlock, bladeMarkup, fishMarkup, open }`)()
+const api = new Function(`${builderSource}\nreturn { shanAmbientScene, dragonflyMarkup, dreamAmbientScene, seaweedMarkup, rippleMarkup, dragonflyBlock, bladeMarkup, fishMarkup, ymSeaSvg, ymBalloonMarkup, caiyunAmbientScene, jpBoatMarkup, dongyunAmbientScene, xsPineMarkup, junyueAmbientScene, jiexinAmbientScene, gcFeatherMarkup, fengchenAmbientScene, open }`)()
 
 // ── 山青婷彩 ─────────────────────────────────────────────────────────────────
 
@@ -115,6 +147,198 @@ check('dream draws five seaweed blades',
   (dream.match(/class="dof-blade dof-blade-\d"/g) ?? []).length === 5)
 check('seaweed rests on three stones', (api.seaweedMarkup().match(/<ellipse /g) ?? []).length === 3)
 check('seaweed gradients use stop-color', api.seaweedMarkup().includes('stop-color='))
+
+// ── 营慕彩云 ─────────────────────────────────────────────────────────────────
+
+const caiyun = api.caiyunAmbientScene(12)
+check('caiyun has a scene root carrying its own positioning',
+  caiyun.startsWith('<div class="ym"') && /class="ym" style="[^"]*position:absolute/.test(caiyun))
+check('caiyun seeds the requested star count', (caiyun.match(/class="ym-star"/g) ?? []).length === 12)
+check('star count is clamped', (api.caiyunAmbientScene(99).match(/class="ym-star"/g) ?? []).length === 30)
+check('stars carry per-star inline geometry', /class="ym-star" style="[^"]*left:\d+%/.test(caiyun))
+check('caiyun draws the dusk glow', caiyun.includes('class="ym-glow"'))
+check('caiyun drifts three blurred clouds', (caiyun.match(/class="ym-drift ym-drift-\d"/g) ?? []).length === 3)
+check('caiyun draws two marquee cloud-seas',
+  caiyun.includes('class="ym-sea ym-sea-back"') && caiyun.includes('class="ym-sea ym-sea-front"'))
+check('each cloud-sea track runs the marquee keyframe',
+  (caiyun.match(/animation:dsh-amb-ym-sea \d+s/g) ?? []).length === 2)
+check('each cloud-sea carries two svg copies so the loop is seamless',
+  (caiyun.match(/class="ym-sea-track"/g) ?? []).length === 2
+  && (caiyun.match(/<svg /g) ?? []).length >= 4)
+check('the sea gradient ids stay unique across copies',
+  new Set(caiyun.match(/id="dsh-ym-sea-[a-z]+-[ab]"/g) ?? []).size === 4)
+check('caiyun flies two balloons', (caiyun.match(/class="ym-balloon ym-balloon-[a-z]+"/g) ?? []).length === 2)
+check('both balloons bob on the ym keyframe',
+  (caiyun.match(/animation:dsh-amb-ym-bob /g) ?? []).length === 2)
+// The balloons legitimately float over the sidebar's lower rows. Their WANDER is what
+// keeps that from being a permanent block: the two travel distinct, wide round trips so
+// they cover and expose the text in turn. The size of that path is the whole point, so
+// it is pinned — a balloon that only bobs is the defect this guards.
+check('each balloon carries its own wide wander path',
+  (caiyun.match(/animation:dsh-amb-ym-wander \d+s/g) ?? []).length === 1
+  && (caiyun.match(/animation:dsh-amb-ym-wander-2 \d+s/g) ?? []).length === 1)
+// The main balloon's wander is a CLOSED LOOP, so it is checked stop by stop rather than
+// by one literal. Bounded spans, not `[^}]*`: a keyframe's body is full of nested braces.
+// The `em` unit is OPTIONAL in the pattern on purpose: CSS allows a bare `0`, and an
+// earlier version of this regex required the unit on the first value — which silently
+// skipped every `translate(0, …)` stop and left the assertions reading the apex only.
+const mainWanderStops = [
+  ...(source.match(/@keyframes dsh-amb-ym-wander\{([\s\S]{0,240}?)\}\}',/)?.[1] ?? '')
+    .matchAll(/translate\((-?[\d.]+)(?:em)?,(-?[\d.]+)(?:em)?\)/g),
+].map((match) => ({ x: Number(match[1]), y: Number(match[2]) }))
+check('the main wander is a closed three-stop loop',
+  mainWanderStops.length === 3)
+check('the main balloon keeps a wide horizontal path',
+  mainWanderStops.length >= 3 && Math.max(...mainWanderStops.map((stop) => stop.x)) >= 6)
+// The scene box clips at its OWN top edge (`overflow:hidden`) and the balloon sits high in
+// the band, so ANY stop above the resting baseline would slice the envelope's crown off at
+// the apex — the hard crop the user reported. Every vertical term must therefore be >= 0.
+check('no stop of the main wander rises above the resting baseline (else the crown is cropped)',
+  mainWanderStops.length >= 3 && mainWanderStops.every((stop) => stop.y >= 0))
+// The apex height was accepted as-is, so it is pinned: raising or lowering it is a change
+// the user did not ask for, and raising it re-introduces the crop.
+const mainApex = mainWanderStops.reduce((best, stop) => (stop.x > best.x ? stop : best), { x: -1, y: -1 })
+check('the rightmost apex keeps the exact position it was accepted at (7em, 0.5em)',
+  mainApex.x === 7 && mainApex.y === 0.5)
+// The loop's rise and fall comes from the START/END sitting lower than the apex, not from
+// the apex moving up. Both ends must be lowered by the same amount and return to x = 0.
+check('the start and end sit lower than the apex, giving the loop its rise and fall',
+  mainWanderStops.length === 3
+  && mainWanderStops[0].x === 0 && mainWanderStops[0].y > mainApex.y
+  && mainWanderStops[2].x === 0 && mainWanderStops[2].y === mainWanderStops[0].y)
+check('the mini balloon keeps its own wide, downward path',
+  /@keyframes dsh-amb-ym-wander-2\{[\s\S]{0,160}?translate\(-5em,1\.6em\)/.test(source))
+check('the balloons carry envelope, ropes and basket artwork',
+  api.ymBalloonMarkup('main').includes('<rect') && api.ymBalloonMarkup('mini').includes('<rect'))
+
+// ── 江畔冬云 ─────────────────────────────────────────────────────────────────
+
+const dongyun = api.dongyunAmbientScene(8)
+check('dongyun has a scene root carrying its own positioning',
+  dongyun.startsWith('<div class="jp"') && /class="jp" style="[^"]*position:absolute/.test(dongyun))
+check('dongyun hangs a haloed winter moon', /class="jp-moon" style="[^"]*box-shadow/.test(dongyun))
+check('dongyun drifts three clouds', (dongyun.match(/class="jp-cloud jp-cloud-\d"/g) ?? []).length === 3)
+check('dongyun seeds the requested snow count', (dongyun.match(/class="jp-snowflake"/g) ?? []).length === 8)
+check('snow count is clamped', (api.dongyunAmbientScene(99).match(/class="jp-snowflake"/g) ?? []).length === 30)
+check('dongyun draws the river with waterline and moonlight column',
+  dongyun.includes('class="jp-river"') && dongyun.includes('class="jp-waterline"')
+  && dongyun.includes('class="jp-moonlight"'))
+check('dongyun draws three ripples and five glints',
+  (dongyun.match(/class="jp-ripple jp-ripple-\d"/g) ?? []).length === 3
+  && (dongyun.match(/class="jp-glint"/g) ?? []).length === 5)
+const boat = api.jpBoatMarkup()
+check('the boat carries hull, awning and lantern artwork',
+  boat.includes('M 6 24 Q 60 36 114 22') && boat.includes('M 38 24 C 44 10, 78 10, 88 23')
+  && boat.includes('r="2.6"'))
+check('the boat reflection is a flipped reuse of the same art',
+  boat.includes('transform="translate(0,90) scale(1,-1)"'))
+check('the boat drifts and bobs',
+  dongyun.includes('animation:dsh-amb-jp-boat 46s') && dongyun.includes('animation:dsh-amb-jp-bob 5.2s'))
+check('dongyun plants four swaying reeds and three bank lines',
+  (dongyun.match(/class="jp-reed jp-reed-\d"/g) ?? []).length === 4
+  && (dongyun.match(/M \d+ 120 C/g) ?? []).length >= 3)
+
+// ── 徐山军月 ─────────────────────────────────────────────────────────────────
+
+const junyue = api.junyueAmbientScene(12)
+check('junyue has a scene root carrying its own positioning',
+  junyue.startsWith('<div class="xs"') && /class="xs" style="[^"]*position:absolute/.test(junyue))
+check('junyue seeds the requested star count', (junyue.match(/class="xs-star"/g) ?? []).length === 12)
+check('junyue star count is clamped', (api.junyueAmbientScene(99).match(/class="xs-star"/g) ?? []).length === 30)
+check('junyue hangs the full moon with a halo', /class="xs-moon" style="[^"]*box-shadow/.test(junyue))
+check('junyue veils the moon with two night clouds',
+  (junyue.match(/class="xs-cloud xs-cloud-\d"/g) ?? []).length === 2)
+check('the meteor carries a glowing head',
+  junyue.includes('class="xs-meteor"') && junyue.includes('box-shadow:0 0 8px 2px rgba(255,251,234,.9)'))
+check('junyue draws both mountain ridges with their gradients',
+  junyue.includes('fill="url(#dsh-xsj-ridge-back)"') && junyue.includes('fill="url(#dsh-xsj-ridge-front)"'))
+check('junyue stands five pines from one shared art def',
+  (junyue.match(/<use href="#dsh-xsj-pine-art"/g) ?? []).length === 5
+  && api.xsPineMarkup().includes('M 12 120 L 12 112'))
+
+// ── 佩安杰心 ─────────────────────────────────────────────────────────────────
+
+const jiexin = api.jiexinAmbientScene(4)
+check('jiexin has a scene root carrying its own positioning',
+  jiexin.startsWith('<div class="pj"') && /class="pj" style="[^"]*position:absolute/.test(jiexin))
+check('jiexin backs the scene with two misty hills',
+  jiexin.includes('M 0 60 Q 34 22 70 46') && jiexin.includes('M 0 72 Q 40 42 82 60'))
+check('jiexin draws the enso circle with its inner arc',
+  jiexin.includes('stroke-dasharray="316 36"') && jiexin.includes('stroke-dasharray="255 92"'))
+check('jiexin seats the meditator with head, body and cushion',
+  jiexin.includes('M 64 52 C 60 68, 62 80, 67 93') && jiexin.includes('cx="80" cy="119" rx="47"'))
+check('jiexin burns incense with two smoke threads on the dashoffset keyframe',
+  (jiexin.match(/class="pj-smoke pj-smoke-\d"/g) ?? []).length === 2
+  && (jiexin.match(/animation:dsh-amb-pj-smoke 7s/g) ?? []).length === 2)
+check('jiexin seeds the requested dust count', (jiexin.match(/class="pj-dust"/g) ?? []).length === 4)
+check('jiexin dust count is clamped', (api.jiexinAmbientScene(99).match(/class="pj-dust"/g) ?? []).length === 20)
+check('jiexin closes with the theme words in a kai face',
+  jiexin.includes('自在') && jiexin.includes('安顿') && jiexin.includes('KaiTi'))
+
+// ── 光彩凤晨 ─────────────────────────────────────────────────────────────────
+
+const fengchen = api.fengchenAmbientScene(6, 10)
+check('fengchen has a scene root carrying its own positioning',
+  fengchen.startsWith('<div class="gc"') && /class="gc" style="[^"]*position:absolute/.test(fengchen))
+check('fengchen fans five dawn rays at inline rotations',
+  (fengchen.match(/class="gc-ray gc-ray-\d" style="[^"]*rotate\(-?\d+deg\)/g) ?? []).length === 5)
+check('fengchen seeds the requested feather count', (fengchen.match(/class="gc-feather"/g) ?? []).length === 6)
+check('fengchen feather count is clamped',
+  (api.fengchenAmbientScene(99, 0).match(/class="gc-feather"/g) ?? []).length === 16)
+check('each feather carries its own gradient id',
+  new Set(fengchen.match(/id="dsh-gc-feather-\d+"/g) ?? []).size === 6
+  && (fengchen.match(/id="dsh-gc-feather-\d+"/g) ?? []).length === 6)
+check('fengchen seeds the requested dew count', (fengchen.match(/class="gc-dew"/g) ?? []).length === 10)
+check('fengchen dew count is clamped',
+  (api.fengchenAmbientScene(0, 99).match(/class="gc-dew"/g) ?? []).length === 30)
+check('the phoenix strokes share one gradient under a glow filter',
+  fengchen.includes('id="dsh-gc-phoenix-stroke"') && fengchen.includes('filter="url(#dsh-gc-glow)"')
+  && (fengchen.match(/stroke="url\(#dsh-gc-phoenix-stroke\)"/g) ?? []).length >= 11)
+check('the phoenix keeps the source stroke-only look (its fill gradient was never defined)',
+  /d="M 380 50 C 360 40 350 60 360 90[^"]*" fill="none"/.test(fengchen))
+check('the phoenix neck keeps its emphasised stroke width',
+  /class="gc-neck"[^>]*stroke-width="7"/.test(fengchen))
+check('the phoenix wings flap on the gc keyframe',
+  (fengchen.match(/animation:dsh-amb-gc-wing 3.4s/g) ?? []).length === 2)
+check('the phoenix eye is the theme gold', fengchen.includes('r="2.5"'))
+
+// ── every new scene's motion lives in the stylesheet ─────────────────────────
+//
+// Keyframes are the one construct that cannot be inlined: an element can carry its
+// animation shorthand inline, but the keyframes it names must exist in AMBIENT_CSS
+// or the animation silently does nothing.
+
+const NEW_KEYFRAMES = [
+  'dsh-amb-ym-star', 'dsh-amb-ym-drift', 'dsh-amb-ym-sea', 'dsh-amb-ym-bob',
+  'dsh-amb-ym-wander', 'dsh-amb-ym-wander-2',
+  'dsh-amb-jp-cloud', 'dsh-amb-jp-snow', 'dsh-amb-jp-ripple', 'dsh-amb-jp-glint',
+  'dsh-amb-jp-boat', 'dsh-amb-jp-bob', 'dsh-amb-jp-sway',
+  'dsh-amb-xs-star', 'dsh-amb-xs-night', 'dsh-amb-xs-meteor',
+  'dsh-amb-pj-smoke', 'dsh-amb-pj-dust',
+  'dsh-amb-gc-ray', 'dsh-amb-gc-feather', 'dsh-amb-gc-fly', 'dsh-amb-gc-bob',
+  'dsh-amb-gc-wing', 'dsh-amb-gc-dew',
+]
+const missingKeyframes = NEW_KEYFRAMES.filter((name) => !new RegExp(`@keyframes ${name}`).test(source))
+check('all 24 new-scene keyframes are defined in AMBIENT_CSS', missingKeyframes.length === 0)
+if (missingKeyframes.length > 0) console.error(`  missing: ${missingKeyframes.join(', ')}`)
+
+// A @keyframes name defined TWICE is a silent override: the later block wins for every
+// element, so a corrected amplitude in the earlier one never runs. This exact trap is
+// recorded in AGENTS.md for the shan hover keyframes (dsh-amb-hover1/2, pending the
+// user's decision, which is why only the NEW families are asserted here) — and it was
+// walked into again while adding the balloon wander, minutes after reading that note.
+// Hence the machine check instead of a resolution to be careful.
+const newKeyframeDefs = [...source.matchAll(/@keyframes\s+(dsh-amb-(?:ym|jp|xs|pj|gc)-[A-Za-z0-9-]+)\s*\{/g)]
+  .map((match) => match[1])
+const duplicatedKeyframes = [...new Set(newKeyframeDefs.filter((name, i) => newKeyframeDefs.indexOf(name) !== i))]
+check('every new-scene keyframe is defined exactly once (a duplicate silently wins)',
+  duplicatedKeyframes.length === 0)
+if (duplicatedKeyframes.length > 0) console.error(`  duplicated: ${duplicatedKeyframes.join(', ')}`)
+
+const sceneMarkupBlock = block('sceneMarkup')
+check('sceneMarkup dispatches every ported kind',
+  ['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen']
+    .every((kind) => sceneMarkupBlock.includes(`'${kind}'`)))
 
 // ── escaping and the script guard ────────────────────────────────────────────
 
@@ -514,6 +738,38 @@ check('the panel renders the scenery line through that decision',
 check('the diagnostics line still renders only behind the switch',
   /debugEnabled\(\) \? jsx\('div', \{ className: 'tg-debug', children: themeDiagnostics\(selected\) \}\) : null/
     .test(source))
+
+// ── the diagnostics belong BELOW the picker, and must say what they are ──────────
+//
+// A user read the two diagnostic lines as a malfunction — reasonably so, since they were a
+// wall of monospace text sitting between the header and the theme cards. They now render
+// below the cards, behind a caption that states they are intentional, and the block is set
+// apart from the grid. Both the ordering (a source-order fact, assertable without a DOM)
+// and the copy are pinned here.
+const pageBody = block('ThemeGalleryPage')
+// Self-check of the extractor itself, BEFORE anything is concluded from it: a truncated
+// body (the destructured-parameter trap fixed above) would let every check below pass
+// while reading nothing at all.
+check('the extractor reads the whole panel body, not just its signature',
+  pageBody.length > 1000 && pageBody.includes("className: 'tg-page'")
+  && pageBody.includes('tg-head') && pageBody.includes('tg-grid'))
+const gridAt = pageBody.indexOf("className: 'tg-grid'")
+const diagAt = pageBody.indexOf("className: 'tg-diag'")
+check('the diagnostics block renders after the theme cards', gridAt > 0 && diagAt > gridAt)
+check('the block carries its own caption, rendered through the dictionary',
+  /className: 'tg-diag-note', children: t\('diagNote'\)/.test(pageBody))
+check('both diagnostic lines render inside that block',
+  diagAt > 0
+  && pageBody.indexOf('themeDiagnostics(selected)', diagAt) > diagAt
+  && pageBody.indexOf('children: scenery', diagAt) > diagAt)
+const diagNotes = [...source.matchAll(/diagNote: '([^']+)'/g)].map((match) => match[1])
+check('the caption ships in both dictionaries', diagNotes.length === 2)
+check('the caption says the readings are intentional, not an error report',
+  diagNotes.length === 2 && diagNotes[0].includes('诊断')
+  && diagNotes[0].includes('并非') && diagNotes[0].includes('报错'))
+check('the page stylesheet sets the diagnostics block apart from the cards',
+  /\.tg-diag\{[^}]*margin-top:\d+px/.test(source)
+  && /\.tg-diag\{[^}]*border-top:/.test(source))
 
 if (failed > 0) {
   console.error(`\n${failed} ambient markup check(s) failed`)

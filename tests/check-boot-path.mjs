@@ -257,6 +257,14 @@ function runBoot({ activeId = 'light', presenterDelayTicks = 3, config } = {}) {
     { id: 'dark', label: 'Dark', colorScheme: 'dark', tokens: {} },
     { id: 'system', label: 'System', colorScheme: 'light', tokens: {} },
   ]
+  // 本插件发布的皮肤 id：表现层对它们都是慢写入（桩里按此建模）。
+  // 只列本次发布包含的 4 套；工作区里还在打磨的皮肤不进发布副本。
+  const SKIN_IDS = [
+    'meng-hai-you-yu',
+    'shan-qing-ting-cai',
+    'ying-mu-cai-yun',
+    'pei-an-jie-xin',
+  ]
 
   const timers = []
   const windowStub = {
@@ -304,7 +312,7 @@ function runBoot({ activeId = 'light', presenterDelayTicks = 3, config } = {}) {
       // sufficient and hide the very race this file exists to catch. So the write is deferred by
       // `presenterDelayTicks` ticks — a skin requested while the presenter is not yet listening
       // is therefore missed, exactly as it is in the app.
-      if (id === 'shan-qing-ting-cai' || id === 'meng-hai-you-yu') {
+      if (SKIN_IDS.includes(id)) {
         pendingPaints.push({ id, remaining: presenterDelayTicks })
       }
       // And it emits, like the real one. This is what closes the loop the guard must break.
