@@ -29,6 +29,7 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { cardRowProblems, paletteProblems } from '../scripts/lib/card-rows.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const real = readFileSync(join(root, 'lib', 'client.js'), 'utf8')
@@ -52,16 +53,16 @@ function check(label, condition) {
  * 而不是某次重构的副作用。
  */
 const EXPECTED = [
-  'light', 'dark', 'ying-mu-cai-yun', 'shan-qing-ting-cai',
-  'pei-an-jie-xin', 'meng-hai-you-yu', 'hu-po-mao-mi', 'hu-zi-a-huang',
+  'light', 'dark', 'shi-liu-jin', 'ying-mu-cai-yun', 'shan-qing-ting-cai',
+  'pei-an-jie-xin', 'meng-hai-you-yu',
+  'hu-po-mao-mi', 'hu-zi-a-huang',
 ]
 
 /** 与 {@link EXPECTED} 一一对应的序号。 */
-const EXPECTED_RANKS = [99, 98, 96, 95, 91, 80, 76, 75]
+const EXPECTED_RANKS = [99, 98, 97, 96, 95, 91, 80, 76, 75]
 
 /** 内联皮肤数组的注册顺序（= embed 的字母序），发布顺序的断言在 check-theme-contribution。 */
-const ALPHA_ORDER = 'hu-po-mao-mi,hu-zi-a-huang,meng-hai-you-yu,'
-  + 'pei-an-jie-xin,shan-qing-ting-cai,ying-mu-cai-yun'
+const ALPHA_ORDER = 'hu-po-mao-mi,hu-zi-a-huang,meng-hai-you-yu,pei-an-jie-xin,shan-qing-ting-cai,shi-liu-jin,ying-mu-cai-yun'
 
 /**
  * 官方 ui-theme 自带的内置主题，按真实注册顺序排在最前。
@@ -262,6 +263,301 @@ check('未排名的主题排在所有排名之后，且彼此保持注册序', (
 })())
 check('publish() 真的用上了展示顺序（表存在但不生效也算失败）', PUBLISH_USES_ORDER.test(real))
 
+// ── 纯色/拼色：15 个可点色值按钮的配色卡（`card.rows` + `lib/palette-schemes.json`）
+//
+// 卡片不再是一条 3 色色带，也不是"展示一套配色的静态色块"，而是**15 个可点的方案按钮**
+// （上两排 10 个纯色、最后一排 5 个拼色）。四个**静默**失败面：
+//
+//   1. 形状写歪（排数、拼色排的位置、一排几个）—— 画出来只是"看着有点怪"；
+//   2. 圆点糊进底色 / 正文在底色上读不清 —— 没有异常，只有眼睛难受；
+//   3. 卡片引用了一个**不存在**的方案 id —— 那一格不画，整张卡静默退回默认色带；
+//   4. 方案自己的 kind 与所在排不一致 —— 拼色被画成一块纯色，读起来只是"颜色有点怪"。
+//
+// 校验实现是 `scripts/lib/card-rows.mjs`，**建期**（`embed-themes.mjs`，发布 CI 会跑）
+// 与这里共用同一份，所以本自检不会去印证另一套规则（硬性规则 6）。
+const CARD_CLASS_ID = 'shi-liu-jin'
+
+/** `lib/palette-schemes.json`：15 套配色的唯一来源。 */
+const PALETTE_FILE = join(root, 'lib', 'palette-schemes.json')
+const SCHEMES = JSON.parse(readFileSync(PALETTE_FILE, 'utf8')).schemes
+
+check('配色表里正好 15 套方案（上两排 10 个纯色 + 最后一排 5 个拼色）',
+  SCHEMES.length === 15
+  && SCHEMES.filter((scheme) => scheme.kind === 'solid').length === 10
+  && SCHEMES.filter((scheme) => scheme.kind === 'clash').length === 5,
+  `实际 ${SCHEMES.length} 套：${SCHEMES.map((s) => `${s.id}(${s.kind})`).join(', ')}`)
+check('配色表全部通过 paletteProblems（圆点对比度、正文对比度、出处、id 形态）',
+  paletteProblems(SCHEMES).length === 0)
+for (const problem of paletteProblems(SCHEMES)) console.error(`  ${problem}`)
+check('每套配色都写明了色库出处（这一类的价值就是"色从哪本书里来"）',
+  SCHEMES.every((scheme) => typeof scheme.source === 'string' && /\d+-\d+/.test(scheme.source)),
+  SCHEMES.map((scheme) => scheme.source).join(' | '))
+
+/** 带配色卡的皮肤。 */
+const blockThemes = api.bundled.filter((theme) => theme.card !== undefined)
+
+check('存在至少一套配色卡皮肤', blockThemes.length > 0)
+check('配色卡皮肤全部通过 card-rows 校验', blockThemes.every((theme) => cardRowProblems(theme, SCHEMES).length === 0))
+for (const theme of blockThemes) {
+  for (const problem of cardRowProblems(theme, SCHEMES)) console.error(`  ${problem}`)
+}
+check('没有 card 字段的皮肤不产生任何问题（默认色带仍是合法形态）',
+  api.bundled.filter((theme) => theme.card === undefined)
+    .every((theme) => cardRowProblems(theme, SCHEMES).length === 0))
+check('配色卡皮肤都排在序号表里（否则卡片会静默掉到列表最后）',
+  blockThemes.every((theme) => typeof api.CARD_ORDER[theme.id] === 'number'))
+check(`样本卡 ${CARD_CLASS_ID} 的序号是 97`, api.CARD_ORDER[CARD_CLASS_ID] === 97)
+
+/** 一张卡上的方案槽总数。 */
+function slotCount(theme) {
+  return (theme.card?.rows ?? []).reduce((sum, row) => sum + (row.schemes ?? []).length, 0)
+}
+
+const sample = api.bundled.find((theme) => theme.id === CARD_CLASS_ID)
+check(`样本卡 ${CARD_CLASS_ID} 是 3 排 15 个方案槽（实测 ${sample === undefined ? '?' : slotCount(sample)} 个）`,
+  sample !== undefined && slotCount(sample) === 15)
+check('每一排都是 5 格（用户定的 5+5+5）',
+  sample !== undefined && sample.card.rows.every((row) => row.schemes.length === 5))
+check('样本卡的拼色排是最后一条，且前面都是纯色排',
+  sample !== undefined && sample.card.rows.slice(0, -1).every((row) => row.kind === 'solid')
+  && sample.card.rows[sample.card.rows.length - 1].kind === 'clash')
+check('样本卡的每一格都指向一套真实存在的方案，且种类与所在排一致',
+  sample !== undefined && sample.card.rows.every((row) => row.schemes.every((id) => {
+    const scheme = SCHEMES.find((entry) => entry.id === id)
+    return scheme !== undefined && scheme.kind === row.kind
+  })))
+check('样本卡不带 ambient（这一类不画侧栏素材）', sample !== undefined && sample.ambient === undefined)
+
+// ── 派生：15 套配色各自展开成 67 个 token，且按钮文字读得清 ──────────────────
+//
+// `schemeTokens` 是**唯一**的色值来源（配色表只写三四个名字色），所以它必须被真的执行、
+// 而不是只断言源码里有这个函数名。
+const { wcagContrast, schemeButtonFill, schemeOnMain, schemeTokens } = readPaletteTools(real)
+const requiredTokens = readFileSync(join(root, 'schema', 'theme.schema.json'), 'utf8')
+const REQUIRED = JSON.parse(requiredTokens)['x-required-tokens']
+const ALL_TOKENS = Object.keys(JSON.parse(
+  readFileSync(join(root, 'lib', 'themes', `${CARD_CLASS_ID}.json`), 'utf8'),
+)[0].tokens)
+
+check('派生器：15 套方案都展开出与皮肤同样多的 token（少一个都会静默沿用锚主题的颜色）',
+  SCHEMES.every((scheme) => Object.keys(schemeTokens(scheme)).length === ALL_TOKENS.length),
+  `皮肤 ${ALL_TOKENS.length} 个 / 派生 ${Object.keys(schemeTokens(SCHEMES[0])).length} 个`)
+check('派生器：每一套都补齐了 schema 的 12 个必需 token',
+  SCHEMES.every((scheme) => REQUIRED.every((token) => token in schemeTokens(scheme))))
+check('派生器：token 全是 { light, dark } 成对字符串（喂给 register 会变成 [object Object] 的是 register，不是层）',
+  SCHEMES.every((scheme) => Object.values(schemeTokens(scheme))
+    .every((pair) => pair !== null && typeof pair === 'object'
+      && typeof pair.light === 'string' && typeof pair.dark === 'string')))
+check('派生器：按钮/链接的填充与文字对比度都 ≥ 4.5:1（亮色方案走压深或深色字）',
+  SCHEMES.every((scheme) => wcagContrast(schemeButtonFill(scheme), schemeOnMain(scheme)) >= 4.5),
+  SCHEMES.map((scheme) => `${scheme.label} ${wcagContrast(schemeButtonFill(scheme), schemeOnMain(scheme)).toFixed(2)}`).join(' | '))
+check('派生器：侧栏渐变停在浅阶（深底会让共享 label-* 的导航文字读不清）',
+  SCHEMES.every((scheme) => {
+    const fill = schemeTokens(scheme)['--dsw-specific-sidebar-fill'].light
+    return /^linear-gradient/.test(fill) && !/#0{0,2}[0-9a-f]{0,4}\b/i.test(fill.slice(0, 0))
+  }))
+
+// 渲染侧的一半：配色卡分支必须吞掉正文介绍，否则卡片被文字挤爆。
+/**
+ * 抹掉注释（规则 7：注释里提到的名字不算一次调用）。
+ *
+ * 这里非有它不可：`ThemeCard` 的注释里**就是要**解释"为什么不按渲染结果判"，
+ * 而断言"源码里没有那种写法"会被自己的说明文字打红。
+ * @param text - 源码片段。
+ * @returns 去掉注释的文本。
+ */
+function stripComments(text) {
+  return text.replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n').filter((line) => !/^\s*(\/\/|\*)/.test(line)).join('\n')
+}
+
+const themeCardBody = block(real, 'ThemeCard')
+const themeCardCode = stripComments(themeCardBody)
+check('配色卡不渲染 .tg-desc（description 只作 tooltip）',
+  /!hasPicker && description[\s\S]{0,160}?tg-desc/.test(themeCardCode))
+check('"是不是配色卡"取自数据且过了消毒器，不按渲染结果判（jsx 桩返回 null）',
+  /const shape = cardRowShape\(\{ card: \{ rows \} \}, PALETTE_SCHEMES\)/.test(themeCardCode)
+  && !/blocks !== null/.test(themeCardCode))
+check('配色卡是 div 而不是 button（里面装着 15 个按钮，button 套 button 是非法标记）',
+  /className: 'tg-card tg-picker-card'/.test(themeCardCode)
+  && /jsxs\('div', \{\s*\n\s*className: 'tg-card tg-picker-card'/.test(themeCardCode))
+check('没有配色数据时才回落到默认色带',
+  /hasPicker\s*\?\s*cardPickerElement\(shape, selectedScheme, onPickScheme, PALETTE_SCHEMES\)\s*:\s*swatches\.length > 0/
+    .test(themeCardCode))
+check('PAGE_CSS 里有配色卡的样式（缺了 15 格会挤成一条）',
+  /\.tg-picker\{/.test(real) && /\.tg-pickrow\{/.test(real) && /\.tg-swatch\{/.test(real) && /\.tg-band\{/.test(real))
+// 拼色新的画法：按宽度分带（主色 2 份、次色各 1 份），不再用"底 + 圆点"。
+// 比值本身由行为断言守着（check-boot-path），这里守的是"别退回圆点方案"。
+check('色带按宽度分配（色格是 flex 行 + 子元素带 flex-grow）',
+  // 一条规则可能被拆成相邻的多个字符串（中间夹着 `',` 与缩进），所以不能要求 `[^']*`。
+  /\.tg-swatch\{[\s\S]{0,220}?display:flex/.test(real)
+  && /flexGrow: weight/.test(real)
+  && !/tg-mini/.test(real))
+check('色格自己不再 overflow:hidden（否则悬停标签会被裁掉，圆角改由色带负责）',
+  !/\.tg-swatch\{[^']*overflow:hidden/.test(real)
+  && /\.tg-band:first-child\{[^']*border-radius/.test(real))
+// 悬停色名：用户要"鼠标移到色块上才显示名称、不改布局"。三件事缺一不可 ——
+// ① 每格带 `data-name`；② CSS 从 `attr(data-name)` 取内容；③ 标签**绝对定位**（脱离文档流，
+// 所以布局一个像素都不会动）。反证见 check-boot-path 的「反证 9」。
+check('每格带 data-name，且悬停标签是绝对定位的（不改布局）',
+  /'data-name': scheme\.label/.test(real)
+  && /content:attr\(data-name\)/.test(real)
+  && /\.tg-swatch:hover::after[\s\S]{0,200}?position:absolute/.test(real))
+check('色格自己不再 overflow:hidden（否则悬停标签会被裁掉，圆角改由色带负责）',
+  !/\.tg-swatch\{[^']*overflow:hidden/.test(real)
+  && /\.tg-band:first-child\{[^']*border-radius/.test(real))
+check('配色卡也走 cardRowShape 的消毒（外部插件贡献的主题不能被信任）',
+  /const rows = cardRowShape\(theme, PALETTE_SCHEMES\)/.test(real) && /draft\.cardRows = cardRows/.test(real))
+check('点一个色值按钮会先记方案、再把锚主题记成"用户选的皮肤"',
+  /function chooseScheme\(schemeId\)/.test(real)
+  && /rememberScheme\(schemeId\)/.test(real)
+  && /rememberCardChoice\(PALETTE_ANCHOR\)/.test(real))
+check('配色层只对锚主题生效，并且套了自发光守卫（规则 1）',
+  /function syncScheme\(snapshot\)/.test(real)
+  && /active\.id === PALETTE_ANCHOR/.test(real)
+  && /schemeLayerDispose = ctx\.theme\.overrideTokens\('theme-gallery: 配色'/.test(real))
+// 石榴金那一格 = 锚主题皮肤自己那套手工配色（第一版那整套），所以它**不叠派生层**。
+// 真正的行为断言在 check-boot-path（含反证 10），这里只是一条"别被顺手删掉"的凭据。
+check('石榴金那一格不叠派生配色（叠了就是"相似但不等"的另一套颜色）',
+  /remembered !== DEFAULT_SCHEME && active\.id === PALETTE_ANCHOR/.test(real))
+check('方案 id 存 localStorage、绝不写 preference（写进去会让应用拒绝启动）',
+  /const SCHEME_KEY = 'theme-gallery:palette'/.test(real)
+  && !/preference.*SCHEME_KEY|SCHEME_KEY.*preference/.test(real))
+
+/**
+ * 把 `cardRowShape` 消毒器从源码里提取出来并执行。
+ *
+ * 与 `build-panel-preview.mjs` 同一手法。从 `const SCHEME_ID` 起**整段切片**，而不是走
+ * {@link readConst}：那是个正则字面量，而 readConst 会把字符类里的 `[` / `]` 当成括号
+ * 配对，切出一段语法错误的残片（`schemeById` / `shade` 就夹在两者之间）。
+ * @param source - 源码文本。
+ * @returns 消毒函数。
+ */
+function readCardRowShape(source) {
+  // eslint-disable-next-line no-new-func
+  return new Function(`${cardShapeSource(source)}\nreturn { cardRowShape }`)().cardRowShape
+}
+
+/**
+ * `const SCHEME_ID` 到 `cardRowShape` 结束为止的源码（消毒器的全部实现）。
+ * @param source - 源码文本。
+ * @returns 源码片段。
+ */
+function cardShapeSource(source) {
+  const at = source.indexOf('    const SCHEME_ID = ')
+  if (at < 0) throw new Error('const SCHEME_ID not found')
+  const shape = block(source, 'cardRowShape')
+  return source.slice(at, source.indexOf(shape) + shape.length)
+}
+
+/**
+ * 把配色派生用到的几个纯函数抽出来执行（{@link cardShapeSource} 提供 `shade` / `schemeById`）。
+ * @param source - 源码文本。
+ * @returns `{ wcagContrast, schemeButtonFill, schemeOnMain, schemeButtonChoice, schemeTokens }`。
+ */
+function readPaletteTools(source) {
+  const names = ['wcagContrast', 'schemeButtonFill', 'schemeOnMain', 'schemeButtonChoice', 'schemeTokens']
+  const body = names.map((name) => block(source, name)).join('\n')
+  // eslint-disable-next-line no-new-func
+  return new Function(`${cardShapeSource(source)}\n${body}\nreturn { ${names.join(', ')} }`)()
+}
+
+/**
+ * 装配**真实的 `createGalleryStore`**，只把 `defineStore` 换成"原样返回规格"的桩。
+ *
+ * 非有它不可：`check-boot-path.mjs` 里的 `defineStore` 桩是空实现（`actions.sync() {}`），
+ * 所以那条路永远跑不到 `sync` 的函数体 —— 这条链路的中间一段只能在这里测。
+ * @param source - 源码文本。
+ * @returns store 规格（`init` + `actions`）。
+ */
+function makeStore(source) {
+  const labels = readConst(source, 'BUILT_IN_LABELS')
+  const descriptions = readConst(source, 'BUILT_IN_DESCRIPTIONS')
+  // eslint-disable-next-line no-new-func
+  const factory = new Function(
+    'defineStore', 'BUILT_IN_LABELS', 'BUILT_IN_DESCRIPTIONS', 'cardRowShape', 'SCHEMES_IN',
+    // 切片里已经有一行 `let PALETTE_SCHEMES = []`，所以这里**不能**再用同名形参
+    // （会 `SyntaxError: Identifier 'PALETTE_SCHEMES' has already been declared`），
+    // 改为从 `SCHEMES_IN` 赋值 —— 这也正好复刻了 client.js 里"先声明、后赋值"的形状。
+    `${cardShapeSource(source)}\nPALETTE_SCHEMES = SCHEMES_IN\n`
+    + `${block(source, 'createGalleryStore')}\nreturn createGalleryStore`,
+  )((spec) => spec, labels, descriptions, readCardRowShape(source), SCHEMES)
+  return factory()
+}
+
+/**
+ * 跑一次真实的 `sync`，返回它写出来的 draft。
+ * @param source - 源码文本。
+ * @param themes - 主题列表。
+ * @param revision - 修订号。
+ * @returns draft。
+ */
+function syncDraftOf(source, themes, revision = 1) {
+  const store = makeStore(source)
+  const draft = store.init()
+  store.actions.sync(draft, themes, 'light', revision)
+  return draft
+}
+
+// ── 最后一环：`sync` 真的把卡片色块组装进 store 了吗 ──────────────────────────
+//
+// 上面测的是消毒器（纯函数）与渲染分支，**中间那段胶水**没人测：`sync` 里的
+// `const rows = cardRowShape(theme)` / `if (rows !== undefined) cardRows[theme.id] = rows`
+// 与收尾的 `draft.cardRows = cardRows`。写错的后果是**每一张卡都静默回落成色带** ——
+// 包括这一张，面板不报任何错，只有眼睛能发现。
+const synced = syncDraftOf(real, api.bundled)
+check('sync 把色块排写进了 store（写漏 → 每张卡都静默回落成色带）',
+  Array.isArray(synced.cardRows[CARD_CLASS_ID]) && synced.cardRows[CARD_CLASS_ID].length === 3,
+  `实际 ${JSON.stringify(synced.cardRows[CARD_CLASS_ID])}`)
+check('sync 只给带 card.rows 的皮肤写色块（九套场景皮肤一个都不受影响）',
+  Object.keys(synced.cardRows).join(',') === CARD_CLASS_ID,
+  `实际 ${JSON.stringify(Object.keys(synced.cardRows))}`)
+check('sync 同时仍然组装了 3 色色带（色块不合法时的回退路径要有东西可退）',
+  (synced.swatches[CARD_CLASS_ID] || []).length === 3)
+check('sync 写进 store 的色块排与内联皮肤里的 card.rows 逐字一致（不是另一份数据）',
+  JSON.stringify(synced.cardRows[CARD_CLASS_ID])
+  === JSON.stringify(sample === undefined ? null : sample.card.rows))
+
+// 修订号门槛：一次**更旧**的 publish（主题列表还可能更空）不许覆盖已经写好的状态。
+// 写错这一条的症状是"面板偶尔变空"，属于最难看懂的一类现象。
+// 注意 `init()` 的 revision 是 -1，所以"更旧"必须比它**先写过一次**才构造得出来 ——
+// 直接拿 revision 0 去比是比 -1 新的，测不到门槛（这条断言第一版就是这么写错的）。
+const staleStore = makeStore(real)
+const staleDraft = staleStore.init()
+staleStore.actions.sync(staleDraft, api.bundled, 'light', 2)
+const afterFresh = JSON.stringify(staleDraft.cardRows)
+staleStore.actions.sync(staleDraft, [], 'light', 1)
+check('更旧的 publish 不许覆盖已写好的 store（否则面板会偶尔变空）',
+  JSON.stringify(staleDraft.cardRows) === afterFresh && afterFresh.includes(CARD_CLASS_ID),
+  `实际 ${JSON.stringify(staleDraft.cardRows)}`)
+
+// ── 内联脚本必须扛得住"主题里嵌数组" ─────────────────────────────────────────
+//
+// `card.rows` 是本项目**第一个**嵌在主题里的数组，而 `embed-themes.mjs` 过去用
+// `/const BUNDLED_THEMES = \[[\s\S]*?\]\n/` 定位内联字面量：它在**第二次**运行时截断到
+// `"rows": [ … ]` 的收尾方括号，把上一次字面量的尾巴留在文件里，产出一个**语法坏掉**的
+// `lib/client.js` —— 而这一步的职责恰恰是"保证 bundle 正确"。现在按终止行 `\n    ]`
+// 定位（其它所有读者早就这么做），并且写回前把字面量**读回来重解析**、再整文件试解析一次。
+const embedSource = readFileSync(join(root, 'scripts', 'embed-themes.mjs'), 'utf8')
+check('内联脚本按终止行定位字面量（不再用非贪婪括号正则）',
+  embedSource.includes("source.indexOf('\\n    ]'") && !/const marker = \/const BUNDLED_THEMES/.test(embedSource))
+check('内联脚本写回后会把字面量读回来重新解析',
+  embedSource.includes('does not read back as the themes it was built from'))
+check('内联脚本写回后会试解析整个文件（那次损坏就是"能跑完但产物坏了"）',
+  embedSource.includes('would not PARSE after embedding'))
+
+/** 合成样本：一个主题里带嵌套数组，也就是 `card.rows` 的形状。 */
+const SYNTHETIC_LITERAL = 'const BUNDLED_THEMES = [\n  {\n    "card": {\n      "rows": [\n'
+  + '        { "kind": "solid" }\n      ]\n    }\n  }\n    ]\n'
+const greedySpan = SYNTHETIC_LITERAL.match(/const BUNDLED_THEMES = \[[\s\S]*?\]\n/)[0]
+check('反证：非贪婪括号正则确实会截在 rows 的收尾方括号上（不是假设，是复现）',
+  greedySpan.length < SYNTHETIC_LITERAL.trimEnd().length)
+const terminatorSpan = SYNTHETIC_LITERAL.slice(
+  0, SYNTHETIC_LITERAL.indexOf('\n    ]') + '\n    ]'.length,
+)
+check('正证：终止行定位取到的正是整个字面量',
+  terminatorSpan === SYNTHETIC_LITERAL.trimEnd())
+
 // ── 变异测试：每条断言都必须能被破坏 ─────────────────────────────────────────
 //
 // 只在真实文件上"通过"是不够的 —— "通过"看起来和真的通过一模一样。
@@ -305,6 +601,133 @@ const mutClaim = real.replace('是同一套配色。', '是同一套配色，不
 check('变异 7 真的改动了源码（旧说法被写回）', mutClaim !== real)
 check('变异 7：写回「不加载任何皮肤」后，文案断言必须失败',
   String(extract(mutClaim).BUILT_IN_DESCRIPTIONS.light).includes('不加载任何皮肤'))
+
+// ── 变异 8..12：色块**数据**的变异 ───────────────────────────────────────────
+//
+// `cardRowProblems` 守的是皮肤数据，所以"故意破坏它守护的代码"就是破坏数据本身。
+// 每一条都先断言"变异真的改动了数据"，否则下面的结论什么都没测。
+/**
+ * 取一份内联皮肤的深拷贝，供变异使用。
+ * @returns 皮肤数组。
+ */
+function copyBundled() {
+  return JSON.parse(JSON.stringify(api.bundled))
+}
+
+/**
+ * 取样本卡的一份深拷贝。
+ * @returns 样本主题定义。
+ */
+function sampleCopy() {
+  return copyBundled().find((theme) => theme.id === CARD_CLASS_ID)
+}
+
+const mutClashFirst = sampleCopy()
+const lastRow = mutClashFirst.card.rows.pop()
+mutClashFirst.card.rows.unshift(lastRow)
+check('变异 8 真的改动了数据（拼色排被挪到第一排）', mutClashFirst.card.rows[0].kind === 'clash')
+check('变异 8：拼色排不在最后一排必须被报错',
+  cardRowProblems(mutClashFirst, SCHEMES).some((problem) => /LAST row is the clash row/.test(problem)))
+
+// 变异 9 打在**配色表**上：圆点糊进底色是配色表的问题，不再是卡片的问题。
+const mutDimDot = JSON.parse(JSON.stringify(SCHEMES))
+mutDimDot.find((scheme) => scheme.id === 'p-shi-liu-jin').dots[0] = '#88ADA6'
+check('变异 9 真的改动了数据（点缀换成明度接近的水色 #88ADA6）',
+  mutDimDot.find((scheme) => scheme.id === 'p-shi-liu-jin').dots[0] === '#88ADA6')
+check('变异 9：糊进底色的圆点必须被报错（实测 1.78:1 < 2.5:1）',
+  paletteProblems(mutDimDot).some((problem) => /disappears into the band/.test(problem)))
+
+const mutGhost = sampleCopy()
+mutGhost.card.rows[0].schemes[0] = 'p-does-not-exist'
+check('变异 10 真的改动了数据（引用一个不存在的方案 id）',
+  mutGhost.card.rows[0].schemes[0] === 'p-does-not-exist')
+check('变异 10：引用了不存在的方案必须被报错（那一格不画、整张卡静默回落成色带）',
+  cardRowProblems(mutGhost, SCHEMES).some((problem) => /is not in lib\/palette-schemes\.json/.test(problem)))
+
+const mutKindMismatch = sampleCopy()
+// 把一个纯色方案塞进拼色排：不报错的话，它会画成"一个色块"，读起来只是颜色有点怪。
+mutKindMismatch.card.rows[2].schemes[0] = 'p-xiang-se'
+check('变异 11 真的改动了数据（拼色排里放了一个纯色方案）',
+  mutKindMismatch.card.rows[2].schemes[0] === 'p-xiang-se')
+check('变异 11：方案种类与所在排不一致必须被报错',
+  cardRowProblems(mutKindMismatch, SCHEMES)
+    .some((problem) => /is a "solid" scheme in a "clash" row/.test(problem)))
+
+const mutOneRow = sampleCopy()
+mutOneRow.card.rows = [mutOneRow.card.rows[0]]
+check('变异 11b 真的改动了数据（只剩一排）', mutOneRow.card.rows.length === 1)
+check('变异 11b：排数越界必须被报错',
+  cardRowProblems(mutOneRow, SCHEMES).some((problem) => /must hold 2 or 3 rows/.test(problem)))
+
+const mutDupSlot = sampleCopy()
+mutDupSlot.card.rows[1].schemes[0] = mutDupSlot.card.rows[0].schemes[0]
+check('变异 12 真的改动了数据（两排出现同一个方案）',
+  mutDupSlot.card.rows[1].schemes[0] === mutDupSlot.card.rows[0].schemes[0])
+check('变异 12：重复的方案必须被报错（每一格是一个选项）',
+  cardRowProblems(mutDupSlot, SCHEMES).some((problem) => /repeats/.test(problem)))
+
+// ── 变异 13..14：配色卡**渲染**侧的两条守卫 ─────────────────────────────────
+const mutDesc = real.replace('!hasPicker && description', 'description')
+check('变异 13 真的改动了源码（拆掉"配色卡不渲染正文"的守卫）', mutDesc !== real)
+check('变异 13：拆掉守卫后，那条断言必须失败',
+  !/!hasPicker && description[\s\S]{0,160}?tg-desc/.test(stripComments(block(mutDesc, 'ThemeCard'))))
+
+// 消毒器本身也要有行为断言（只断言源码里有这行字，证明不了它会拒绝坏数据）。
+const shape = readCardRowShape(real)
+const goodRows = [
+  { kind: 'solid', schemes: ['p-xiang-se'] },
+  { kind: 'clash', schemes: ['p-shi-liu-jin'] },
+]
+check('消毒器：合法的两排原样通过', Array.isArray(shape({ card: { rows: goodRows } }, SCHEMES)))
+check('消毒器：拼色排不在最后 → 退回默认色带（undefined）',
+  shape({ card: { rows: [goodRows[1], goodRows[0]] } }, SCHEMES) === undefined)
+check('消毒器：四排 → undefined',
+  shape({ card: { rows: [goodRows[0], goodRows[0], goodRows[0], goodRows[1]] } }, SCHEMES) === undefined)
+check('消毒器：不存在的方案 id → undefined',
+  shape({ card: { rows: [{ kind: 'solid', schemes: ['p-nope'] }, goodRows[1]] } }, SCHEMES) === undefined)
+check('消毒器：方案种类与排不符 → undefined',
+  shape({ card: { rows: [{ kind: 'solid', schemes: ['p-shi-liu-jin'] }, goodRows[1]] } }, SCHEMES) === undefined)
+check('消毒器：没有 card 字段 → undefined（默认色带这条路不能被动到）', shape({}, SCHEMES) === undefined)
+// schemastery 会把缺省的对象字段物化成空数组（`tests/check-schema.mjs` 里有读数），
+// 所以"经过一次 provider 校验"的主题拿到的是 `rows: []` 而不是 undefined —— 这一形态
+// 也必须回落成默认色带，否则配色区会画出一片空白。
+check('消毒器：空数组（provider 物化出来的形态）→ undefined',
+  shape({ card: { rows: [] } }, SCHEMES) === undefined)
+
+// 排位规则有**两道**守卫：整排的 kind，以及每一格的方案 kind。只拆一道仍会被另一道拦住
+// （第一版这条变异就是这么"失败"的 —— 断言没错，是变异没真的放宽规则）。
+const mutShape = real
+  .replace('if (row.kind !== wanted) return undefined\n', '')
+  .replace('if (scheme === undefined || scheme.kind !== wanted) return undefined', 'if (scheme === undefined) return undefined')
+check('变异 14 真的改动了源码（两道排位判断都被拆掉）',
+  mutShape !== real && !/row\.kind !== wanted/.test(mutShape) && !/scheme\.kind !== wanted/.test(mutShape))
+check('变异 14：拆掉排位判断后，消毒器会接受"拼色排在第一排"（说明那条断言真的在测它）',
+  Array.isArray(readCardRowShape(mutShape)({ card: { rows: [goodRows[1], goodRows[0]] } }, SCHEMES)))
+
+// ── 变异 15..16：`sync` 那两行胶水 ───────────────────────────────────────────
+//
+// 这两条是本轮补上的：在此之前，"`sync` 把色块写进 store"只有一条源码级正则守着，
+// 而正则证明不了它真的会写。把两处分别改坏，再从改坏的源码装配 store 跑同一个 sync。
+const mutAssign = real.replace('draft.cardRows = cardRows', '')
+check('变异 15 真的改动了源码（sync 不再把色块写进 draft）', mutAssign !== real)
+check('变异 15：拆掉赋值后，store 里就没有色块了（说明那条断言真的在测它）',
+  syncDraftOf(mutAssign, api.bundled).cardRows[CARD_CLASS_ID] === undefined)
+
+const mutGuard = real.replace('if (rows !== undefined) cardRows[theme.id] = rows', 'cardRows[theme.id] = rows')
+check('变异 16 真的改动了源码（"只有拿到合法 rows 才写"的守卫被拆掉）', mutGuard !== real)
+check('变异 16：拆掉守卫后，九套场景皮肤也被写进了色块表（说明那条断言真的在测它）',
+  Object.keys(syncDraftOf(mutGuard, api.bundled).cardRows).length === api.bundled.length)
+
+const mutStale = real.replace('if (revision <= draft.revision) return', 'if (false) return')
+check('变异 17 真的改动了源码（修订号门槛被拆掉）', mutStale !== real)
+check('变异 17：拆掉门槛后，更旧的 publish 会把 store 清空（说明那条断言真的在测它）',
+  (() => {
+    const store = makeStore(mutStale)
+    const draft = store.init()
+    store.actions.sync(draft, api.bundled, 'light', 2)
+    store.actions.sync(draft, [], 'light', 1)
+    return Object.keys(draft.cardRows).length === 0
+  })())
 
 if (failed > 0) {
   console.error(`\n${failed} card order check(s) failed`)

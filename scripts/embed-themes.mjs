@@ -12,7 +12,8 @@
  *   1. every file is a JSON array of themes;
  *   2. ids are unique across all files;
  *   3. shape, id pattern, colorScheme and per-token { light, dark } pairs are valid;
- *   4. every required token from schema/theme.schema.json is present.
+ *   4. every required token from schema/theme.schema.json is present;
+ *   5. `card.rows` (the colour-block card layout), when a theme declares one.
  *
  * Run after editing any file in lib/themes/:
  *   node scripts/embed-themes.mjs
@@ -20,6 +21,7 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { cardRowProblems, paletteProblems } from './lib/card-rows.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const themesDir = join(root, 'lib', 'themes')
@@ -134,6 +136,13 @@ function checkTheme(theme, where, required) {
       }
     }
   }
+  if (theme.card !== undefined) {
+    // The colour-block card layout. The rules (and why each one is a silent
+    // failure if unchecked) live in `scripts/lib/card-rows.mjs`, which
+    // `tests/check-card-order.mjs` also drives — one implementation, so the
+    // self-test cannot end up validating a different rule set than the build.
+    for (const problem of cardRowProblems(theme, schemes)) problems.push(problem)
+  }
   const missing = required.filter((token) => !(token in theme.tokens))
   if (missing.length > 0) {
     fail(where, `missing ${missing.length} required token(s): ${missing.join(', ')}`)
@@ -145,6 +154,15 @@ const required = schema['x-required-tokens']
 if (!Array.isArray(required) || required.length === 0) {
   throw new Error(`${schemaPath}: x-required-tokens is missing or empty`)
 }
+
+// ── 15 套「纯色/拼色」配色（不是主题）─────────────────────────────────────────
+//
+// 它们不注册进主题服务，但卡片上的 15 个按钮就指着它们 —— 所以这里先校验、再内联。
+// 校验与前一条同源：`card-rows.mjs` 里的 `paletteProblems`。
+const palettePath = join(root, 'lib', 'palette-schemes.json')
+const paletteRaw = JSON.parse(readFileSync(palettePath, 'utf8'))
+const schemes = paletteRaw?.schemes
+for (const problem of paletteProblems(schemes)) problems.push(`lib/palette-schemes.json: ${problem}`)
 
 const files = readdirSync(themesDir).filter((name) => name.endsWith('.json')).sort()
 const themes = []
@@ -178,13 +196,35 @@ const literal = JSON.stringify(themes, null, 2)
   .map((line, index) => (index === 0 ? line : `    ${line}`))
   .join('\n')
 
+// Same treatment for the 15 palette schemes. They are NOT registered as themes, so they
+// travel in their own inlined constant — the browser half cannot read the JSON either.
+const paletteLiteral = JSON.stringify(schemes, null, 2)
+  .split('\n')
+  .map((line, index) => (index === 0 ? line : `    ${line}`))
+  .join('\n')
+
 const source = readFileSync(clientPath, 'utf8')
-// Match the untouched placeholder AND an already-embedded array, so re-running
-// this script is idempotent instead of throwing on the second run.
-const marker = /const BUNDLED_THEMES = (?:\/\* BUNDLED_THEMES \*\/ )?\[[\s\S]*?\](?=\n)/
-if (!marker.test(source)) {
+//
+// ── LOCATE THE ARRAY BY ITS TERMINATOR, NOT BY A NON-GREEDY BRACKET REGEX ─────
+//
+// This used to be `/const BUNDLED_THEMES = \[[\s\S]*?\]\n/`, which stops at the first
+// `]` that ends a line. That was correct only for as long as NO theme carried a nested
+// array — `card.rows` is the first one, and on the second run the pattern truncated the
+// literal at the closing bracket of `"rows": [...]` and left the remainder of the
+// PREVIOUS literal behind as garbage. The result was a `lib/client.js` that no longer
+// parsed, produced by the very step whose job is to keep it correct.
+//
+// The emitted literal is `JSON.stringify(themes, null, 2)` with four spaces prefixed to
+// every continuation line, so the array's own closing bracket is the only line in the
+// file that is exactly `    ]`. `embed-themes` was the odd one out in not using that
+// convention — every reader (tests, previews, publish-check) already slices on it.
+const declAt = source.indexOf('const BUNDLED_THEMES = ')
+const openAt = declAt < 0 ? -1 : source.indexOf('[', declAt)
+const endAt = openAt < 0 ? -1 : source.indexOf('\n    ]', openAt)
+if (declAt < 0 || openAt < 0 || endAt < 0) {
   throw new Error('lib/client.js: could not find the BUNDLED_THEMES declaration to replace')
 }
+const spanEnd = endAt + '\n    ]'.length
 
 // The panel shows the version, and the browser half has no way to read its own
 // manifest — so it is inlined here, from package.json, on every run. A stale value
@@ -199,11 +239,50 @@ if (typeof pkg.version !== 'string' || pkg.version === '') {
   throw new Error('package.json: version is missing')
 }
 
+const next = source.slice(0, declAt)
+  + `const BUNDLED_THEMES = ${literal}`
+  + source.slice(spanEnd)
+
+// ── the palette constant, located the same way (terminator line) ──────────────
+const paletteAt = next.indexOf('const BUNDLED_PALETTES = ')
+const paletteOpen = paletteAt < 0 ? -1 : next.indexOf('[', paletteAt)
+const paletteEnd = paletteOpen < 0 ? -1 : next.indexOf('\n    ]', paletteOpen)
+if (paletteAt < 0 || paletteOpen < 0 || paletteEnd < 0) {
+  throw new Error('lib/client.js: could not find the BUNDLED_PALETTES declaration to replace')
+}
+const embedded = next.slice(0, paletteAt)
+  + `const BUNDLED_PALETTES = ${paletteLiteral}`
+  + next.slice(paletteEnd + '\n    ]'.length)
+
+// ── READ THE LITERALS BACK OUT OF THE NEW TEXT, AND PARSE THE WHOLE FILE ──────
+//
+// Both assertions exist because of the truncation above: the file stayed syntactically
+// plausible while carrying a broken literal, and nothing downstream looks at its raw
+// shape. Reading them back makes "what I wrote is what a reader will find" a checked
+// fact rather than an assumption.
+const readAt = embedded.indexOf('const BUNDLED_THEMES = ')
+const readEnd = embedded.indexOf('\n    ]', readAt) + '\n    ]'.length
+const readBack = JSON.parse(embedded.slice(readAt + 'const BUNDLED_THEMES = '.length, readEnd))
+if (readBack.length !== themes.length
+  || readBack.map((theme) => theme.id).join(',') !== themes.map((theme) => theme.id).join(',')) {
+  throw new Error('embed-themes: the inlined literal does not read back as the themes it was built from')
+}
+const paletteReadAt = embedded.indexOf('const BUNDLED_PALETTES = ')
+const paletteReadEnd = embedded.indexOf('\n    ]', paletteReadAt) + '\n    ]'.length
+const paletteReadBack = JSON.parse(embedded.slice(paletteReadAt + 'const BUNDLED_PALETTES = '.length, paletteReadEnd))
+if (paletteReadBack.map((scheme) => scheme.id).join(',') !== schemes.map((scheme) => scheme.id).join(',')) {
+  throw new Error('embed-themes: the inlined palette does not read back as the schemes it was built from')
+}
+try {
+  // eslint-disable-next-line no-new-func
+  new Function(embedded)
+} catch (error) {
+  throw new Error(`lib/client.js would not PARSE after embedding: ${String(error.message ?? error)}`)
+}
+
 writeFileSync(
   clientPath,
-  source
-    .replace(marker, `const BUNDLED_THEMES = ${literal}`)
-    .replace(versionMarker, `const BUNDLED_VERSION = '${pkg.version}'`),
+  embedded.replace(versionMarker, `const BUNDLED_VERSION = '${pkg.version}'`),
 )
 console.log(`embedded ${themes.length} theme(s) from ${files.length} file(s): ${[...seen.keys()].join(', ')}`)
-console.log(`inlined version ${pkg.version}`)
+console.log(`inlined ${schemes.length} palette scheme(s) and version ${pkg.version}`)

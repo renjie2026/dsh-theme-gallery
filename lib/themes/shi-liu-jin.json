@@ -1,0 +1,293 @@
+[
+  {
+    "id": "shi-liu-jin",
+    "label": "纯色/拼色",
+    "description": "石榴红撞赤金与翡翠 —— 纯色排 × 拼色排的配色卡：15 个色块铺满卡面，不含侧栏素材",
+    "colorScheme": "light",
+    "tokens": {
+      "--dsw-alias-bg-base": {
+        "light": "linear-gradient(to bottom,#FBF7EC 0%,#F2ECDE 55%,#EADFC4 100%)",
+        "dark": "linear-gradient(to bottom,#FBF7EC 0%,#F2ECDE 55%,#EADFC4 100%)"
+      },
+      "--dsw-alias-bg-layer-1": {
+        "light": "#F0F0F4",
+        "dark": "#F0F0F4"
+      },
+      "--dsw-alias-bg-layer-2": {
+        "light": "#FFFBF0",
+        "dark": "#FFFBF0"
+      },
+      "--dsw-alias-bg-layer-3": {
+        "light": "#FFFBF0",
+        "dark": "#FFFBF0"
+      },
+      "--dsw-alias-bg-overlay": {
+        "light": "#EEDEB0",
+        "dark": "#EEDEB0"
+      },
+      "--dsw-alias-bg-skeleton": {
+        "light": "#D1D9E0",
+        "dark": "#D1D9E0"
+      },
+      "--dsw-alias-bg-module-platform": {
+        "light": "#EEDEB0",
+        "dark": "#EEDEB0"
+      },
+      "--dsw-alias-bg-multi-select": {
+        "light": "#EEDEB0",
+        "dark": "#EEDEB0"
+      },
+      "--dsw-alias-border-l1": {
+        "light": "#9D29330F",
+        "dark": "#9D29330F"
+      },
+      "--dsw-alias-border-l2": {
+        "light": "#9D293321",
+        "dark": "#9D293321"
+      },
+      "--dsw-alias-border-l3": {
+        "light": "#9D29332E",
+        "dark": "#9D29332E"
+      },
+      "--dsw-alias-border-l4": {
+        "light": "#D1D9E080",
+        "dark": "#D1D9E080"
+      },
+      "--dsw-alias-brand-primary": {
+        "light": "#9D2933",
+        "dark": "#9D2933"
+      },
+      "--dsw-alias-brand-primary-invert": {
+        "light": "#FFFFFF",
+        "dark": "#FFFFFF"
+      },
+      "--dsw-alias-brand-text": {
+        "light": "#9D2933",
+        "dark": "#9D2933"
+      },
+      "--dsw-alias-label-primary": {
+        "light": "#312520",
+        "dark": "#312520"
+      },
+      "--dsw-alias-label-primary-bluish": {
+        "light": "#312520",
+        "dark": "#312520"
+      },
+      "--dsw-alias-label-secondary": {
+        "light": "#574266",
+        "dark": "#574266"
+      },
+      "--dsw-alias-label-tertiary": {
+        "light": "#75664D",
+        "dark": "#75664D"
+      },
+      "--dsw-alias-label-caption": {
+        "light": "#75664D",
+        "dark": "#75664D"
+      },
+      "--dsw-alias-label-dimmed": {
+        "light": "#9A8C76",
+        "dark": "#9A8C76"
+      },
+      "--dsw-alias-label-primary-dimmed": {
+        "light": "#574266",
+        "dark": "#574266"
+      },
+      "--dsw-alias-label-primary-foreground": {
+        "light": "#FFFFFF",
+        "dark": "#FFFFFF"
+      },
+      "--dsw-alias-label-primary-inverted": {
+        "light": "#FFFFFF",
+        "dark": "#FFFFFF"
+      },
+      "--dsw-alias-link": {
+        "light": "#9D2933",
+        "dark": "#9D2933"
+      },
+      "--dsw-alias-interactive-bg-hover": {
+        "light": "#9D293314",
+        "dark": "#9D293314"
+      },
+      "--dsw-alias-interactive-bg-active": {
+        "light": "#F20C002E",
+        "dark": "#F20C002E"
+      },
+      "--dsw-alias-interactive-bg-hover-solid": {
+        "light": "#EEDEB0",
+        "dark": "#EEDEB0"
+      },
+      "--dsw-alias-interactive-bg-hover-accent": {
+        "light": "#F20C003D",
+        "dark": "#F20C003D"
+      },
+      "--dsw-alias-button-primary-fill": {
+        "light": "#9D2933",
+        "dark": "#9D2933"
+      },
+      "--dsw-alias-button-primary-hover": {
+        "light": "#B33A45",
+        "dark": "#B33A45"
+      },
+      "--dsw-alias-button-primary-dimmed": {
+        "light": "#9D293347",
+        "dark": "#9D293347"
+      },
+      "--dsw-alias-button-ghost-active-fill": {
+        "light": "#F20C0029",
+        "dark": "#F20C0029"
+      },
+      "--dsw-alias-button-ghost-active-border": {
+        "light": "#F20C00",
+        "dark": "#F20C00"
+      },
+      "--dsw-alias-button-ghost-active-hover": {
+        "light": "#F20C0047",
+        "dark": "#F20C0047"
+      },
+      "--dsw-alias-button-info-fill": {
+        "light": "#574266",
+        "dark": "#574266"
+      },
+      "--dsw-alias-button-info-hover": {
+        "light": "#75664D",
+        "dark": "#75664D"
+      },
+      "--dsw-alias-button-elevated-fill": {
+        "light": "#FFFBF0",
+        "dark": "#FFFBF0"
+      },
+      "--dsw-alias-button-floating-fill": {
+        "light": "#FFFBF0",
+        "dark": "#FFFBF0"
+      },
+      "--dsw-alias-button-floating-hover": {
+        "light": "#F7F0E0",
+        "dark": "#F7F0E0"
+      },
+      "--dsw-alias-button-contrast-fill": {
+        "light": "#312520",
+        "dark": "#312520"
+      },
+      "--dsw-alias-markdown-code-block": {
+        "light": "#F0F0F4",
+        "dark": "#F0F0F4"
+      },
+      "--dsw-alias-markdown-code-block-banner": {
+        "light": "#E4E6EC",
+        "dark": "#E4E6EC"
+      },
+      "--dsw-alias-markdown-inline-code": {
+        "light": "#EEDEB0",
+        "dark": "#EEDEB0"
+      },
+      "--dsw-alias-markdown-citation": {
+        "light": "#EEDEB0",
+        "dark": "#EEDEB0"
+      },
+      "--dsw-alias-markdown-tag": {
+        "light": "#EEDEB0",
+        "dark": "#EEDEB0"
+      },
+      "--dsw-alias-markdown-placeholder": {
+        "light": "#D1D9E0",
+        "dark": "#D1D9E0"
+      },
+      "--dsw-alias-markdown-code-segment-selected": {
+        "light": "#F20C0029",
+        "dark": "#F20C0029"
+      },
+      "--dsw-alias-markdown-code-segment-unselected": {
+        "light": "#F0F0F4",
+        "dark": "#F0F0F4"
+      },
+      "--dsw-alias-scrollbar-bg-l1": {
+        "light": "#9D293329",
+        "dark": "#9D293329"
+      },
+      "--dsw-alias-scrollbar-bg-l2": {
+        "light": "#9D293338",
+        "dark": "#9D293338"
+      },
+      "--dsw-alias-scrollbar-hover-l1": {
+        "light": "#9D293352",
+        "dark": "#9D293352"
+      },
+      "--dsw-alias-scrollbar-hover-l2": {
+        "light": "#9D293366",
+        "dark": "#9D293366"
+      },
+      "--dsw-alias-tooltip-bg": {
+        "light": "#312520",
+        "dark": "#312520"
+      },
+      "--dsw-alias-toast-bg": {
+        "light": "#FFFBF0",
+        "dark": "#FFFBF0"
+      },
+      "--dsw-alias-state-error-primary": {
+        "light": "#C2352B",
+        "dark": "#C2352B"
+      },
+      "--dsw-alias-state-error-secondary": {
+        "light": "#DB5A6B",
+        "dark": "#DB5A6B"
+      },
+      "--dsw-alias-state-success-primary": {
+        "light": "#1DA981",
+        "dark": "#1DA981"
+      },
+      "--dsw-alias-state-success-secondary": {
+        "light": "#7FE3C0",
+        "dark": "#7FE3C0"
+      },
+      "--dsw-alias-state-success-tertiary": {
+        "light": "#D8F5E8",
+        "dark": "#D8F5E8"
+      },
+      "--dsw-alias-state-warn-primary": {
+        "light": "#C89B40",
+        "dark": "#C89B40"
+      },
+      "--dsw-alias-state-warn-secondary": {
+        "light": "#EACD76",
+        "dark": "#EACD76"
+      },
+      "--dsw-alias-state-warn-tertiary": {
+        "light": "#F7EBC8",
+        "dark": "#F7EBC8"
+      },
+      "--dsw-alias-state-warn-label": {
+        "light": "#7A5A0E",
+        "dark": "#7A5A0E"
+      },
+      "--dsw-alias-state-business-primary": {
+        "light": "#3DE1AD",
+        "dark": "#3DE1AD"
+      },
+      "--dsw-alias-state-business-tertiary": {
+        "light": "#A8F0D8",
+        "dark": "#A8F0D8"
+      },
+      "--dsw-specific-sidebar-fill": {
+        "light": "linear-gradient(to bottom,#D6ECF0 0%,#E4E6E4 8%,#F2ECDE 18%,#F5E7CE 30%,#EFD6AE 44%,#E5BE86 58%,#D6A45C 72%,#C48F3C 86%,#BA8330 100%)",
+        "dark": "linear-gradient(to bottom,#D6ECF0 0%,#E4E6E4 8%,#F2ECDE 18%,#F5E7CE 30%,#EFD6AE 44%,#E5BE86 58%,#D6A45C 72%,#C48F3C 86%,#BA8330 100%)"
+      }
+    },
+    "reading": {
+      "colorScheme": "light",
+      "bg": "#FFFBF0",
+      "alpha": 0.62,
+      "blur": 3,
+      "maxWidth": 640
+    },
+    "card": {
+      "rows": [
+        { "kind": "solid", "schemes": ["p-xiang-se", "p-ju-huang", "p-tao-hong", "p-hai-tang-hong", "p-jiang-zi"] },
+        { "kind": "solid", "schemes": ["p-song-bai-lu", "p-zhu-qing", "p-cang-qing", "p-dai-zi", "p-xuan-qing"] },
+        { "kind": "clash", "schemes": ["p-shi-liu-jin", "p-bao-lan-jin", "p-qing-lian-jin", "p-song-hua-tao", "p-wu-jin"] }
+      ]
+    },
+    "accent": "#F20C00"
+  }
+]

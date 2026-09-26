@@ -40,9 +40,17 @@ export const ReadingSchema = z.object({
   maxWidth: z.number().required().min(320).max(1600),
 })
 
-/** 侧栏氛围装饰：主题可选请求的场景（只有插件实际带素材的几种可寻址）。 */
+/**
+ * 侧栏氛围装饰：主题可选请求的场景（只有插件实际带素材的几种可寻址）。
+ *
+ * ⚠️ `kind` **故意不写 `.required()`**：`ambient` 本身是可选字段，而上面那条实测过的
+ * 机制会让"可选对象里的必填字段"把**外层**变成事实上的必填 —— 于是**有意不配素材**的
+ * 那一类皮肤（纯色/拼色）会被这道校验判为非法。而"有 `ambient` 就必须有合法 `kind`"
+ * 这条真正的约束由 `scripts/embed-themes.mjs` 的 `AMBIENT_KINDS` 在**建期**强制，
+ * 它比这里严格（未知 kind 直接失败），并且发布 CI 一定会跑。
+ */
 export const AmbientSchema = z.object({
-  kind: z.union(['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen', 'humao', 'ahuang']).required(),
+  kind: z.union(['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen', 'humao', 'ahuang']),
   petals: z.number().min(0).max(20),
   bubbles: z.number().min(0).max(24),
   // 淡蓝荧光光点：与气泡是不同的特效，两者同时绘制，故各自独立计数。
@@ -60,6 +68,37 @@ export const AmbientSchema = z.object({
   dew: z.number().min(0).max(30),
 })
 
+/**
+ * 配色选择器的一排：等宽的可点色值按钮。
+ *
+ * 形状由 schemastery 表达（`kind` 两态 + `schemes` 字符串数组），**跨字段规则**——最后一排
+ * 必须是拼色、一排几个、引用的方案必须存在、方案种类要与排一致、圆点与正文的对比度——
+ * 都只写在 `scripts/lib/card-rows.mjs` 一处，由建期（`embed-themes`）与测试
+ * （`check-card-order`）共用。在类型层重复一遍规则，只会多出第二份会漂移的实现。
+ *
+ * ⚠️ 除 `kind` 外**不要加 `.required()`**：schemastery 里"可选对象内的必填字段"会让
+ * **外层对象**变成事实上的必填。实测读数（`tests/check-schema.mjs` 里同一条）：
+ *
+ *     z.object({ outer: z.object({ inner: z.string().required() }) })  解析 {} → 抛
+ *                                                                     $.outer.inner missing required value
+ *     z.object({ outer: z.object({ inner: z.string() }) })             解析 {} → {"outer":{}}
+ *
+ * 也就是说"外层可选、内层必填"在这个库里表达不出来；照直写会**静默地把合法主题判为非法**。
+ * 这个文件必须在这里声明 `card`，哪怕当前的 settings provider 没有人读取：schemastery 对
+ * 未知键是**直接丢弃**（实测），所以走文件型 provider 校验过的主题会**悄悄丢掉配色选择器**、
+ * 回落成默认色带 —— 而"看起来只是样式不一样"正是本项目最贵的那类失败。
+ */
+export const CardRowSchema = z.object({
+  kind: z.union(['solid', 'clash']).required(),
+  /** 一排 1–5 个方案 id（`p-…`）。颜色与点击目标都从 `lib/palette-schemes.json` 来。 */
+  schemes: z.array(z.string()),
+})
+
+/** 卡片上的配色选择器（纯色/拼色 一类；不写就是默认的单条 3 色色带）。 */
+export const CardSchema = z.object({
+  rows: z.array(CardRowSchema),
+})
+
 /** 一个可选主题。 */
 export const ThemeDefinitionSchema = z.object({
   id: z.string().required().pattern(/^[a-z0-9][a-z0-9-]*$/),
@@ -71,6 +110,7 @@ export const ThemeDefinitionSchema = z.object({
   // 激活态强调色：与 alpha 后缀拼接使用，故必须是 6 位十六进制字面量。
   accent: z.string().pattern(/^#[0-9a-fA-F]{6}$/),
   ambient: AmbientSchema,
+  card: CardSchema,
 })
 
 /** 持久化的 theme-gallery 段。 */

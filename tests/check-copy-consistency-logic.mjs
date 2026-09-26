@@ -101,13 +101,23 @@ mutation('README 表格多一个不存在的 id',
   '每个 id 都真实存在')
 
 // 3) 数量与表格行数不一致（表格改了、数字没改）。
+//
+// ⚠️ 变异目标**从真实 README 现算**，不写死数字：早先这里写的是 `发布 **6 套**` / `**0.3.0**`，
+// 于是每次升版本或加皮肤，这两条变异就静默地"没改动输入"（`changed` 为假）而报红 ——
+// 红的是**测试自己的锚点**，不是被守护的机制。锚点必须跟着数据走（同族的坑还有：变异锚在不存在的
+// 主题 id 上，见 AGENTS 的发版一节）。
+const statedCount = /发布 \*\*(\d+) 套\*\*/.exec(readme)
+const statedVersion = /已随 \*\*([\d.]+)\*\* 发布/.exec(readme)
+if (statedCount === null || statedVersion === null) {
+  throw new Error('README 里找不到「发布 N 套」或「已随 X.Y.Z 发布」—— 变异锚点失效，不能当作通过')
+}
 mutation('README 的数量与表格行数不一致',
-  { ...base, readme: readme.replace('发布 **6 套**', '发布 **7 套**') },
+  { ...base, readme: readme.replace(`发布 **${statedCount[1]} 套**`, `发布 **${Number(statedCount[1]) + 1} 套**`) },
   '声明的数量与表格行数一致')
 
 // 4) 升了版本号但没改 README 那句。
 mutation('README 的版本落后于 package.json',
-  { ...base, readme: readme.replace('已随 **0.3.0** 发布', '已随 **0.2.0** 发布') },
+  { ...base, readme: readme.replace(`已随 **${statedVersion[1]}** 发布`, '已随 **0.0.1** 发布') },
   '声明的版本与 package.json 一致')
 
 // 5) 旧说法被写回来（这正是本次要修的问题）。

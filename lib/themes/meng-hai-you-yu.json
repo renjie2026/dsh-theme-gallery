@@ -2,7 +2,7 @@
   {
     "id": "meng-hai-you-yu",
     "label": "梦海游鱼",
-    "description": "梦幻海洋，游鱼作伴 —— 复刻自电商新零售系统管理后台的默认主题",
+    "description": "梦幻海洋，游鱼作伴 —— 复刻自蜂链商城电商新零售系统管理后台的默认主题",
     "colorScheme": "light",
     "tokens": {
       "--dsw-alias-bg-base": {

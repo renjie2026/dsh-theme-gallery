@@ -1,0 +1,20 @@
+{
+  "$comment": "纯色/拼色卡片上的 15 个可点击配色方案。它们**不是主题**：不注册进主题服务、不占面板卡片、不进官方「外观」下拉；点按钮时由插件叠一层 token 覆盖层把整屏换掉（见 lib/client.js 的 schemeTokens / syncScheme）。字段只放『人体可判断』的几个色，其余 60 多个 token 由 schemeTokens() 按同一条造色规则派生，这样 15 套不会各写各的、彼此漂移。**所有色值取自「中国传统色库」项目（chinese-colors）**：https://github.com/zerosoul/chinese-colors —— 作者 tristan（GitHub @zerosoul），在线手册 https://colors.ichuantong.cn ，许可 ISC。色名与色值是作者整理的开源成果，本插件只做取色与派生；source 字段记的是该库 src/assets/colors.json 里的『组 + id』。感谢作者 tristan 的整理与开源。",
+  "schemes": [
+    { "id": "p-xiang-se", "kind": "solid", "label": "缃色", "main": "#F0C239", "ground": "#F2ECDE", "ink": "#312520", "source": "黄 1-9 缃色（浅黄色）" },
+    { "id": "p-ju-huang", "kind": "solid", "label": "橘黄", "main": "#FF8936", "ground": "#F2ECDE", "ink": "#312520", "source": "黄 1-5 橘黄（柑橘的黄色）" },
+    { "id": "p-tao-hong", "kind": "solid", "label": "桃红", "main": "#F47983", "ground": "#EDD1D8", "ink": "#56004F", "source": "红 0-3 桃红（桃花的颜色）" },
+    { "id": "p-hai-tang-hong", "kind": "solid", "label": "海棠红", "main": "#DB5A6B", "ground": "#EDD1D8", "ink": "#56004F", "source": "红 0-4 海棠红（淡紫红色、较桃红色深一些）" },
+    { "id": "p-jiang-zi", "kind": "solid", "label": "绛紫", "main": "#8C4356", "ground": "#EDD1D8", "ink": "#56004F", "source": "红 0-9 绛紫（紫中略带红的颜色）" },
+    { "id": "p-song-bai-lu", "kind": "solid", "label": "松柏绿", "main": "#057748", "ground": "#E0F0E9", "ink": "#424C50", "source": "绿 2-30 松花绿（松柏叶的墨绿）" },
+    { "id": "p-zhu-qing", "kind": "solid", "label": "竹青", "main": "#789262", "ground": "#E0EEE8", "ink": "#424C50", "source": "绿 2-3 竹青（竹子的绿色）" },
+    { "id": "p-cang-qing", "kind": "solid", "label": "苍青", "main": "#7397AB", "ground": "#D6ECF0", "ink": "#4A4266", "source": "苍 4-3 苍青" },
+    { "id": "p-dai-zi", "kind": "solid", "label": "黛紫", "main": "#574266", "ground": "#E4C6D0", "ink": "#56004F", "source": "蓝 3-12 黛紫（深紫色）" },
+    { "id": "p-xuan-qing", "kind": "solid", "label": "玄青", "main": "#3D3B4F", "ground": "#F0F0F4", "ink": "#312520", "source": "黑 7-1 玄青（深黑色）" },
+    { "id": "p-shi-liu-jin", "kind": "clash", "label": "石榴金", "main": "#F20C00", "ground": "#F2ECDE", "ink": "#312520", "fill": "#9D2933", "dots": ["#FFFFFF", "#D6ECF0", "#EACD76", "#3DE1AD"], "source": "红 0-5 石榴红 + 金银 8-0 赤金 + 绿 2-14 翡翠色；按钮族用红 0-11 胭脂（白字 7.50:1，而压在石榴红上只有 4.35:1）" },
+    { "id": "p-bao-lan-jin", "kind": "clash", "label": "宝蓝·赤金", "main": "#4B5CC4", "ground": "#D6ECF0", "ink": "#4A4266", "dots": ["#F2BE45", "#EACD76", "#D9B611", "#FFFFFF"], "source": "蓝 3-5 宝蓝（多和小面积纯黄色（金色）配合使用）+ 金银 8-0 赤金" },
+    { "id": "p-qing-lian-jin", "kind": "clash", "label": "青莲·金玉", "main": "#801DAE", "ground": "#E4C6D0", "ink": "#56004F", "dots": ["#F2BE45", "#FFF143", "#3DE1AD", "#FFFFFF"], "source": "蓝 3-19 青莲（偏蓝的紫色）+ 黄 1-0 鹅黄 + 绿 2-14 翡翠色" },
+    { "id": "p-song-hua-tao", "kind": "clash", "label": "松花·桃粉", "main": "#BCE672", "ground": "#F7FBEC", "ink": "#424C50", "dots": ["#C93756", "#057748"], "source": "绿 2-31 松花色（嫩黄绿）+ 红 0-1 樱桃色 + 绿 2-30 松花绿" },
+    { "id": "p-wu-jin", "kind": "clash", "label": "藏青·鹅黄", "main": "#2E4E7E", "ground": "#E2E9F2", "ink": "#312520", "dots": ["#F2BE45", "#FFFFFF", "#FFB3A7", "#3DE1AD"], "source": "蓝 8-2 藏青（深蓝）+ 金银 8-0 赤金 + 精白 + 红 0-0 粉红 + 绿 2-14 翡翠色" }
+  ]
+}

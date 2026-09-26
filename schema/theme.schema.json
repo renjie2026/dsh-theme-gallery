@@ -67,6 +67,21 @@
           "$ref": "#/$defs/cssValue",
           "description": "The theme's marker colour, used for the states that say WHICH workspace or conversation is active. Taken from the theme's own characteristic colour - the source admin system's design rules forbid introducing a hue that does not already exist in the skin. It is stacked as an overrideTokens layer over --dsw-alias-button-ghost-active-fill/-border/-hover, the family the sidebar entry and the selected conversation row read. Omit it and the theme keeps the base palette's selection colour."
         },
+        "card": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rows"],
+          "description": "How this theme's card is drawn in the gallery, for a theme whose card is a PALETTE PICKER rather than one look (the 纯色/撞色 class). Omit it and the card keeps the default single 3-colour strip derived from the theme's own tokens, which is what every scene-carrying skin does. When present, the card draws a grid of CLICKABLE colour-value buttons — each slot names a scheme from lib/palette-schemes.json, and clicking it recolours the whole UI (the schemes are NOT registered themes, so they never appear in the official Appearance list). Such a card prints no `description` body: the slots already fill it, so the field stays a tooltip (asserted by tests/check-card-order.mjs).",
+          "properties": {
+            "rows": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 3,
+              "description": "Two or three rows, drawn top to bottom. The LAST row must hold clash schemes and every earlier row must hold solid ones — the user's layout is 5+5+5: two rows of solid options, then the row of clash options. Each row's slots are equal width.",
+              "items": { "$ref": "#/$defs/cardRow" }
+            }
+          }
+        },
         "ambient": {
           "type": "object",
           "additionalProperties": false,
@@ -134,6 +149,27 @@
           }
         }
       }
+    },
+    "cardRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "schemes"],
+      "description": "One row of the palette picker: equal-width colour-value buttons. `kind` says what each button in THIS row looks like (a flat block, or a band with dots) and must match the kind every referenced scheme declares — drawing a clash scheme as one flat block reads as a colour that is merely off.",
+      "properties": {
+        "kind": { "enum": ["solid", "clash"] },
+        "schemes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "description": "Scheme ids from lib/palette-schemes.json. Five is the ceiling the card can still show as five distinct buttons (at the card's 200px minimum width each is ~34px); a sixth would read as a texture. A slot naming a scheme that does not exist draws nothing, and the whole card silently falls back to the default strip — scripts/lib/card-rows.mjs fails the build for that.",
+          "items": { "$ref": "#/$defs/schemeId" }
+        }
+      }
+    },
+    "schemeId": {
+      "type": "string",
+      "pattern": "^p-[a-z0-9-]+$",
+      "description": "A palette-scheme id, `p-` prefixed so it can never be confused with a registered theme id (the picker's anchor theme is `shi-liu-jin`). The scheme itself lives in lib/palette-schemes.json, which is inlined into the bundle but NOT registered with the theme service — these 15 are colour options, not themes, so they stay out of the official Appearance list and out of the skin count."
     },
     "modes": {
       "type": "object",

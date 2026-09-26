@@ -110,12 +110,19 @@ const builders = new Function(`${builderSource}\nreturn { shanAmbientScene, drea
 
 /**
  * Build one theme's scene from its bundled `ambient` config through the real
- * builders. An unknown kind throws — the preview must never quietly show nothing.
+ * builders.
+ *
+ * Two different "no scene" cases, and they must not be conflated:
+ *   · **No `ambient` field at all** is legitimate — the 纯色/拼色 class declares none
+ *     on purpose (its card is a palette, not a scene), so it gets an empty pane.
+ *   · **An `ambient.kind` with no builder** is a typo in a skin that DID ask for
+ *     scenery. That throws: the preview must never quietly show nothing for it.
  * @param theme - a bundled theme definition.
- * @returns the scene markup.
+ * @returns the scene markup, or '' when the theme asks for no scenery.
  */
 function sceneFor(theme) {
-  const a = theme.ambient ?? {}
+  const a = theme.ambient
+  if (a === undefined) return ''
   switch (a.kind) {
     case 'shan': return builders.shanAmbientScene(a.petals)
     case 'dream': return builders.dreamAmbientScene(a.bubbles, a.motes, a.fish)
@@ -164,7 +171,9 @@ const NAV_SURFACE = 'rgba(255,255,255,.72)'
 /** One pane per bundled theme: its own sidebar fill, its own scene. */
 const panes = themes.map((theme) => ({
   title: `${theme.label} · ${theme.ambient?.kind ?? '（无装饰）'}`,
-  note: KIND_NOTES[theme.ambient?.kind] ?? '',
+  note: theme.ambient === undefined
+    ? '有意不配素材：这一类卡片的身份在卡面的 15 个色块上，侧栏只有它自己的渐变'
+    : (KIND_NOTES[theme.ambient.kind] ?? ''),
   fill: theme.tokens['--dsw-specific-sidebar-fill']?.light ?? '#EEEEEE',
   scene: sceneFor(theme),
 }))

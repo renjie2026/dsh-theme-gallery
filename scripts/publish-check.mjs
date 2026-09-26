@@ -116,9 +116,17 @@ const themeFiles = existsSync(themesDir)
 check('lib/themes 里有皮肤 JSON', themeFiles.length > 0)
 
 const clientSource = readFileSync(join(root, 'lib', 'client.js'), 'utf8')
-const bundled = /const BUNDLED_THEMES = \[([\s\S]*?)\]\n/.exec(clientSource)
-check('lib/client.js 里有 BUNDLED_THEMES 声明', bundled !== null)
-const bundledIds = bundled === null ? [] : [...bundled[1].matchAll(/"id": "([^"]+)"/g)].map((m) => m[1])
+// Slice on the TERMINATOR LINE (`\n    ]`), not on a non-greedy bracket regex: the
+// inlined literal now contains nested arrays (`card.rows`), and `\[[\s\S]*?\]\n`
+// stops at the first of those, silently reading only part of the id list. Every
+// other reader in this repository already used the terminator convention; this one
+// and `embed-themes.mjs` were the two that did not.
+const bundledAt = clientSource.indexOf('const BUNDLED_THEMES = ')
+const bundledEnd = bundledAt < 0 ? -1 : clientSource.indexOf('\n    ]', bundledAt)
+check('lib/client.js 里有 BUNDLED_THEMES 声明', bundledAt >= 0 && bundledEnd > bundledAt)
+const bundledIds = bundledAt < 0 || bundledEnd < 0
+  ? []
+  : [...clientSource.slice(bundledAt, bundledEnd).matchAll(/"id": "([^"]+)"/g)].map((m) => m[1])
 
 const fileIds = themeFiles.map((name) => {
   const raw = JSON.parse(readFileSync(join(themesDir, name), 'utf8'))

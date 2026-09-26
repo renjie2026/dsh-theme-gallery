@@ -69,6 +69,9 @@ const GLOBALS = new Set([
   'require', 'window', 'document', 'console', 'Object', 'Array', 'Set', 'Map', 'Math',
   'JSON', 'String', 'Number', 'Boolean', 'Promise', 'Error', 'TypeError', 'Symbol',
   'RegExp', 'Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval',
+  // 派生色值用到的两个标准全局函数。它们和 `Math` 一样是运行环境提供的，不是本包的
+  // 名字 —— 列进来是为了让"未定义调用"这条断言继续只盯**本包自己的**名字。
+  'parseInt', 'parseFloat',
   'MutationObserver', 'ResizeObserver', 'IntersectionObserver', 'getComputedStyle',
   // `stop` is a method on the handle `repeatUntilStable` returns; the scan cannot tell a
   // method call from a bare one, so it is listed rather than special-cased.

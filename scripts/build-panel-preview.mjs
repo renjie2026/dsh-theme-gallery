@@ -51,6 +51,25 @@ function readLiteral(name) {
       else if (ch === quote) quote = null
       continue
     }
+    // ── 注释必须先跳过 ────────────────────────────────────────────────────────
+    //
+    // 这个读取器按"引号配对"扫字面量，所以注释里出现的一对**反引号**会被当成模板字符串
+    // 的起止，扫描就此跑飞，报的还是 `const PAGE_CSS literal not terminated` ——
+    // 指向的是 PAGE_CSS，真正的原因却在它上方一句注释里（本次实测：注释里写了
+    // overflow:hidden 的反引号形式，预览页构建直接挂）。这与规则 7 是同一族：
+    // **注释里提到的代码写法会骗过按文本工作的工具**，区别只是这次断的是构建而不是断言。
+    if (ch === '/' && source[i + 1] === '/') {
+      const lineEnd = source.indexOf('\n', i)
+      if (lineEnd < 0) break
+      i = lineEnd
+      continue
+    }
+    if (ch === '/' && source[i + 1] === '*') {
+      const blockEnd = source.indexOf('*/', i + 2)
+      if (blockEnd < 0) break
+      i = blockEnd + 1
+      continue
+    }
     if (ch === "'" || ch === '"' || ch === '`') { quote = ch; continue }
     if (ch === '{' || ch === '[' || ch === '(') depth += 1
     else if (ch === '}' || ch === ']' || ch === ')') {
@@ -126,6 +145,37 @@ const { cardRank, cardsInDisplayOrder } = new Function(
 )(CARD_ORDER)
 
 /**
+ * The picker sanitiser, extracted from the bundle and executed.
+ *
+ * Sliced rather than read as a literal: the helpers start at `const SCHEME_ID`,
+ * which is a REGEX — and the literal reader above counts `[`/`]` as brackets, so it
+ * would stop at the character class and evaluate a syntax error. Taking the
+ * contiguous source from the regex to the end of `cardRowShape` keeps the preview
+ * on the shipping implementation (`schemeById` / `shade` sit between them).
+ * @returns the sanitiser.
+ */
+function readCardRowShape() {
+  const at = source.indexOf('    const SCHEME_ID = ')
+  if (at < 0) throw new Error('lib/client.js: const SCHEME_ID not found')
+  const shape = block('cardRowShape')
+  const end = source.indexOf(shape) + shape.length
+  // eslint-disable-next-line no-new-func
+  return new Function(`${source.slice(at, end)}\nreturn { cardRowShape }`)().cardRowShape
+}
+
+const cardRowShape = readCardRowShape()
+
+/**
+ * 15 套配色方案 —— 卡片上那 15 个色值按钮的颜色与标签都从这里来。
+ *
+ * 直接读 `lib/palette-schemes.json`（与 `embed-themes.mjs` 内联的是同一个文件），
+ * 所以预览页画出来的格子与面板里点的格子不可能对不上。
+ */
+const PALETTE_SCHEMES = JSON.parse(
+  readFileSync(join(root, 'lib', 'palette-schemes.json'), 'utf8'),
+).schemes
+
+/**
  * The official ui-theme themes, in their real registration order. They declare no
  * tokens of their own (their card is a plain line), which is why they have no strip.
  */
@@ -164,20 +214,53 @@ const cards = shown.map((theme) => {  const label = theme.label || BUILT_IN_LABE
     tokenValue(theme, '--dsw-alias-label-secondary'),
     tokenValue(theme, '--dsw-alias-state-business-primary'),
   ].filter((value) => typeof value === 'string' && value !== '')
+  // A picker card replaces the strip AND drops the description body (it stays the
+  // tooltip) — the same branch the panel takes, decided by the same function.
+  const rows = cardRowShape(theme, PALETTE_SCHEMES)
+  const picker = rows === undefined
+    ? ''
+    : `
+        <span class="tg-picker">${rows.map((row) => `<span class="tg-pickrow">`
+      + `${row.schemes.map((id) => {
+        const scheme = PALETTE_SCHEMES.find((entry) => entry.id === id) ?? { label: id, main: '#000000', kind: 'solid' }
+        const accents = scheme.dots ?? []
+        // 与面板同一套规则：拼色按宽度分带（主色 2 份、每个次色 1 份），
+        // 纯色是"一条带占满"的退化情况。
+        const bands = scheme.kind === 'clash'
+          ? [[scheme.main, 2], ...accents.map((colour) => [colour, 1])]
+          : [[scheme.main, 1]]
+        const inner = bands
+          .map(([colour, weight]) => `<span class="tg-band" style="background:${colour};flex-grow:${weight}"></span>`)
+          .join('')
+        // 预览里按钮不可点（点了也不会真的换色），所以 aria-pressed 一律 false：
+        // 它只是"排版与颜色长什么样"的对照，不是交互演示。`data-name` 是悬停标签的内容
+        // （CSS `content:attr(data-name)`），预览页里鼠标移上去就能看到名字。
+        return `<button type="button" class="tg-swatch" aria-pressed="false" data-name="${scheme.label}" `
+          + `title="${scheme.label}${scheme.source === undefined ? '' : ` · ${scheme.source}`}">${inner}</button>`
+      }).join('')}</span>`).join('')}</span>`
+  const strip = rows !== undefined || swatches.length === 0
+    ? ''
+    : `
+        <span class="tg-strip">${swatches.map((colour) => `<span style="background:${colour}"></span>`).join('')}</span>`
   const selected = theme.id === DEFAULT_SKIN
   const rank = cardRank(theme.id)
-  return `
-      <button type="button" class="tg-card" aria-pressed="${selected}" title="${description || label}">
+  const head = `
         <div class="tg-card-top">
           <span class="tg-name">${label}</span>
           ${selected ? `<span class="tg-badge">${zh.applied}</span>` : ''}
-        </div>
-        ${swatches.length > 0
-    ? `<span class="tg-strip">${swatches.map((colour) => `<span style="background:${colour}"></span>`).join('')}</span>`
-    : ''}
-        ${description ? `<span class="tg-desc">${description}</span>` : ''}
-        <span class="pv-rank">序号 ${rank}${rank < 0 ? '（未排名）' : ''} · ${theme.id}</span>
+        </div>`
+  const tail = `${rows === undefined && description ? `<span class="tg-desc">${description}</span>` : ''}
+        <span class="pv-rank">序号 ${rank}${rank < 0 ? '（未排名）' : ''} · ${theme.id}</span>`
+  // 配色卡是 div（里面装着 15 个按钮），其余卡片仍是整块可点的 button —— 与面板一致。
+  return rows === undefined
+    ? `
+      <button type="button" class="tg-card" aria-pressed="${selected}" title="${description || label}">${head}${strip}
+        ${tail}
       </button>`
+    : `
+      <div class="tg-card tg-picker-card" title="${description || label}">${head}${picker}
+        ${tail}
+      </div>`
 }).join('\n')
 
 /** The default skin's own palette, so the panel is painted as it looks in the app. */
