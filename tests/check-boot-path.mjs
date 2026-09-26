@@ -1162,6 +1162,34 @@ check('点一个色格后：选中的方案写进了 localStorage',
   `实际 ${live.localStorage.getItem('theme-gallery:palette')}`)
 check('点一个色格后：配色层真的叠上了（服务里能查到这一层）',
   live.overrides.has('theme-gallery: 配色'), `实际 ${JSON.stringify([...live.overrides.keys()])}`)
+// ── 用户报的"第一次点变成浅色、第二次才生效" ──────────────────────────────────
+//
+// 根因：`ensureSkinPainted` 的**跳转重试**（先切内置 `light`、再切回皮肤）。点卡片时
+// `chooseScheme` 紧接着自己 `publish()`，而那一刻表现层**必然还没落色**（它是异步写 token 的），
+// 于是被误判成"这次切换丢了" → 先切浅色再切回。用户看到的就是"点了没反应、反而变成浅色"。
+// 这条断言要看的是**服务真的被写过浅色**（`setThemeCalls`），而不是看截图或面板文字。
+//
+// 注：`check()` 只收两个参数（第三参一直被丢掉），所以诊断信息在这里自己打印 ——
+// 失败时才有读数，正是排查这类问题需要的东西。
+if (live.setThemeCalls.includes('light')) {
+  console.error(`  实际写过的主题：${JSON.stringify(live.setThemeCalls)}`)
+}
+check('点色格只应把主题切到锚主题，绝不该顺路写一次内置「浅色」（用户报的第一次点击失效）',
+  !live.setThemeCalls.includes('light'))
+
+// 反证 11：把"给表现层的耐心"调成 0，上面那条必须翻转（否则它是空转的）。
+const mutGrace = source.replace('const PAINT_GRACE_MS = 400', 'const PAINT_GRACE_MS = 0')
+check('反证 11 真的改动了源码（把等待时间调成 0）', mutGrace !== source)
+const impatient = runBoot({
+  activeId: 'shan-qing-ting-cai', seedSkin: 'shan-qing-ting-cai',
+  wireSlots: true, bundleSource: mutGrace,
+})
+impatient.cardTree('shi-liu-jin', { 'shi-liu-jin': PICKER_ROWS }, { 'shi-liu-jin': BLOCK_DESC })
+  .tree.filter((call) => call.props?.className === 'tg-swatch')[12].props.onClick()
+impatient.drive(30)
+check('反证 11：没有耐心时，点一次色格就会顺路写一次「浅色」（说明上面那条测的是真通道）',
+  impatient.setThemeCalls.includes('light'),
+  `实际 ${JSON.stringify(impatient.setThemeCalls)}`)
 
 // 反证 6：把"真的切主题"那一步删掉，上面两条必须翻转 —— 这正是第一版的形状。
 const mutNoSwitch = source.replace('emitting(() => ctx.theme.setTheme(PALETTE_ANCHOR))', '')

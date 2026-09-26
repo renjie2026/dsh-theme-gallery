@@ -11,7 +11,7 @@
 | 自己做皮肤（或让 AI 做） | 在 `lib/themes/` 加 JSON 后重跑 `npm run embed-themes`，或装 `dsh-theme-skin-author` 技能让 AI 生成 |
 | 贡献一个皮肤给所有人 | 在 `lib/themes/` 放一个 JSON，提 PR |
 
-已随 **0.4.0** 发布 **7 套**皮肤：四套复刻自**蜂链商城**电商新零售系统管理后台
+已随 **0.4.1** 发布 **7 套**皮肤：四套复刻自**蜂链商城**电商新零售系统管理后台
 （[`renjie2026/fenglianshop-open`](https://github.com/renjie2026/fenglianshop-open) 的
 `admin-modular/src/utils/themes.js`），两套是本插件**原创**的宠物主题（同一套造色方法，色相取自中国传统色库），
 另有一套是**「纯色/拼色」配色选择器**卡片（15 个可点色值，见下）。
