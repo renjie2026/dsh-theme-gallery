@@ -1,0 +1,290 @@
+[
+  {
+    "id": "hu-po-mao-mi",
+    "label": "琥珀猫咪",
+    "description": "琥珀暖光，双猫伴读 —— 原创宠物主题：两只虎斑短毛猫守着洒满阳光的窗台",
+    "colorScheme": "light",
+    "tokens": {
+      "--dsw-alias-bg-base": {
+        "light": "linear-gradient(to bottom,#FEFBF5 0%,#FBF2E3 55%,#F8EDD8 100%)",
+        "dark": "linear-gradient(to bottom,#FEFBF5 0%,#FBF2E3 55%,#F8EDD8 100%)"
+      },
+      "--dsw-alias-bg-layer-1": {
+        "light": "#FEFCF7",
+        "dark": "#FEFCF7"
+      },
+      "--dsw-alias-bg-layer-2": {
+        "light": "#FFFFFF",
+        "dark": "#FFFFFF"
+      },
+      "--dsw-alias-bg-layer-3": {
+        "light": "#FFFFFF",
+        "dark": "#FFFFFF"
+      },
+      "--dsw-alias-bg-overlay": {
+        "light": "#F3E5CD",
+        "dark": "#F3E5CD"
+      },
+      "--dsw-alias-bg-skeleton": {
+        "light": "#9C5F2414",
+        "dark": "#9C5F2414"
+      },
+      "--dsw-alias-bg-module-platform": {
+        "light": "#F3E5CD",
+        "dark": "#F3E5CD"
+      },
+      "--dsw-alias-bg-multi-select": {
+        "light": "#F3E5CD",
+        "dark": "#F3E5CD"
+      },
+      "--dsw-alias-border-l1": {
+        "light": "#9C5F240F",
+        "dark": "#9C5F240F"
+      },
+      "--dsw-alias-border-l2": {
+        "light": "#9C5F2421",
+        "dark": "#9C5F2421"
+      },
+      "--dsw-alias-border-l3": {
+        "light": "#9C5F242E",
+        "dark": "#9C5F242E"
+      },
+      "--dsw-alias-border-l4": {
+        "light": "#9C5F243D",
+        "dark": "#9C5F243D"
+      },
+      "--dsw-alias-brand-primary": {
+        "light": "#9C5F24",
+        "dark": "#9C5F24"
+      },
+      "--dsw-alias-brand-primary-invert": {
+        "light": "#FFFFFF",
+        "dark": "#FFFFFF"
+      },
+      "--dsw-alias-brand-text": {
+        "light": "#9C5F24",
+        "dark": "#9C5F24"
+      },
+      "--dsw-alias-label-primary": {
+        "light": "#453019",
+        "dark": "#453019"
+      },
+      "--dsw-alias-label-primary-bluish": {
+        "light": "#453019",
+        "dark": "#453019"
+      },
+      "--dsw-alias-label-secondary": {
+        "light": "#6A4E2F",
+        "dark": "#6A4E2F"
+      },
+      "--dsw-alias-label-tertiary": {
+        "light": "#8C6F4C",
+        "dark": "#8C6F4C"
+      },
+      "--dsw-alias-label-caption": {
+        "light": "#8C6F4C",
+        "dark": "#8C6F4C"
+      },
+      "--dsw-alias-label-dimmed": {
+        "light": "#B49C7F",
+        "dark": "#B49C7F"
+      },
+      "--dsw-alias-label-primary-dimmed": {
+        "light": "#6A4E2F",
+        "dark": "#6A4E2F"
+      },
+      "--dsw-alias-label-primary-foreground": {
+        "light": "#FFFFFF",
+        "dark": "#FFFFFF"
+      },
+      "--dsw-alias-label-primary-inverted": {
+        "light": "#FFFFFF",
+        "dark": "#FFFFFF"
+      },
+      "--dsw-alias-link": {
+        "light": "#CA6924",
+        "dark": "#CA6924"
+      },
+      "--dsw-alias-interactive-bg-hover": {
+        "light": "#9C5F2414",
+        "dark": "#9C5F2414"
+      },
+      "--dsw-alias-interactive-bg-active": {
+        "light": "#CA69242E",
+        "dark": "#CA69242E"
+      },
+      "--dsw-alias-interactive-bg-hover-solid": {
+        "light": "#F3E5CD",
+        "dark": "#F3E5CD"
+      },
+      "--dsw-alias-interactive-bg-hover-accent": {
+        "light": "#CA69243D",
+        "dark": "#CA69243D"
+      },
+      "--dsw-alias-button-primary-fill": {
+        "light": "#9C5F24",
+        "dark": "#9C5F24"
+      },
+      "--dsw-alias-button-primary-hover": {
+        "light": "#B0702F",
+        "dark": "#B0702F"
+      },
+      "--dsw-alias-button-primary-dimmed": {
+        "light": "#9C5F2447",
+        "dark": "#9C5F2447"
+      },
+      "--dsw-alias-button-ghost-active-fill": {
+        "light": "#CA692429",
+        "dark": "#CA692429"
+      },
+      "--dsw-alias-button-ghost-active-border": {
+        "light": "#CA6924",
+        "dark": "#CA6924"
+      },
+      "--dsw-alias-button-ghost-active-hover": {
+        "light": "#CA692447",
+        "dark": "#CA692447"
+      },
+      "--dsw-alias-button-info-fill": {
+        "light": "#B0702F",
+        "dark": "#B0702F"
+      },
+      "--dsw-alias-button-info-hover": {
+        "light": "#9C5F24",
+        "dark": "#9C5F24"
+      },
+      "--dsw-alias-button-elevated-fill": {
+        "light": "#FFFFFF",
+        "dark": "#FFFFFF"
+      },
+      "--dsw-alias-button-floating-fill": {
+        "light": "#FFFFFF",
+        "dark": "#FFFFFF"
+      },
+      "--dsw-alias-button-floating-hover": {
+        "light": "#FDF8F0",
+        "dark": "#FDF8F0"
+      },
+      "--dsw-alias-button-contrast-fill": {
+        "light": "#453019",
+        "dark": "#453019"
+      },
+      "--dsw-alias-markdown-code-block": {
+        "light": "#F7EEDF",
+        "dark": "#F7EEDF"
+      },
+      "--dsw-alias-markdown-code-block-banner": {
+        "light": "#F0E3CB",
+        "dark": "#F0E3CB"
+      },
+      "--dsw-alias-markdown-inline-code": {
+        "light": "#F3E9D6",
+        "dark": "#F3E9D6"
+      },
+      "--dsw-alias-markdown-citation": {
+        "light": "#F3E9D6",
+        "dark": "#F3E9D6"
+      },
+      "--dsw-alias-markdown-tag": {
+        "light": "#F3E9D6",
+        "dark": "#F3E9D6"
+      },
+      "--dsw-alias-markdown-placeholder": {
+        "light": "#F0E3CB",
+        "dark": "#F0E3CB"
+      },
+      "--dsw-alias-markdown-code-segment-selected": {
+        "light": "#CA692429",
+        "dark": "#CA692429"
+      },
+      "--dsw-alias-markdown-code-segment-unselected": {
+        "light": "#F7EEDF",
+        "dark": "#F7EEDF"
+      },
+      "--dsw-alias-scrollbar-bg-l1": {
+        "light": "#9C5F2429",
+        "dark": "#9C5F2429"
+      },
+      "--dsw-alias-scrollbar-bg-l2": {
+        "light": "#9C5F2438",
+        "dark": "#9C5F2438"
+      },
+      "--dsw-alias-scrollbar-hover-l1": {
+        "light": "#9C5F2452",
+        "dark": "#9C5F2452"
+      },
+      "--dsw-alias-scrollbar-hover-l2": {
+        "light": "#9C5F2466",
+        "dark": "#9C5F2466"
+      },
+      "--dsw-alias-tooltip-bg": {
+        "light": "#453019",
+        "dark": "#453019"
+      },
+      "--dsw-alias-toast-bg": {
+        "light": "#FFFFFF",
+        "dark": "#FFFFFF"
+      },
+      "--dsw-alias-state-error-primary": {
+        "light": "#C65B6A",
+        "dark": "#C65B6A"
+      },
+      "--dsw-alias-state-error-secondary": {
+        "light": "#DB5A6B",
+        "dark": "#DB5A6B"
+      },
+      "--dsw-alias-state-success-primary": {
+        "light": "#21A675",
+        "dark": "#21A675"
+      },
+      "--dsw-alias-state-success-secondary": {
+        "light": "#9C5F24",
+        "dark": "#9C5F24"
+      },
+      "--dsw-alias-state-success-tertiary": {
+        "light": "#CFBA9C",
+        "dark": "#CFBA9C"
+      },
+      "--dsw-alias-state-warn-primary": {
+        "light": "#B97F3A",
+        "dark": "#B97F3A"
+      },
+      "--dsw-alias-state-warn-secondary": {
+        "light": "#D9A45E",
+        "dark": "#D9A45E"
+      },
+      "--dsw-alias-state-warn-tertiary": {
+        "light": "#EFDCC0",
+        "dark": "#EFDCC0"
+      },
+      "--dsw-alias-state-warn-label": {
+        "light": "#8A5A22",
+        "dark": "#8A5A22"
+      },
+      "--dsw-alias-state-business-primary": {
+        "light": "#CA6924",
+        "dark": "#CA6924"
+      },
+      "--dsw-alias-state-business-tertiary": {
+        "light": "#E29C45",
+        "dark": "#E29C45"
+      },
+      "--dsw-specific-sidebar-fill": {
+        "light": "linear-gradient(to bottom,#FBF0DE 0%,#F5E3C6 20%,#EDD5AE 36%,#E3C593 50%,#D8B57D 62%,#CBA468 74%,#C69E5F 86%,#BB904F 100%)",
+        "dark": "linear-gradient(to bottom,#FBF0DE 0%,#F5E3C6 20%,#EDD5AE 36%,#E3C593 50%,#D8B57D 62%,#CBA468 74%,#C69E5F 86%,#BB904F 100%)"
+      }
+    },
+    "reading": {
+      "colorScheme": "light",
+      "bg": "#FFFFFF",
+      "alpha": 0.62,
+      "blur": 3,
+      "maxWidth": 640
+    },
+    "accent": "#CA6924",
+    "ambient": {
+      "kind": "humao",
+      "dust": 6
+    }
+  }
+]

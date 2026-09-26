@@ -26,9 +26,20 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { blankNonCode } from './lib/scope-reach.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const source = readFileSync(join(root, 'lib', 'client.js'), 'utf8')
+
+/**
+ * 结构视图：注释与字符串内容抹成空格，**长度与换行保持不变**。
+ *
+ * 断言正文必须跑在这份文本上，而不是原文上。理由是真实发生过的：本文件的
+ * "the sync 只有一次渲染调用" 这一条，被 `syncAmbient` 里一句**注释**（提到了
+ * `drawScene()`）数成了两次 —— 规则 7 记过同一个坑两次，这是第三次。
+ * 因为 `blankNonCode` 保持长度，下方的下标与花括号配对仍然有效。
+ */
+const structural = blankNonCode(source)
 
 let failed = 0
 
@@ -92,16 +103,17 @@ check('the resize observer is wired to the coalescing entry point',
 //
 // `footerHeight` walks every descendant of the sidebar. If the fingerprint were computed from
 // that geometry, the guard would cost as much as the work it avoids.
-const syncStart = source.indexOf('    function syncAmbient(')
+const syncStart = structural.indexOf('    function syncAmbient(')
 // Take the FUNCTION BODY by brace matching, not a fixed-size slice: a fixed window ran past the
 // closing brace and swallowed the next function's definition, which made a "how many calls are
-// there" count meaningless.
+// there" count meaningless. Matched on the STRUCTURAL text, so a brace inside prose cannot move
+// the body's end either.
 const syncBody = (() => {
-  const open = source.indexOf('{', syncStart)
+  const open = structural.indexOf('{', syncStart)
   let depth = 0
-  for (let i = open; i < source.length; i += 1) {
-    if (source[i] === '{') depth += 1
-    else if (source[i] === '}') { depth -= 1; if (depth === 0) return source.slice(syncStart, i + 1) }
+  for (let i = open; i < structural.length; i += 1) {
+    if (structural[i] === '{') depth += 1
+    else if (structural[i] === '}') { depth -= 1; if (depth === 0) return structural.slice(syncStart, i + 1) }
   }
   throw new Error('syncAmbient body not found')
 })()
@@ -172,6 +184,42 @@ check('the geometry is refreshed without repainting', /applySceneBox\(box, colum
 // One DOM copy, not two. Two copies meant two of every animated element on screen.
 check('the scene is written to exactly one container',
   (code.match(/\.innerHTML = String\(markup\)/g) ?? []).length === 1)
+
+// ── 8. 计数断言的自检：两个方向都要成立（规则 6 / 规则 7）─────────────────────
+//
+// "该抓的抓住"：真的多一条渲染调用必须被数出来；
+// "不该报的不报"：注释里提到 `drawScene()` 不算一次调用 —— 这个坑本仓库已经是第三次，
+// 所以把自检写进文件里，而不是只修好这一次。
+/**
+ * 在给定文本上数 `syncAmbient` 函数体里的渲染调用。
+ * @param text - 已经抹掉注释/字符串的结构文本。
+ * @returns 调用次数。
+ */
+function countRenders(text) {
+  const start = text.indexOf('    function syncAmbient(')
+  if (start < 0) throw new Error('syncAmbient not found')
+  const open = text.indexOf('{', start)
+  let depth = 0
+  for (let i = open; i < text.length; i += 1) {
+    if (text[i] === '{') depth += 1
+    else if (text[i] === '}') {
+      depth -= 1
+      if (depth === 0) return (text.slice(start, i + 1).match(/drawScene\(/g) ?? []).length
+    }
+  }
+  throw new Error('syncAmbient body not found')
+}
+
+check('自检：真实源码里，注释提到的 drawScene() 不算一次渲染调用',
+  countRenders(structural) === 1)
+
+const mutSecondRender = source.replace(
+  'const placement = drawScene(column, markup, kind)',
+  'const placement = drawScene(column, markup, kind)\n      const second = drawScene(column, markup, kind)',
+)
+check('自检：注入第二条渲染调用的变异真的改动了源码', mutSecondRender !== source)
+check('自检：注入第二条渲染调用后必须数出 2 条（否则这条断言什么都没测）',
+  countRenders(blankNonCode(mutSecondRender)) === 2)
 
 if (failed > 0) {
   console.error(`\n${failed} bounded-work check(s) failed`)

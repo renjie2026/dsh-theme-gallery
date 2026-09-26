@@ -11,7 +11,8 @@
 | 自己做皮肤（或让 AI 做） | 在 `lib/themes/` 加 JSON 后重跑 `npm run embed-themes`，或装 `dsh-theme-skin-author` 技能让 AI 生成 |
 | 贡献一个皮肤给所有人 | 在 `lib/themes/` 放一个 JSON，提 PR |
 
-内置四个皮肤，均复刻自电商新零售系统管理后台（`admin-modular/src/utils/themes.js`）：
+已随 **0.3.0** 发布 **6 套**皮肤：四套复刻自电商新零售系统管理后台（`admin-modular/src/utils/themes.js`），
+两套是本插件**原创**的宠物主题（同一套造色方法，色相取自中国传统色库）。
 
 | id | 名称 | 主色 | 强调色 |
 |---|---|---|---|
@@ -19,6 +20,17 @@
 | `meng-hai-you-yu` | **梦海游鱼** | `#177CB0` 靛青 | `#FFD166` 琥珀金 |
 | `ying-mu-cai-yun` | **营慕彩云** | `#2D5A3D` 林间深绿 | `#FFB347` 琥珀 |
 | `pei-an-jie-xin` | **佩安杰心** | `#7A5C3E` 暖檀褐 | `#B4653A` 赭陶 |
+| `hu-po-mao-mi` | **琥珀猫咪**（原创） | `#9C5F24` 琥珀深焙（按钮/边框族） | `#CA6924` 琥珀（中国传统色） |
+| `hu-zi-a-huang` | **虎子阿黄**（原创） | `#896C39` 秋色（按钮/边框族） | `#F0C239` 缃色（中国传统色） |
+
+面板里另有**两张内置外观卡**（`浅色` / `深色`）：它们**不是皮肤**，作用是把配色切回官方的浅色 / 深色
+（与「设置 → 通用 → 外观」同一套），所以**不计入上面这 6 套**。我们在官方浅色/深色上加了一点**小惊喜**
+—— 见 [效果预览](#效果预览) 最后一行。官方外观里的「跟随系统」**不出卡**：它就是浅色/深色二选一，
+再占一张卡只是重复。
+
+工作区里另有三套复刻皮肤仍在打磨，**尚未发布**：江畔冬云 `jiang-pan-dong-yun`、
+徐山军月 `xu-shan-jun-yue`、光彩凤晨 `guang-cai-feng-chen`。（发布前自检会核对这份清单：
+README 里的每个 id 都要真实存在，`lib/themes` 里的每套皮肤也必须在这里被提到。）
 
 每个皮肤 67 个 token，覆盖整屏。
 
@@ -32,13 +44,28 @@
 |---|---|
 | ![营慕彩云：暮色暖光、三层彩云与前后两层漂移云海，两只热气球往返漫游](https://raw.githubusercontent.com/renjie2026/dsh-theme-gallery/main/screenshots/ying-mu-cai-yun.png) | ![佩安杰心：雾山远衬、禅意圆相与坐禅人影、香炉两缕青烟与浮尘，底部禅语](https://raw.githubusercontent.com/renjie2026/dsh-theme-gallery/main/screenshots/pei-an-jie-xin.png) |
 
+| 琥珀猫咪 `hu-po-mao-mi`（原创） | 虎子阿黄 `hu-zi-a-huang`（原创） |
+|---|---|
+| ![琥珀猫咪：暖阳光晕与晒暖窗台，坐姿虎斑猫摆尾抖耳，蜷卧酣睡猫呼吸起伏并冒小 z，阳光浮尘](https://raw.githubusercontent.com/renjie2026/dsh-theme-gallery/main/screenshots/hu-po-mao-mi.png) | ![虎子阿黄：金色光晕与田埂干草丛，中黄田园犬镰刀尾摇摆、歪头、挂着铃铛项圈，缃色皮球与蒲公英绒毛](https://raw.githubusercontent.com/renjie2026/dsh-theme-gallery/main/screenshots/hu-zi-a-huang.png) |
+
+**内置浅色 / 深色 + 皮肤素材 —— 那个小惊喜**
+
+| 内置「浅色」+ 山青婷彩的侧栏素材 | 内置「深色」+ 营慕彩云的侧栏素材 |
+|---|---|
+| ![内置浅色外观：调色回到官方浅色，而侧栏仍留着山青婷彩的山峦、水塘与蜻蜓](https://raw.githubusercontent.com/renjie2026/dsh-theme-gallery/main/screenshots/builtin-light-with-shan-qing-ting-cai.png) | ![内置深色外观：调色回到官方深色，而侧栏仍留着营慕彩云的彩云与热气球](https://raw.githubusercontent.com/renjie2026/dsh-theme-gallery/main/screenshots/builtin-dark-with-ying-mu-cai-yun.png) |
+
+玩法：**先点一套皮肤，再点「浅色」或「深色」** —— 调色回到官方外观，而侧栏素材**留在原处**
+（切到**另一套皮肤**时素材会正常替换；重启应用后不会有残留，因为那时的页面上本来就没有"上一套"可留）。
+
 截图取自桌面版 0.1.7-rc.2 实机。图片用**绝对地址**引用而不是相对路径，是为了让同一份 README 在
 GitHub、npm 与社区市场三处都能显示（npm 不会把相对路径解析到仓库）。原图在
 [`screenshots/`](screenshots/) 下，不在 npm 包内（`package.json` 的 `files` 白名单只含运行必需文件）。
 
 侧栏装饰还可以先看后装：仓库内的
 [`tools/theme-bench/ambient-preview.html`](tools/theme-bench/ambient-preview.html) 以宽窄两种侧栏宽度
-并排渲染全部皮肤（该页把 CSS 与场景标记直接读自 `lib/client.js`，不会与出货版本漂移）。
+并排渲染全部皮肤（该页把 CSS 与场景标记直接读自 `lib/client.js`，不会与出货版本漂移）；
+[`tools/theme-bench/panel-preview.html`](tools/theme-bench/panel-preview.html) 则渲染**面板本身的卡片顺序与文案**
+—— 顺序表、内置卡文案、页面样式同样直接读自 `lib/client.js`。
 
 ---
 
@@ -75,7 +102,7 @@ const CUBES = [light, dark, system]
 
 ---
 
-## 入口在哪：左侧栏面板，不是设置
+## 入口在哪：左侧菜单区【插件】图标的下方，不是设置
 
 | 位置 | 官方插槽 | 形态 |
 |---|---|---|
@@ -89,7 +116,8 @@ const CUBES = [light, dark, system]
 
 > `sidebar.footer.action` 同样是 `list`，一个插件也只有一个座位，且气泡里放不下预览。设置行则额外需要 settings 域——见下面的踩坑记录。
 
-**打开方式**：左栏那排面板图标里点 **主题皮肤**，主区显示全部可选主题，点卡片切换，选中态会记入设置。
+**打开方式**：在**左侧菜单区，【插件】图标的下方**点 **主题皮肤**（它与「插件」同为面板入口，就在其下一行），
+主区显示全部可选主题，点卡片切换，选中态会记入设置。
 
 ---
 
@@ -101,8 +129,8 @@ const CUBES = [light, dark, system]
 
 1. **设置 → 插件 → 添加插件** → 填 **`dsh-theme-gallery`**
 2. **重启应用**
-3. 左侧栏底部出现 **主题皮肤** 入口（**不在**「设置 → 通用 → 外观」里，原因见下文），
-   当前三个主题：山青婷彩 / 梦海游鱼 / 深色
+3. **左侧菜单区【插件】图标的下方**出现 **主题皮肤** 入口（**不在**「设置 → 通用 → 外观」里，
+   原因见下文），面板里是 **6 套皮肤 + 内置浅色/深色两张卡**（清单见页面顶部表格）
 
 Web / CLI profile 用官方 CLI 装同一个包：
 
@@ -132,19 +160,19 @@ dsh plugin --profile web add dsh-theme-gallery
 
 | 渠道 | 说明 |
 |---|---|
-| **插件市场** | 装 [DSH-Plugins-Marketplace](https://github.com/bradeGithub/DSH-Plugins-Marketplace) 后，卡片会显示 **「已装 v0.1.4 → v0.1.6」** 并给**更新**按钮 —— 目前最省事的路径 |
+| **插件市场** | 装 [DSH-Plugins-Marketplace](https://github.com/bradeGithub/DSH-Plugins-Marketplace) 后，卡片会显示 **「已装 v0.2.0 → v0.3.0」** 并给**更新**按钮 —— 目前最省事的路径 |
 | **GitHub Releases** | 在本仓库点 **Watch → Custom → Releases only**，有新版本会收到邮件 |
-| **对照版本号** | 插件面板右上角显示**你装的版本**（如 `v0.1.4`），与 [npm 页面](https://www.npmjs.com/package/dsh-theme-gallery) 上的版本号直接对照 |
+| **对照版本号** | 插件面板右上角显示**你装的版本**（如 `v0.3.0`），与 [npm 页面](https://www.npmjs.com/package/dsh-theme-gallery) 上的版本号直接对照 |
 
 **怎么更新？**
 
 1. **设置 → 插件 → 添加插件** → 再填一次 `dsh-theme-gallery` → **重启**（装上 `^x.y.z` 范围内的最新版）
-2. 想要**强制拿最新**（含 0.1.x → 0.2.0 这类次版本号变更）：**先移除、再添加**
+2. 想要**强制拿最新**（含 0.2.x → 0.3.0 这类次版本号变更）：**先移除、再添加**
 3. 装了市场的：点卡片上的**更新**按钮
 4. Web / CLI profile：`dsh plugin --profile web add dsh-theme-gallery`
 
-**版本范围语义**：安装时会记录成 **`^0.1.4`**，即 `>=0.1.4 <0.2.0` ——
-`0.1.5` / `0.1.9` 这类补丁会在重装时自动带上；**`0.2.0` 不会**（npm 对 `0.x` 的惯例是
+**版本范围语义**：安装时会记录成 **`^0.2.0`**，即 `>=0.2.0 <0.3.0` ——
+`0.2.1` 这类补丁会在重装时自动带上；**`0.3.0` 不会**（npm 对 `0.x` 的惯例是
 把次版本号变更视为可能破坏性），那种情况按第 2 条显式重装即可。
 
 > ⚠️ 从 **Release 的 `.tgz`** 安装的用户**没有更新机制**（tgz 是一次性快照，只能重新下载）——
@@ -157,7 +185,7 @@ dsh plugin --profile web add dsh-theme-gallery
 | 平台 | DeepSeek Harness **桌面版 0.1.7-rc.2**（实测通过）；同为 web 客户端的 Web / CLI profile 理论可用，但本项目只实测过桌面版 |
 | 网络 | **不联网** —— 插件半侧不发起任何请求 |
 | 文件 | 包内只有 `lib/`、`schema/`、`cordis.patch.yml`（见 `package.json` 的 `files`），不读写用户文件 |
-| 界面改动 | 只新增左侧栏一个面板入口；**不碰**官方「设置 → 通用 → 外观」那一行 |
+| 界面改动 | 只新增左侧菜单区一个面板入口（在【插件】图标下方）；官方「设置 → 通用 → 外观」那一行**保持原样**——面板里的浅色/深色卡只是调用官方偏好接口，不会往那一行塞任何东西 |
 | 本地状态 | 皮肤选择存在 `localStorage`；主题偏好只写 `light`/`dark`/`system` |
 
 ### 装不上或想手动装
@@ -172,7 +200,7 @@ error: profile "desktop" is managed exclusively by the Electron application
 
 ```jsonc
 // <DSH_HOME>/profiles/desktop/package.json
-//   "dependencies":        { "dsh-theme-gallery": "^0.1.0" }
+//   "dependencies":        { "dsh-theme-gallery": "^0.3.0" }
 //   "dsh.profile.bundles": [ ..., "dsh-theme-gallery" ]
 ```
 
@@ -360,9 +388,12 @@ if (active === void 0) throw new Error(`theme registry lost "${resolvedId}"`)
 | 梦海游鱼 `kind: "dream"` | 左上柔光辉 + 两道弥散光洗 + 上浮气泡 + 五叶水草摇摆 |
 | 营慕彩云 `kind: "caiyun"` | 暮色暖光 + 暖金光点 + 三层模糊彩云 + 前后两层漂移云海 + 两只往返漫游的热气球 |
 | 佩安杰心 `kind: "jiexin"` | 雾山远衬 + 禅意圆相与坐禅人影 + 香炉两缕青烟 + 浮尘光点 + 禅语「自在 · 安顿」 |
+| 琥珀猫咪 `kind: "humao"`（原创） | 暖阳光晕 + 晒暖窗台 + 坐姿虎斑猫（摆尾 / 抖耳）+ 蜷卧酣睡猫（呼吸起伏 + 小 z）+ 阳光浮尘 |
+| 虎子阿黄 `kind: "ahuang"`（原创） | 金色光晕 + 田埂 + 中黄田园犬（镰刀尾摇摆 / 歪头 / 铃铛项圈）+ 干草丛 + 缃色皮球 + 蒲公英绒毛 |
 
 素材逐像素复刻自源系统对应的主题动画组件（`ShanQingTingCaiAnimation.vue`、
-`DreamOceanAmbient.vue`、`YingMuCaiYunAnimation.vue`、`PeiAnJieXinAnimation.vue`）。与原系统**有意偏离**两处：
+`DreamOceanAmbient.vue`、`YingMuCaiYunAnimation.vue`、`PeiAnJieXinAnimation.vue`）；`humao` / `ahuang`
+两套为本插件**原创**绘制（同一条造色十步法，色相取自中国传统色库）。与原系统**有意偏离**两处：
 
 1. **尺寸改为百分比 / em**。原系统写死 223px 侧栏宽；DSH 侧栏可拖拽，固定像素在窄侧栏会截断。
 2. **`pointer-events:none` 且置于导航之下**。原系统文档记有一条 bug：不透明山形贴在侧栏底部会遮挡最下方菜单项。
@@ -385,6 +416,8 @@ if (active === void 0) throw new Error(`theme registry lost "${resolvedId}"`)
 | 梦海游鱼 | `#FFD166` | 夕照金 |
 | 营慕彩云 | `#FFB347` | 云霞琥珀 |
 | 佩安杰心 | `#B4653A` | 赭陶 |
+| 琥珀猫咪（原创） | `#CA6924` | 中国传统色「琥珀」 |
+| 虎子阿黄（原创） | `#F0C239` | 中国传统色「缃色」 |
 
 **不是所有主题一律粉**——那样恰好违反来源项目自己的规范。两条约束由代码强制：叠加**只对活跃主题**生效、切走即撤除；**不动 `brand-primary`**（否则链接、主按钮、状态徽标会被一起改掉）。
 
@@ -543,17 +576,18 @@ dsh-theme-gallery/
 ├── package.json          # dsh.bundle + dsh.client + exports["./client"]
 ├── cordis.patch.yml      # 被 profile 选中时应用的配置层
 ├── schema/theme.schema.json   # 皮肤 JSON Schema（含必需 token 清单）
-├── tools/theme-bench/    # 视觉调参台（单文件 HTML）
+├── screenshots/          # README 里的实机截图（不进 npm 包）
+├── tools/
+│   ├── theme-bench/             # 视觉调参台 + 两套预览页（单文件 HTML）
+│   ├── profile-skin.mjs         # skin:status / disable / enable / rollback
+│   └── watch-renderer.mjs       # 采样 renderer 的 CPU 与内存（查自旋事故）
 ├── scripts/
-│   ├── embed-themes.mjs         # 校验内置皮肤并内联进 client.js
+│   ├── embed-themes.mjs          # 校验内置皮肤并内联进 client.js
+│   ├── publish-check.mjs         # 发布前自检（含 README 与 lib/themes 一致性）
 │   ├── build-ambient-preview.mjs # 生成侧栏素材预览页（CSS 读自 client.js）
-│   └── serve-bench.mjs          # 启动调参台
-├── tests/
-│   ├── check-schema.mjs               # 真实 schemastery 解析 + 反向用例
-│   ├── smoke-host.mjs                 # 真机加载 lib/index.js 并跑 apply
-│   ├── check-store-contract.mjs       # create() 实例语义
-│   ├── check-declaration-order.mjs    # ctx.effect 同步执行的 TDZ 审计
-│   └── check-theme-contribution.mjs   # 贡献逻辑 + token 必须是字符串
+│   ├── build-panel-preview.mjs   # 生成面板卡片顺序/文案预览页
+│   └── serve-bench.mjs           # 启动调参台
+├── tests/                # 20 组校验（一个 *.mjs 文件一组；lib/ 是共用解析器）
 ├── types/                # 契约校验源（不参与运行）
 └── lib/
     ├── index.js          # 宿主：注册 theme-gallery settings 命名空间（预留扩展点，当前无人读取）
@@ -571,18 +605,20 @@ dsh-theme-gallery/
 
 ```sh
 pnpm install
-pnpm run check     # 全部五组，当前全绿
+pnpm run check     # tsc + npm test 的 20 组校验 + 内联皮肤 + 重建两个预览页
 pnpm run bench     # 调参台
 ```
 
-`pnpm run check` 依次做六件事：
+`pnpm run check` = `typecheck && test && embed-themes && preview:ambient && preview:panel`；`npm test` 的 **20 组**按职责分六类：
 
 1. **`tsc`（exit 0）**：`types/*.ts` 用官方发布的真实类型包校验插槽注册契约、`defineStore` 座位形状、主题注册与 token 契约。
-2. **`tests/check-schema.mjs`**：用真实 schemastery 解析内置皮肤（正例），再跑 **10 个反向用例**确认 schema 不是空转——含缺 `label`、缺 `description`、`reading.alpha` 越界等。
-3. **`tests/smoke-host.mjs`**：**真机加载** `lib/index.js`，用假 context 跑 `apply`，确认注册了命名空间与 schema 实例、缺 settings 服务时是安静的空操作；并守住客户端 `inject` 清单（必需服务在白名单内、settings 域的服务不得出现）与插槽注册是否都被 `ctx.slots.inject` 门控。
-4. **`tests/check-store-contract.mjs`**：验证 `handle.create()` 的实例语义（每次返回新实例，因此必须钉住）。
-5. **`tests/check-declaration-order.mjs`**：静态审计 `apply` 体，确认没有同步入口（`ctx.effect` / `ctx.on`）读取更晚声明的顶层标识符——`ctx.effect` 是**同步执行**的。
-6. **`tests/check-theme-contribution.mjs`**：跑贡献逻辑与幂等守卫，并断言**注册的 token 必须是字符串**（成对对象会变成 `[object Object]`）；`scripts/embed-themes.mjs` 校验皮肤（形状 / id 唯一 / 双配色 / 12 必需 token / `reading`）后内联进 `lib/client.js`，幂等。
+2. **契约与桩**：`check-schema`（真实 schemastery 解析 + **10 个反向用例**，含缺 `label`、缺 `description`、`reading.alpha` 越界）、`smoke-host`（**真机加载** `lib/index.js` 跑 `apply`，并守住 `inject` 清单与插槽门控）、`check-store-contract`（`handle.create()` 每次返回新实例）、`check-client-module`（bundle 形状、挂载失败必须可见）。
+3. **启动安全与端到端引导**：`check-boot-safety`（`inject` 清单、无 `modifies` 环）、`check-boot-timing`、`check-boot-path`（桩里跑完整引导：上色确认、默认皮肤、点内置卡不被弹回、切内置主题后素材保留 —— 每条都带**反证**）。
+4. **静态审计（含自检与变异反证）**：`check-declaration-order`、`check-tdz-order` + `check-tdz-logic`、`check-scope-reach` + `check-scope-reach-logic`、`check-undefined-calls`、`check-bounded-work`（有界工作量：指纹守卫、单一路径渲染、循环有截止）、`check-self-emit-guard` + `check-self-emit-guard-logic`（数出**全部**主题服务写入点）。
+5. **主题与皮肤**：`check-theme-contribution`（贡献逻辑与幂等，并断言**注册的 token 必须是字符串**——成对对象会变成 `[object Object]`）、`check-card-order`（卡片顺序、内置卡文案、默认皮肤，含 7 处变异反证）、`check-ambient-render`（场景标记与关键帧）。
+6. **介绍文字不落后于实际**：`check-copy-consistency-logic` —— 核对 README 的皮肤清单 / 数量 / 版本 / 入口说法、面板与预览页的计数口径、README 里写的校验组数，与 `lib/themes`、`package.json`、`lib/client.js` 一致（**10 处变异反证 + 1 个"正式发布一套皮肤必须全过"的对照组**）。发布自检 `npm run publish:check` 用同一份实现，所以"改了皮肤忘了改文案"会在发布前被拦住。
+
+`scripts/embed-themes.mjs` 校验每套皮肤（形状 / id 唯一 / 双配色 / 12 必需 token / `reading`）后内联进 `lib/client.js`，幂等；两个预览页随后重建。
 
 ### 客户端插件通用陷阱（每一条都真实踩过，都已写成自动检查）
 

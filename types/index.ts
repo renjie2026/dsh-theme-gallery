@@ -42,7 +42,7 @@ export const ReadingSchema = z.object({
 
 /** 侧栏氛围装饰：主题可选请求的场景（只有插件实际带素材的几种可寻址）。 */
 export const AmbientSchema = z.object({
-  kind: z.union(['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen']).required(),
+  kind: z.union(['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen', 'humao', 'ahuang']).required(),
   petals: z.number().min(0).max(20),
   bubbles: z.number().min(0).max(24),
   // 淡蓝荧光光点：与气泡是不同的特效，两者同时绘制，故各自独立计数。
@@ -53,7 +53,7 @@ export const AmbientSchema = z.object({
   stars: z.number().min(0).max(30),
   // 江畔冬云的细雪。
   snow: z.number().min(0).max(30),
-  // 佩安杰心的浮尘光点。
+  // 佩安杰心的浮尘光点；琥珀猫咪的阳光浮尘；虎子阿黄的蒲公英绒毛（同一计数旋钮）。
   dust: z.number().min(0).max(20),
   // 光彩凤晨的凤羽与晨露：两种独立特效，各自计数。
   feathers: z.number().min(0).max(16),

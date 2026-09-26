@@ -37,7 +37,7 @@ function check(label, condition) {
 }
 
 /** 加载 client bundle，拿到它的 exports。 */
-function loadBundle(window_, document_) {
+function loadBundle(window_, document_, recordJsx = () => {}, bundleSource = source) {
   const registrations = []
   const windowStub = {
     ...window_,
@@ -69,11 +69,17 @@ function loadBundle(window_, document_) {
       }
     }
     if (id === 'react') return { createElement: () => null, useState: () => [undefined, () => {}] }
-    if (id === 'react/jsx-runtime') return { jsx: () => null, jsxs: () => null, Fragment: null }
+    // The jsx runtime records what the page BUILT, so a test can reach the very props the
+    // shell would hand to a card — including its click handler. Returning `null` (as before)
+    // is still correct: nothing here renders, only the element descriptions are collected.
+    if (id === 'react/jsx-runtime') {
+      const record = (type, props, key) => { recordJsx({ type, props, key }); return null }
+      return { jsx: record, jsxs: record, Fragment: null }
+    }
     return {}
   }
   // eslint-disable-next-line no-new-func
-  new Function('window', 'document', 'require', source)(windowStub, document_, seed)
+  new Function('window', 'document', 'require', bundleSource)(windowStub, document_, seed)
   return registrations[0].factory(seed)
 }
 
@@ -94,6 +100,15 @@ function documentStub() {
    * not, since a duplicate path can reach the same assignment.
    */
   const innerHTMLWrites = []
+
+  /**
+   * 每一次节点移除，按顺序记下来。
+   *
+   * 桩原先的 `remove()` 是空函数，于是"装饰层被删掉"这件事**完全不可观测** —— 而切换主题时
+   * "该不该清掉上一套皮肤的素材"正是靠它判断的（用户明确要求保留那份素材）。
+   * 桩缺少真实副作用 = 缺陷测不出来（规则 8）。
+   */
+  const removals = []
 
   /** 侧栏列：`getBoundingClientRect` 返回真实感的矩形。 */
   const column = {
@@ -138,7 +153,12 @@ function documentStub() {
     getAttribute(name) { return this.attributes.get(name) ?? null },
     removeAttribute(name) { this.attributes.delete(name) },
     hasAttribute(name) { return this.attributes.has(name) },
-    remove() {},
+    _removed: false,
+    remove() {
+      if (this._removed) return
+      this._removed = true
+      removals.push({ id: this.id, className: String(this.className) })
+    },
     closest: () => null,
   })
   const body = makeNode('body')
@@ -159,6 +179,36 @@ function documentStub() {
    * first reported zero.
    */
   const created = []
+
+  /**
+   * 按选择器找出仍未被移除的节点。
+   *
+   * `querySelectorAll` 原先恒返回 `[]`，于是 `removeAllAmbientSeats()`（以及任何按选择器
+   * 清理装饰节点的代码）在桩里**什么都不做** —— 一个"清空装饰层"的改动可以在桩里悄悄通过。
+   * 这里按插件真正用到的两类选择器作答，让"移除了什么"变成可断言的事实。
+   * @param selector - 选择器文本。
+   * @returns 匹配的节点数组。
+   */
+  const findAll = (selector) => {
+    if (typeof selector !== 'string') return []
+    const alive = created.filter((node) => !node._removed)
+    if (selector.includes('#dsh-theme-ambient')) {
+      return alive.filter((node) => node.id === 'dsh-theme-ambient')
+    }
+    if (selector.includes('.dsh-amb-control')) {
+      return alive.filter((node) =>
+        String(node.className).split(' ').some((name) => name.startsWith('dsh-amb-control')))
+    }
+    return []
+  }
+
+  /** 当前装饰层里的场景标记（最后一个场景盒），没有时返回 null。 */
+  const sceneHtml = () => {
+    const boxes = created.filter((node) => !node._removed
+      && String(node.className).split(' ').includes('dsh-amb-control-scene'))
+    return boxes.length === 0 ? null : boxes[boxes.length - 1]._html
+  }
+
   const document_ = {
     head, body, documentElement,
     visibilityState: 'visible',
@@ -190,10 +240,10 @@ function documentStub() {
       }
       return null
     },
-    querySelectorAll: () => [],
+    querySelectorAll: (selector) => findAll(selector),
     addEventListener() {}, removeEventListener() {},
   }
-  return { document_, body, innerHTMLWrites }
+  return { document_, body, innerHTMLWrites, removals, sceneHtml }
 }
 
 /**
@@ -238,15 +288,32 @@ function installObserverStubs() {
  * @param options - 配置。
  * @param options.activeId - 主题服务一开始报告的活动主题。
  * @param options.presenterDelayTicks - 表现层要过多少个 tick 才开始写令牌（模拟它晚挂载）。
+ * @param options.config - 组合配置（`ambient: false` 是急停开关）。
+ * @param options.seedSkin - 预置的「记住的皮肤」；`null` 表示全新安装（从未选过）。
+ * @param options.seedBuiltIn - 预置的「用户在面板里选过内置外观」标记。
+ * @param options.wireSlots - 是否让 `slots.inject('main', …)` 真的执行回调，
+ *   从而拿到页面 `inject` 面（`setTheme`）—— 用来测"点卡片"这条真实入口。
+ * @param options.bundleSource - 用哪份源码加载 bundle（缺省即真实文件）。
+ *   存在的理由是**反证**：把源码改坏再从改坏的源码跑一遍，确认断言真的会失败。
  * @returns 观测到的 setTheme 调用、探针文字、以及主题服务状态。
  */
-function runBoot({ activeId = 'light', presenterDelayTicks = 3, config } = {}) {
+function runBoot({
+  activeId = 'light',
+  presenterDelayTicks = 3,
+  config,
+  seedSkin = 'shan-qing-ting-cai',
+  seedBuiltIn,
+  wireSlots = false,
+  bundleSource = source,
+} = {}) {
   const restoreObservers = installObserverStubs()
   try {
-  const { document_, body, innerHTMLWrites } = documentStub()
+  const { document_, body, innerHTMLWrites, removals, sceneHtml } = documentStub()
   const setThemeCalls = []
   let accentLayers = 0
   const registrations = []
+  /** 页面构建过的所有元素描述（jsx 桩记录），用来拿到卡片真实的 props。 */
+  const jsxCalls = []
   /** 等待表现层写入的皮肤。 */
   const pendingPaints = []
 
@@ -257,19 +324,29 @@ function runBoot({ activeId = 'light', presenterDelayTicks = 3, config } = {}) {
     { id: 'dark', label: 'Dark', colorScheme: 'dark', tokens: {} },
     { id: 'system', label: 'System', colorScheme: 'light', tokens: {} },
   ]
-  // 本插件发布的皮肤 id：表现层对它们都是慢写入（桩里按此建模）。
-  // 只列本次发布包含的 4 套；工作区里还在打磨的皮肤不进发布副本。
+  // 本插件提供的皮肤 id：表现层对它们都是慢写入（桩里按此建模）。
   const SKIN_IDS = [
     'meng-hai-you-yu',
     'shan-qing-ting-cai',
     'ying-mu-cai-yun',
     'pei-an-jie-xin',
+    'hu-po-mao-mi',
+    'hu-zi-a-huang',
   ]
 
   const timers = []
   const windowStub = {
     _: null,
-    localStorage: { store: new Map(), getItem(k) { return this.store.get(k) ?? null }, setItem(k, v) { this.store.set(k, String(v)) } },
+    localStorage: {
+      store: new Map(),
+      getItem(k) { return this.store.get(k) ?? null },
+      setItem(k, v) { this.store.set(k, String(v)) },
+      // 真实浏览器的 localStorage 有 removeItem —— 桩里缺了它，插件"点内置卡先清掉记住的皮肤"
+      // 这一步会抛 TypeError（被插件自己的 catch 记下来，于是症状只是"点了没反应"）。
+      // 桩缺少真实副作用 = 缺陷测不出来，这个坑本仓库记录在规则 8。
+      removeItem(k) { this.store.delete(k) },
+      clear() { this.store.clear() },
+    },
     innerHeight: 950,
     addEventListener() {}, removeEventListener() {},
     setTimeout: (fn, delay) => { timers.push({ fn, delay }); return timers.length },
@@ -372,14 +449,35 @@ function runBoot({ activeId = 'light', presenterDelayTicks = 3, config } = {}) {
     body.style.setProperty('--dsw-alias-bg-base', String(gradient ?? `skin:${id}`))
   }
 
-  const exports_ = loadBundle(windowStub, document_)
+  const exports_ = loadBundle(windowStub, document_, (call) => { jsxCalls.push(call) }, bundleSource)
+  /**
+   * 槽位注册记录。
+   *
+   * 页面是通过 `ctx.slots.inject('main', cb)` 注册的：`cb` 里才调用 `ctx.slots.register`，
+   * 并把 `{ setTheme }` 作为页面的 `inject` 面交出去。默认（`wireSlots: false`）**不执行** `cb`，
+   * 与旧行为完全一致；只有需要走"用户点卡片"这条真实入口时才执行它。
+   */
+  const slotRegistrations = []
+  let mainInjectCallback
   const ctx = {
     theme: ctxTheme,
     // The composition config, as the loader hands it to the row. `ambient: false` is the kill
     // switch, and it has to be readable from BOTH the factory-level helpers and the mount body.
     config,
     locale: { register() {} },
-    slots: { inject() {}, register: () => () => {} },
+    slots: {
+      inject: (name, callback) => {
+        if (wireSlots && name === 'main') {
+          mainInjectCallback = callback
+          callback()
+        }
+        return () => {}
+      },
+      register: (spec, component) => {
+        slotRegistrations.push({ name: spec?.name, spec, component })
+        return () => {}
+      },
+    },
     effect: (cb) => { try { cb() } catch (error) { globalThis.__bootError = error } return () => {} },
     // The subscription is REAL here: the plugin's echo guard is only meaningful if its own writes
     // actually reach it.
@@ -394,21 +492,81 @@ function runBoot({ activeId = 'light', presenterDelayTicks = 3, config } = {}) {
     inject() {},
   }
 
-  // 先写入"记住的皮肤"，模拟上一次会话选了山青婷彩。
-  windowStub.localStorage.setItem('theme-gallery:last-skin', 'shan-qing-ting-cai')
+  // 预置上一次会话的选择。`seedSkin: null` = 全新安装（从未选过任何主题）；
+  // `seedBuiltIn` = 用户在本面板里选过内置外观（浅色/深色），那是一次明确的选择。
+  if (seedSkin !== null) windowStub.localStorage.setItem('theme-gallery:last-skin', seedSkin)
+  if (seedBuiltIn !== undefined) {
+    windowStub.localStorage.setItem('theme-gallery:built-in-choice', seedBuiltIn)
+  }
 
   let applyError = null
   try { exports_.apply(ctx) } catch (error) { applyError = error }
 
-  // 驱动桩定时器：引导门由"几何稳定"循环推进，皮肤上色由"paintWatch"推进。
-  // 每轮先推一下表现层，模拟它在若干 tick 之后才开始写令牌。
-  for (let round = 0; round < 120 && timers.length > 0; round += 1) {
-    pumpPresenter()
-    const batch = timers.splice(0, timers.length)
-    for (const t of batch) { try { t.fn() } catch { /* 桩环境忽略 */ } }
+  /**
+   * 驱动桩定时器若干轮。
+   *
+   * 引导门由"几何稳定"循环推进，皮肤上色由"paintWatch"推进；每轮先推一下表现层，
+   * 模拟它在若干 tick 之后才开始写令牌。
+   * @param rounds - 最多推进多少轮（定时器排空即停）。
+   */
+  const drive = (rounds) => {
+    for (let round = 0; round < rounds && timers.length > 0; round += 1) {
+      pumpPresenter()
+      const batch = timers.splice(0, timers.length)
+      for (const t of batch) { try { t.fn() } catch { /* 桩环境忽略 */ } }
+    }
+    // 收尾再推几次，让最后一批写入落定。
+    for (let i = 0; i < 5; i += 1) pumpPresenter()
   }
-  // 收尾再推几次，让最后一批写入落定。
-  for (let i = 0; i < 5; i += 1) pumpPresenter()
+
+  drive(120)
+
+  /** 页面组件（真实的那一个），以及它的 `inject` 面。 */
+  const pageRegistration = () => {
+    const page = slotRegistrations.find((entry) => entry.name === 'main')
+    if (page === undefined) throw new Error('main 插槽没有注册（wireSlots 没打开？）')
+    return page
+  }
+
+  /**
+   * 页面的 `inject` 面，**解析一次就缓存**。
+   *
+   * 真实外壳在挂载页面时解析一次，把 `setTheme` 当成 prop 交下去；本桩若每次点击都重新解析，
+   * 就会多出一次"以当前活动主题为内容"的 `publish()` —— 那一次会把刚被点击清掉的
+   * `last-skin` 又写回去，于是**桩自己制造出**"点内置卡被弹回"的假象。
+   * @returns `{ setTheme }`。
+   */
+  const pageFace = () => {
+    const page = pageRegistration()
+    if (page.face === undefined) page.face = page.spec.inject()
+    return page.face
+  }
+
+  /**
+   * 走**真实入口**点一张卡片。
+   *
+   * 渲染页面组件（jsx 桩只记录元素、不真的挂载），从记录里取出那张卡片的 props，
+   * 再调用它的 `onSelect` —— 与用户点击调用的是同一个函数，包含"先记录选择"那一步。
+   * @param id - 卡片对应的主题 id。
+   */
+  const clickCard = (id) => {
+    const page = pageRegistration()
+    const face = pageFace()
+    page.component({
+      t: (key) => key,
+      setTheme: face.setTheme,
+      useStore: (selector) => selector({
+        ids: ['light', 'dark', 'ying-mu-cai-yun', 'shan-qing-ting-cai', 'meng-hai-you-yu'],
+        labels: {}, descriptions: {}, swatches: {},
+        selected: 'shan-qing-ting-cai', status: '', revision: 1,
+      }),
+      usePanelInfo: (selector) => selector({ activePanelId: 'theme-gallery' }),
+    })
+    const card = jsxCalls.find((call) => call.props?.id === id
+      && typeof call.props?.onSelect === 'function')
+    if (card === undefined) throw new Error(`卡片 ${id} 没有被渲染出来`)
+    card.props.onSelect(id)
+  }
 
   return {
     setThemeCalls, registrations, body, applyError, themeState, document_,
@@ -416,6 +574,13 @@ function runBoot({ activeId = 'light', presenterDelayTicks = 3, config } = {}) {
     paintedProbe: body.style.getPropertyValue('--dsw-alias-bg-base'),
     overrides: ctxTheme.overrides,
     adoptPersistedPreference,
+    drive,
+    clickCard,
+    localStorage: windowStub.localStorage,
+    jsxCalls,
+    mainInjectCallback,
+    removals,
+    sceneHtml,
   }
   } finally {
     restoreObservers()
@@ -549,6 +714,149 @@ check('ambient:false 时不再绘制装饰', off.innerHTMLWrites.length === 0)
 // 反向：省略配置必须保持原样，不能因为"读不到配置"就把功能关掉。
 const on = runBoot({ activeId: 'light' })
 check('省略配置时功能保持开启（与旧行为一致）', on.innerHTMLWrites.length > 0)
+
+// ── 全新安装要默认落到山青婷彩 ───────────────────────────────────────────────
+//
+// 用户的要求：激活本插件后默认使用山青婷彩。此前"从未选过任何主题"时插件什么都不做，
+// 新装用户看到的是系统默认主题，得自己去面板里点一下。
+//
+// wireSlots 打开，是为了让 `theme/change` 订阅真的存在（真实应用里它就是存在的）：
+// 默认皮肤的落地要靠"服务报告皮肤 → 记入 localStorage"这条回路被走完。
+const fresh = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true })
+check('全新安装：默认请求山青婷彩', fresh.setThemeCalls.includes('shan-qing-ting-cai'),
+  `实际 ${fresh.setThemeCalls.join(',') || '(无)'}`)
+check('全新安装：默认皮肤的配色真的写上了文档',
+  fresh.paintedProbe === 'skin:shan-qing-ting-cai', `实际 ${fresh.paintedProbe || '(空)'}`)
+// 默认皮肤特意**不写** last-skin：它每一步都由"没有选择"推导出来。写进去反而会把
+// 一次默认固化成一个"用户的选择"，之后用户改用系统设置里的外观就再也退不出来了。
+check('全新安装：不把默认写进 last-skin（免得把默认固化成用户选择）',
+  fresh.localStorage.getItem('theme-gallery:last-skin') === null)
+check('全新安装：默认皮肤的令牌层已叠加（颜色确实在生效）',
+  fresh.overrides.has('theme-gallery: palette'))
+
+// ── 用户选过内置外观，就不许再被皮肤弹回 ─────────────────────────────────────
+//
+// 这是"深色卡点不动"的机制性原因：只要 localStorage 里记着皮肤，恢复逻辑就会在
+// 每一次 publish 时把内置主题改回皮肤。用户明确选过内置外观后，恢复必须让路。
+const picked = runBoot({ activeId: 'dark', seedSkin: null, seedBuiltIn: 'dark', wireSlots: true })
+check('用户选过内置外观后，不再请求任何皮肤', picked.setThemeCalls.length === 0,
+  `实际 ${picked.setThemeCalls.join(',') || '(无)'}`)
+
+// ── 点内置卡片这条真实入口（用户报告的那次点击）─────────────────────────────
+//
+// 点卡片走的是页面组件里的 `onSelect`：先记录选择，再把点击交给外壳。
+// 这里渲染真实组件、取出那张卡片的 props、调用它的 onSelect —— 与用户点击同一个函数。
+const click = runBoot({ activeId: 'shan-qing-ting-cai', wireSlots: true })
+check('点卡片之前：记得的是山青婷彩',
+  click.localStorage.getItem('theme-gallery:last-skin') === 'shan-qing-ting-cai')
+const beforeClick = click.setThemeCalls.length
+click.clickCard('dark')
+click.drive(30)
+check('点深色后：主题服务停在 dark', click.themeState.active.id === 'dark',
+  `实际 ${click.themeState.active.id}`)
+check('点深色后：没有被恢复逻辑弹回皮肤',
+  click.setThemeCalls.slice(beforeClick).filter((id) => id === 'shan-qing-ting-cai').length === 0,
+  `点击后 setTheme 序列：${click.setThemeCalls.slice(beforeClick).join(',') || '(无)'}`)
+check('点深色后：记住的皮肤已被清掉',
+  click.localStorage.getItem('theme-gallery:last-skin') === null)
+check('点深色后：内置选择被记下（重启后不会被默认皮肤覆盖）',
+  click.localStorage.getItem('theme-gallery:built-in-choice') === 'dark')
+
+// ── 点皮肤卡：选择要能跨重启 ─────────────────────────────────────────────────
+//
+// 与上面相反的方向：点皮肤卡时 `setTheme` 是**不加守卫**的槽位动作，所以订阅者会收到
+// 那次 `theme/change` 并跑 `publish()` —— 皮肤 id 就是在这条路上写进 localStorage 的。
+const pickSkin = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true })
+check('点皮肤卡之前：还没有记住的皮肤', pickSkin.localStorage.getItem('theme-gallery:last-skin') === null)
+pickSkin.clickCard('meng-hai-you-yu')
+pickSkin.drive(30)
+check('点皮肤卡后：主题服务停在梦海游鱼',
+  pickSkin.themeState.active.id === 'meng-hai-you-yu', `实际 ${pickSkin.themeState.active.id}`)
+check('点皮肤卡后：皮肤 id 被记入 localStorage（下次启动复用）',
+  pickSkin.localStorage.getItem('theme-gallery:last-skin') === 'meng-hai-you-yu')
+check('点皮肤卡后：内置选择的旧标记被清掉',
+  pickSkin.localStorage.getItem('theme-gallery:built-in-choice') === null)
+
+// ── 切到内置主题（浅色/深色）后，上一套皮肤的侧栏素材必须保留 ─────────────────
+//
+// 用户明确要求保留的设计（"惊喜"）：先选一套主题皮肤，再切到浅色/深色 —— 调色回到系统外观，
+// 而侧栏里的气球 / 游鱼 / 山峦等素材**留在原处**。浅色/深色卡片的说明文字就在宣传它。
+//
+// 机制：素材画在 `.dsh-amb-control` 图层里，而"该主题没有装饰"这一支只清
+// `#dsh-theme-ambient` 座位（历史容器），从不触碰活动图层 —— 活动图层只由 `drawScene()` 改写。
+// 这条断言把该行为钉住，一个"顺手清理"的改动会让它变红。
+const scenery = runBoot({ activeId: 'ying-mu-cai-yun', seedSkin: 'ying-mu-cai-yun', wireSlots: true })
+const beforeScene = scenery.sceneHtml()
+check('切换前：营慕彩云的气球场景已画进装饰层',
+  typeof beforeScene === 'string' && beforeScene.length > 500,
+  `实际 ${beforeScene === null ? '(无装饰层)' : `${beforeScene.length} 字符`}`)
+const writesBefore = scenery.innerHTMLWrites.length
+const layerRemovalsBefore = scenery.removals.filter((r) => r.className.includes('dsh-amb-control')).length
+scenery.clickCard('dark')
+scenery.drive(30)
+check('切到深色后：主题服务真的停在 dark（没有弹回皮肤）',
+  scenery.themeState.active.id === 'dark', `实际 ${scenery.themeState.active.id}`)
+check('切到深色后：没有清空装饰层（没有新的场景写入）',
+  scenery.innerHTMLWrites.length === writesBefore,
+  `新增写入 ${scenery.innerHTMLWrites.length - writesBefore} 次`)
+check('切到深色后：也没有把装饰层节点删掉',
+  scenery.removals.filter((r) => r.className.includes('dsh-amb-control')).length === layerRemovalsBefore)
+check('切到深色后：装饰层里仍是上一套皮肤的素材（这就是「惊喜」）',
+  scenery.sceneHtml() === beforeScene)
+
+// 反向：切到另一套**有装饰**的皮肤时，素材必须真的被换掉 —— 不能把上一套留在屏幕上。
+const swap = runBoot({ activeId: 'ying-mu-cai-yun', seedSkin: 'ying-mu-cai-yun', wireSlots: true })
+const caiyunScene = swap.sceneHtml()
+swap.clickCard('shan-qing-ting-cai')
+swap.drive(30)
+check('切到另一套皮肤时：素材被替换成新皮肤的（不留上一套）',
+  typeof swap.sceneHtml() === 'string' && swap.sceneHtml() !== caiyunScene,
+  `实际 ${swap.sceneHtml() === caiyunScene ? '仍是彩云场景' : '已替换'}`)
+
+// ── 反证：上面两条新断言必须真的会失败（硬性规则 9）──────────────────────────
+//
+// 合成样本上通过证明不了真实文件上还有效；而"通过"看起来和真的通过一模一样。
+// 这里把两处修复点分别改坏，再从**改坏的源码**加载 bundle 跑同一段流程，
+// 断言结论必须翻转。每一步都先确认"变异真的改动了源码"，否则下面的结论什么都没测。
+
+const mutChoice = source.replace('if (builtInChoice() !== null) return null', 'if (false) return null')
+check('反证 1 真的改动了源码（内置选择不再优先）', mutChoice !== source)
+const bounced = runBoot({
+  activeId: 'shan-qing-ting-cai', wireSlots: true, bundleSource: mutChoice,
+})
+bounced.clickCard('dark')
+bounced.drive(30)
+check('反证 1：去掉"内置选择优先"后，点深色确实会被弹回皮肤',
+  bounced.themeState.active.id === 'shan-qing-ting-cai'
+  && bounced.setThemeCalls.includes('shan-qing-ting-cai'),
+  `实际 active=${bounced.themeState.active.id} 序列=${bounced.setThemeCalls.join(',')}`)
+
+const mutDefault = source.replace('return DEFAULT_SKIN\n', 'return null\n')
+check('反证 2 真的改动了源码（默认皮肤不再启用）', mutDefault !== source)
+const noDefault = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, bundleSource: mutDefault })
+check('反证 2：去掉默认皮肤后，全新安装不会再请求山青婷彩',
+  !noDefault.setThemeCalls.includes('shan-qing-ting-cai'),
+  `实际 ${noDefault.setThemeCalls.join(',') || '(无)'}`)
+
+// 反证 3：把"没有装饰时保留活动图层"改坏（模拟一次"顺手清理"），"惊喜"断言必须翻转。
+//
+// 注意 `removeAllAmbientSeats()` 在源码里出现多次，所以变异锚在**紧随其后的那一行**上，
+// 否则改的是别的分支；同时断言"变异真的改动了源码"。
+const mutClear = source.replace(
+  /removeAllAmbientSeats\(\)\r?\n(\s*)if \(record\) noteAmbientAttempt\(\{ kind, column: true, band: '无装饰' \}\)/,
+  (whole, indent) => 'for (const node of document.querySelectorAll(\'.dsh-amb-control, .dsh-amb-control-scene\'))'
+    + ` node.remove()\n${indent}if (record) noteAmbientAttempt({ kind, column: true, band: '无装饰' })`,
+)
+check('反证 3 真的改动了源码（没有装饰时改为清空活动图层）', mutClear !== source)
+const cleared = runBoot({
+  activeId: 'ying-mu-cai-yun', seedSkin: 'ying-mu-cai-yun', wireSlots: true, bundleSource: mutClear,
+})
+const clearedBefore = cleared.sceneHtml()
+cleared.clickCard('dark')
+cleared.drive(30)
+check('反证 3：一旦在"无装饰"分支清理图层，「惊喜」素材就没了（说明上面那组断言测的是真通道）',
+  clearedBefore !== null && cleared.sceneHtml() === null,
+  `实际 ${cleared.sceneHtml() === null ? '装饰层已消失' : '装饰层仍在'}`)
 
 if (failed > 0) {
   console.error(`\n${failed} boot path check(s) failed`)

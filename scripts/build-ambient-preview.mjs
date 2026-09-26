@@ -100,10 +100,13 @@ const builderSource = [
   block('jiexinAmbientScene'),
   block('gcFeatherMarkup'),
   block('fengchenAmbientScene'),
+  block('petHazeMarkup'),
+  block('humaoAmbientScene'),
+  block('ahuangAmbientScene'),
 ].join('\n\n')
 
 // eslint-disable-next-line no-new-func
-const builders = new Function(`${builderSource}\nreturn { shanAmbientScene, dreamAmbientScene, caiyunAmbientScene, dongyunAmbientScene, junyueAmbientScene, jiexinAmbientScene, fengchenAmbientScene }`)()
+const builders = new Function(`${builderSource}\nreturn { shanAmbientScene, dreamAmbientScene, caiyunAmbientScene, dongyunAmbientScene, junyueAmbientScene, jiexinAmbientScene, fengchenAmbientScene, humaoAmbientScene, ahuangAmbientScene }`)()
 
 /**
  * Build one theme's scene from its bundled `ambient` config through the real
@@ -121,6 +124,8 @@ function sceneFor(theme) {
     case 'junyue': return builders.junyueAmbientScene(a.stars)
     case 'jiexin': return builders.jiexinAmbientScene(a.dust)
     case 'fengchen': return builders.fengchenAmbientScene(a.feathers, a.dew)
+    case 'humao': return builders.humaoAmbientScene(a.dust)
+    case 'ahuang': return builders.ahuangAmbientScene(a.dust)
     default: throw new Error(`theme ${theme.id}: ambient.kind "${a.kind}" has no builder`)
   }
 }
@@ -136,6 +141,8 @@ const KIND_NOTES = {
   junyue: '星空 + 明月 + 夜云 + 流星 + 山峦剪影 + 松树',
   jiexin: '雾山 + 禅意圆相与坐禅人影 + 香炉青烟 + 浮尘 + 禅语',
   fengchen: '晨光扇面 + 凤羽飘落 + 笔触凤凰往返飞行 + 晨露',
+  humao: '暖阳光晕 + 晒暖窗台 + 坐姿虎斑猫（摆尾/抖耳）+ 蜷卧酣睡猫（呼吸 + 小 z）+ 阳光浮尘（原创）',
+  ahuang: '金色光晕 + 田埂 + 中黄田园犬（镰刀尾摇摆/歪头/铃铛项圈）+ 干草丛 + 缃色皮球 + 蒲公英绒毛（原创）',
 }
 
 /** The bundled themes, in embed order (alphabetical by file). */
@@ -274,11 +281,11 @@ const html = `<!doctype html>
 </style>
 </head>
 <body>
-  <h1>DSH 侧栏氛围装饰（复刻自电商新零售系统）</h1>
+  <h1>DSH 侧栏氛围装饰预览</h1>
   <p class="lede">
     下面每一段 CSS 与每一段场景标记都<strong>直接读自 <code>lib/client.js</code></strong>
     （与 <code>tests/check-ambient-render.mjs</code> 同一提取机制），不是另抄一份；
-    七套皮肤各画两栏，宽窄两种宽度都画出来，因为侧栏可拖拽、而装饰是按百分比自适应的。
+    全部皮肤各画两栏，宽窄两种宽度都画出来，因为侧栏可拖拽、而装饰是按百分比自适应的。
     场景挂在 <code>#dsh-theme-ambient</code> 上，该元素 <code>pointer-events:none</code>
     且位于导航之下，不会遮挡任何菜单项。
   </p>

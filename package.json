@@ -1,7 +1,7 @@
 {
   "name": "dsh-theme-gallery",
-  "version": "0.2.0",
-  "description": "A community theme gallery for DeepSeek Harness (DSH): JSON-defined skins with full-screen coverage and ported sidebar scenery, switched from the plugin's own sidebar panel — adding skins needs no code change",
+  "version": "0.3.0",
+  "description": "A theme gallery for DeepSeek Harness (DSH): six JSON-defined skins with full-screen coverage and sidebar scenery, plus built-in light/dark cards, switched from the panel under the sidebar's Plugins icon — adding skins needs no code change",
   "author": "renjie2026 (https://github.com/renjie2026)",
   "license": "MIT",
   "repository": {
@@ -51,6 +51,8 @@
     "test:order": "node tests/check-declaration-order.mjs",
     "test:tdz": "node tests/check-tdz-order.mjs && node tests/check-tdz-logic.mjs",
     "test:theme": "node tests/check-theme-contribution.mjs",
+    "test:cards": "node tests/check-card-order.mjs",
+    "test:copy": "node tests/check-copy-consistency-logic.mjs",
     "test:ambient": "node tests/check-ambient-render.mjs",
     "test:boot": "node tests/check-boot-timing.mjs",
     "test:safety": "node tests/check-boot-safety.mjs",
@@ -60,9 +62,10 @@
     "test:scope": "node tests/check-scope-reach.mjs",
     "test:scopelogic": "node tests/check-scope-reach-logic.mjs",
     "test:preview": "node scripts/build-ambient-preview.mjs",
+    "preview:panel": "node scripts/build-panel-preview.mjs",
     "test:calls": "node tests/check-undefined-calls.mjs",
     "test:emitguard": "node tests/check-self-emit-guard.mjs && node tests/check-self-emit-guard-logic.mjs",
-    "test": "npm run test:schema && npm run test:host && npm run test:store && npm run test:order && npm run test:tdz && npm run test:theme && npm run test:ambient && npm run test:boot && npm run test:safety && npm run test:module && npm run test:bounded && npm run test:bootpath && npm run test:scope && npm run test:scopelogic && npm run test:calls && npm run test:emitguard",
+    "test": "npm run test:schema && npm run test:host && npm run test:store && npm run test:order && npm run test:tdz && npm run test:theme && npm run test:cards && npm run test:copy && npm run test:ambient && npm run test:boot && npm run test:safety && npm run test:module && npm run test:bounded && npm run test:bootpath && npm run test:scope && npm run test:scopelogic && npm run test:calls && npm run test:emitguard",
     "prepack": "node scripts/embed-themes.mjs",
     "publish:check": "node scripts/publish-check.mjs",
     "embed-themes": "node scripts/embed-themes.mjs",
@@ -73,7 +76,7 @@
     "skin:enable": "node tools/profile-skin.mjs enable",
     "skin:rollback": "node tools/profile-skin.mjs rollback",
     "watch:renderer": "node tools/watch-renderer.mjs",
-    "check": "npm run typecheck && npm run test && npm run embed-themes && npm run preview:ambient",
+    "check": "npm run typecheck && npm run test && npm run embed-themes && npm run preview:ambient && npm run preview:panel",
     "prepublishOnly": "npm run publish:check"
   },
   "keywords": [

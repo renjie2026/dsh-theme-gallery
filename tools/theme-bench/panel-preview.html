@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>DSH 主题皮肤面板 · 卡片顺序预览</title>
+<style>
+  /* ── the default skin's own tokens, verbatim from lib/client.js ─────────
+     The panel's stylesheet reads these variables, so without them it would
+     render unthemed and the preview would be judging the wrong picture. */
+  :root {
+    --dsw-alias-bg-base: linear-gradient(to bottom,#F7FCF9 0%,#EDF7F1 55%,#E4F2EA 100%);
+    --dsw-alias-bg-layer-1: #FBFEFC;
+    --dsw-alias-bg-layer-2: #FFFFFF;
+    --dsw-alias-bg-layer-3: #FFFFFF;
+    --dsw-alias-bg-overlay: #E3F1E8;
+    --dsw-alias-bg-skeleton: #2F7D5E14;
+    --dsw-alias-bg-module-platform: #E4F3EA;
+    --dsw-alias-bg-multi-select: #E4F3EA;
+    --dsw-alias-border-l1: #2F7D5E0F;
+    --dsw-alias-border-l2: #2F7D5E21;
+    --dsw-alias-border-l3: #2F7D5E2E;
+    --dsw-alias-border-l4: #2F7D5E3D;
+    --dsw-alias-brand-primary: #2F7D5E;
+    --dsw-alias-brand-primary-invert: #FFFFFF;
+    --dsw-alias-brand-text: #2F7D5E;
+    --dsw-alias-label-primary: #1F4638;
+    --dsw-alias-label-primary-bluish: #1F4638;
+    --dsw-alias-label-secondary: #3C6B57;
+    --dsw-alias-label-tertiary: #5C8474;
+    --dsw-alias-label-caption: #5C8474;
+    --dsw-alias-label-dimmed: #8AA79B;
+    --dsw-alias-label-primary-dimmed: #3C6B57;
+    --dsw-alias-label-primary-foreground: #FFFFFF;
+    --dsw-alias-label-primary-inverted: #FFFFFF;
+    --dsw-alias-link: #D97BA4;
+    --dsw-alias-interactive-bg-hover: #3E9B7A14;
+    --dsw-alias-interactive-bg-active: #E88BB02E;
+    --dsw-alias-interactive-bg-hover-solid: #E4F3EA;
+    --dsw-alias-interactive-bg-hover-accent: #E88BB03D;
+    --dsw-alias-button-primary-fill: #2F7D5E;
+    --dsw-alias-button-primary-hover: #3E9B7A;
+    --dsw-alias-button-primary-dimmed: #2F7D5E47;
+    --dsw-alias-button-ghost-active-fill: #E88BB029;
+    --dsw-alias-button-ghost-active-border: #E88BB0;
+    --dsw-alias-button-ghost-active-hover: #E88BB047;
+    --dsw-alias-button-info-fill: #4C9B78;
+    --dsw-alias-button-info-hover: #3E9B7A;
+    --dsw-alias-button-elevated-fill: #FFFFFF;
+    --dsw-alias-button-floating-fill: #FFFFFF;
+    --dsw-alias-button-floating-hover: #F4FBF7;
+    --dsw-alias-button-contrast-fill: #1F4638;
+    --dsw-alias-markdown-code-block: #EAF7F0;
+    --dsw-alias-markdown-code-block-banner: #DCEEE2;
+    --dsw-alias-markdown-inline-code: #E4F3EA;
+    --dsw-alias-markdown-citation: #E4F3EA;
+    --dsw-alias-markdown-tag: #E4F3EA;
+    --dsw-alias-markdown-placeholder: #DCEEE2;
+    --dsw-alias-markdown-code-segment-selected: #E88BB029;
+    --dsw-alias-markdown-code-segment-unselected: #EAF7F0;
+    --dsw-alias-scrollbar-bg-l1: #2F7D5E29;
+    --dsw-alias-scrollbar-bg-l2: #2F7D5E38;
+    --dsw-alias-scrollbar-hover-l1: #2F7D5E52;
+    --dsw-alias-scrollbar-hover-l2: #2F7D5E66;
+    --dsw-alias-tooltip-bg: #1F4638;
+    --dsw-alias-toast-bg: #FFFFFF;
+    --dsw-alias-state-error-primary: #C65B6A;
+    --dsw-alias-state-error-secondary: #DB5A6B;
+    --dsw-alias-state-success-primary: #21A675;
+    --dsw-alias-state-success-secondary: #2F7D5E;
+    --dsw-alias-state-success-tertiary: #9DCDBA;
+    --dsw-alias-state-warn-primary: #B97F3A;
+    --dsw-alias-state-warn-secondary: #D9A45E;
+    --dsw-alias-state-warn-tertiary: #EFDCC0;
+    --dsw-alias-state-warn-label: #8A5A22;
+    --dsw-alias-state-business-primary: #E88BB0;
+    --dsw-alias-state-business-tertiary: #F8A8C2;
+    --dsw-specific-sidebar-fill: linear-gradient(to bottom,#EAF7F0 0%,#D8EFE4 20%,#C9E8DA 36%,#BFE2D2 50%,#B4DCCA 62%,#A8D2BE 74%,#9CC9B2 86%,#90C0A8 100%);
+  }
+
+  /* ── everything below this marker is the plugin's own stylesheet ─────── */
+.tg-page{padding:20px 24px;display:flex;flex-direction:column;gap:16px;height:100%;overflow:auto}.tg-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.tg-title{font-size:15px;font-weight:600;color:var(--dsw-alias-label-primary)}.tg-hint{font-size:12px;color:var(--dsw-alias-label-tertiary)}.tg-debug{font:11px/1.6 ui-monospace,Consolas,monospace;color:var(--dsw-alias-label-tertiary);background:var(--dsw-alias-bg-layer-3);border:.5px solid var(--dsw-alias-border-l3);border-radius:8px;padding:8px 10px;word-break:break-all}.tg-warn{color:var(--dsw-alias-state-warn-primary);border-color:var(--dsw-alias-state-warn-primary)}.tg-diag{margin-top:14px;padding-top:12px;border-top:.5px solid var(--dsw-alias-border-l2);display:flex;flex-direction:column;gap:10px}.tg-diag-note{font-size:12px;line-height:1.5;color:var(--dsw-alias-label-secondary)}.tg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}.tg-card{display:flex;flex-direction:column;gap:8px;padding:12px;text-align:left;cursor:pointer;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);border:.5px solid var(--dsw-alias-border-l3);border-radius:10px;font:inherit;transition:border-color .15s,background .15s}.tg-card:hover{background:var(--dsw-alias-interactive-bg-hover)}.tg-card[aria-pressed="true"]{border-color:var(--dsw-alias-brand-primary);box-shadow:inset 0 0 0 1px var(--dsw-alias-brand-primary)}.tg-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.tg-name{font-size:13.5px;font-weight:600}.tg-badge{font-size:11px;padding:1px 7px;border-radius:999px;background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary-foreground)}.tg-desc{font-size:12px;color:var(--dsw-alias-label-secondary);line-height:1.5}.tg-strip{display:flex;height:6px;border-radius:999px;overflow:hidden;border:.5px solid var(--dsw-alias-border-l3)}.tg-strip span{flex:1}
+
+  /* ── preview chrome only ────────────────────────────────────────────── */
+  body{margin:0;padding:24px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);
+    font:14px/1.6 system-ui,"Segoe UI","Microsoft YaHei",sans-serif}
+  .pv-note{max-width:1100px;margin:0 auto 14px;font-size:12.5px;line-height:1.7;
+    color:var(--dsw-alias-label-secondary)}
+  .pv-note code{background:var(--dsw-alias-bg-layer-3);padding:1px 5px;border-radius:4px}
+  .pv-frame{max-width:1100px;margin:0 auto;background:var(--dsw-alias-bg-base);
+    border:.5px solid var(--dsw-alias-border-l3);border-radius:12px;overflow:hidden}
+  .pv-rank{font:11px/1.4 ui-monospace,Consolas,monospace;color:var(--dsw-alias-label-tertiary);
+    border-top:1px dashed var(--dsw-alias-border-l3);padding-top:6px}
+</style>
+</head>
+<body>
+  <p class="pv-note">
+    本页由 <code>scripts/build-panel-preview.mjs</code> 生成：面板样式 <code>PAGE_CSS</code>、
+    顺序表 <code>CARD_ORDER</code>、<code>cardsInDisplayOrder()</code>、内置卡文案、
+    默认皮肤与内联皮肤数组，全部<strong>直接读自 <code>lib/client.js</code> 并原样执行</strong>，
+    不是另抄一份。卡片顺序即出货顺序；每张卡下方的
+    <code>序号 … · id</code> 一行是本页额外的校对标注，应用里没有。当前配色取自默认皮肤
+    山青婷彩。
+  </p>
+  <div class="pv-frame">
+    <div class="tg-page">
+      <div class="tg-head">
+        <span class="tg-title">主题皮肤</span>
+        <span class="tg-hint">点一下即切换，选中会记入设置</span>
+        <span class="tg-hint">9 款皮肤（另有内置浅色/深色两张卡）</span>
+        <span class="tg-hint">v0.3.0</span>
+      </div>
+      <div class="tg-grid">
+
+      <button type="button" class="tg-card" aria-pressed="false" title="系统默认浅色外观：与「设置 → 通用 → 外观」里的浅色是同一套配色。先选中主题皮肤，再切换浅色/深色 会有惊喜哦">
+        <div class="tg-card-top">
+          <span class="tg-name">浅色</span>
+          
+        </div>
+        
+        <span class="tg-desc">系统默认浅色外观：与「设置 → 通用 → 外观」里的浅色是同一套配色。先选中主题皮肤，再切换浅色/深色 会有惊喜哦</span>
+        <span class="pv-rank">序号 99 · light</span>
+      </button>
+
+      <button type="button" class="tg-card" aria-pressed="false" title="系统默认深色外观：与「设置 → 通用 → 外观」里的深色是同一套配色。先选中主题皮肤，再切换浅色/深色 会有惊喜哦">
+        <div class="tg-card-top">
+          <span class="tg-name">深色</span>
+          
+        </div>
+        
+        <span class="tg-desc">系统默认深色外观：与「设置 → 通用 → 外观」里的深色是同一套配色。先选中主题皮肤，再切换浅色/深色 会有惊喜哦</span>
+        <span class="pv-rank">序号 98 · dark</span>
+      </button>
+
+      <button type="button" class="tg-card" aria-pressed="false" title="营幕之下，彩云为伴 —— 复刻自电商新零售系统管理后台同名主题">
+        <div class="tg-card-top">
+          <span class="tg-name">营慕彩云</span>
+          
+        </div>
+        <span class="tg-strip"><span style="background:#2D5A3D"></span><span style="background:#3E6B4A"></span><span style="background:#FFB347"></span></span>
+        <span class="tg-desc">营幕之下，彩云为伴 —— 复刻自电商新零售系统管理后台同名主题</span>
+        <span class="pv-rank">序号 96 · ying-mu-cai-yun</span>
+      </button>
+
+      <button type="button" class="tg-card" aria-pressed="true" title="青山叠翠，蜓舞生姿 —— 复刻自电商新零售系统管理后台同名主题">
+        <div class="tg-card-top">
+          <span class="tg-name">山青婷彩</span>
+          <span class="tg-badge">已应用</span>
+        </div>
+        <span class="tg-strip"><span style="background:#2F7D5E"></span><span style="background:#3C6B57"></span><span style="background:#E88BB0"></span></span>
+        <span class="tg-desc">青山叠翠，蜓舞生姿 —— 复刻自电商新零售系统管理后台同名主题</span>
+        <span class="pv-rank">序号 95 · shan-qing-ting-cai</span>
+      </button>
+
+      <button type="button" class="tg-card" aria-pressed="false" title="冬云低垂，江畔泛舟 —— 复刻自电商新零售系统管理后台同名主题">
+        <div class="tg-card-top">
+          <span class="tg-name">江畔冬云</span>
+          
+        </div>
+        <span class="tg-strip"><span style="background:#3A556B"></span><span style="background:#3A556B"></span><span style="background:#F2C879"></span></span>
+        <span class="tg-desc">冬云低垂，江畔泛舟 —— 复刻自电商新零售系统管理后台同名主题</span>
+        <span class="pv-rank">序号 92 · jiang-pan-dong-yun</span>
+      </button>
+
+      <button type="button" class="tg-card" aria-pressed="false" title="檀香禅影，自在安顿 —— 复刻自电商新零售系统管理后台同名主题">
+        <div class="tg-card-top">
+          <span class="tg-name">佩安杰心</span>
+          
+        </div>
+        <span class="tg-strip"><span style="background:#7A5C3E"></span><span style="background:#5E4A38"></span><span style="background:#B4653A"></span></span>
+        <span class="tg-desc">檀香禅影，自在安顿 —— 复刻自电商新零售系统管理后台同名主题</span>
+        <span class="pv-rank">序号 91 · pei-an-jie-xin</span>
+      </button>
+
+      <button type="button" class="tg-card" aria-pressed="false" title="军山沐月，松风肃立 —— 复刻自电商新零售系统管理后台同名主题">
+        <div class="tg-card-top">
+          <span class="tg-name">徐山军月</span>
+          
+        </div>
+        <span class="tg-strip"><span style="background:#2C3B2E"></span><span style="background:#3A4A3C"></span><span style="background:#D4B266"></span></span>
+        <span class="tg-desc">军山沐月，松风肃立 —— 复刻自电商新零售系统管理后台同名主题</span>
+        <span class="pv-rank">序号 90 · xu-shan-jun-yue</span>
+      </button>
+
+      <button type="button" class="tg-card" aria-pressed="false" title="晨光初照，凤舞光彩 —— 复刻自电商新零售系统管理后台同名主题">
+        <div class="tg-card-top">
+          <span class="tg-name">光彩凤晨</span>
+          
+        </div>
+        <span class="tg-strip"><span style="background:#A31515"></span><span style="background:#7A3B2E"></span><span style="background:#FFE082"></span></span>
+        <span class="tg-desc">晨光初照，凤舞光彩 —— 复刻自电商新零售系统管理后台同名主题</span>
+        <span class="pv-rank">序号 89 · guang-cai-feng-chen</span>
+      </button>
+
+      <button type="button" class="tg-card" aria-pressed="false" title="梦幻海洋，游鱼作伴 —— 复刻自电商新零售系统管理后台的默认主题">
+        <div class="tg-card-top">
+          <span class="tg-name">梦海游鱼</span>
+          
+        </div>
+        <span class="tg-strip"><span style="background:#177CB0"></span><span style="background:#2E4A63"></span><span style="background:#177CB0"></span></span>
+        <span class="tg-desc">梦幻海洋，游鱼作伴 —— 复刻自电商新零售系统管理后台的默认主题</span>
+        <span class="pv-rank">序号 80 · meng-hai-you-yu</span>
+      </button>
+
+      <button type="button" class="tg-card" aria-pressed="false" title="琥珀暖光，双猫伴读 —— 原创宠物主题：两只虎斑短毛猫守着洒满阳光的窗台">
+        <div class="tg-card-top">
+          <span class="tg-name">琥珀猫咪</span>
+          
+        </div>
+        <span class="tg-strip"><span style="background:#9C5F24"></span><span style="background:#6A4E2F"></span><span style="background:#CA6924"></span></span>
+        <span class="tg-desc">琥珀暖光，双猫伴读 —— 原创宠物主题：两只虎斑短毛猫守着洒满阳光的窗台</span>
+        <span class="pv-rank">序号 76 · hu-po-mao-mi</span>
+      </button>
+
+      <button type="button" class="tg-card" aria-pressed="false" title="麦香田园，黄犬相迎 —— 原创宠物主题：中黄田园犬「虎子阿黄」摇着尾巴守在田埂上">
+        <div class="tg-card-top">
+          <span class="tg-name">虎子阿黄</span>
+          
+        </div>
+        <span class="tg-strip"><span style="background:#896C39"></span><span style="background:#5D4E2B"></span><span style="background:#F0C239"></span></span>
+        <span class="tg-desc">麦香田园，黄犬相迎 —— 原创宠物主题：中黄田园犬「虎子阿黄」摇着尾巴守在田埂上</span>
+        <span class="pv-rank">序号 75 · hu-zi-a-huang</span>
+      </button>
+      </div>
+    </div>
+  </div>
+  <p class="pv-note">顺序自检：99 浅色 → 98 深色 → 96 营慕彩云 → 95 山青婷彩 → 92 江畔冬云 → 91 佩安杰心 → 90 徐山军月 → 89 光彩凤晨 → 80 梦海游鱼 → 76 琥珀猫咪 → 75 虎子阿黄</p>
+</body>
+</html>

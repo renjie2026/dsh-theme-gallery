@@ -92,10 +92,13 @@ const builderSource = [
   block('jiexinAmbientScene'),
   block('gcFeatherMarkup'),
   block('fengchenAmbientScene'),
+  block('petHazeMarkup'),
+  block('humaoAmbientScene'),
+  block('ahuangAmbientScene'),
 ].join('\n\n')
 
 // eslint-disable-next-line no-new-func
-const api = new Function(`${builderSource}\nreturn { shanAmbientScene, dragonflyMarkup, dreamAmbientScene, seaweedMarkup, rippleMarkup, dragonflyBlock, bladeMarkup, fishMarkup, ymSeaSvg, ymBalloonMarkup, caiyunAmbientScene, jpBoatMarkup, dongyunAmbientScene, xsPineMarkup, junyueAmbientScene, jiexinAmbientScene, gcFeatherMarkup, fengchenAmbientScene, open }`)()
+const api = new Function(`${builderSource}\nreturn { shanAmbientScene, dragonflyMarkup, dreamAmbientScene, seaweedMarkup, rippleMarkup, dragonflyBlock, bladeMarkup, fishMarkup, ymSeaSvg, ymBalloonMarkup, caiyunAmbientScene, jpBoatMarkup, dongyunAmbientScene, xsPineMarkup, junyueAmbientScene, jiexinAmbientScene, gcFeatherMarkup, fengchenAmbientScene, petHazeMarkup, humaoAmbientScene, ahuangAmbientScene, open }`)()
 
 // ── 山青婷彩 ─────────────────────────────────────────────────────────────────
 
@@ -302,6 +305,78 @@ check('the phoenix wings flap on the gc keyframe',
   (fengchen.match(/animation:dsh-amb-gc-wing 3.4s/g) ?? []).length === 2)
 check('the phoenix eye is the theme gold', fengchen.includes('r="2.5"'))
 
+// ── 琥珀猫咪（原创）────────────────────────────────────────────────────────────
+
+const humao = api.humaoAmbientScene(6)
+check('humao has a scene root carrying its own positioning',
+  humao.startsWith('<div class="hm"') && /class="hm" style="[^"]*position:absolute/.test(humao))
+check('humao opens with the shared pet haze masked at the band edge',
+  humao.includes(api.petHazeMarkup('rgba(255,214,140,.5)', 'dsh-amb-hm-glow'))
+    && /class="pet-haze" style="[^"]*mask-image:linear-gradient\(to bottom,transparent 0,#000 42%\)/.test(humao))
+check('humao draws exactly two cats',
+  (humao.match(/class="hm-cat-/g) ?? []).length === 2)
+check('the sitting tabby carries ears, face and tabby stripes',
+  humao.includes('d="M26 46 L23 31 L35 39 Z"')
+    && humao.includes('d="M36 58 L40 58 L38 61 Z"')
+    && (humao.match(/stroke="#8A5A2B"/g) ?? []).length >= 3)
+// The head/body DETACH the user reported is a geometry fact, so pin it numerically.
+// The connection is the HEAD being placed low enough (user-specified: no neck shape):
+// the body's top edge at the head's center-x (38) sits at y≈61.25 for the pinned
+// body path (M30 78 C34 64 42 56 52 52 …), so a connected head needs cy + r >= 63.25.
+// v1's head (cy=26, bottom 41) was the floating head the user reported.
+const hmHead = /<circle cx="38" cy="([\d.]+)" r="([\d.]+)"/.exec(humao)
+check('the sitting cat\u2019s head reaches the body (the reported detach)',
+  hmHead !== null && Number(hmHead[1]) + Number(hmHead[2]) >= 63.25)
+check('the curled cat sleeps on its own breathing keyframe',
+  (humao.match(/animation:dsh-amb-hm-breathe /g) ?? []).length === 1)
+check('the sitting cat sways its tail and twitches an ear',
+  (humao.match(/animation:dsh-amb-hm-tail /g) ?? []).length === 1
+    && (humao.match(/animation:dsh-amb-hm-ear /g) ?? []).length === 1)
+check('two z glyphs drift off the sleeping cat',
+  (humao.match(/class="hm-z hm-z-\d"/g) ?? []).length === 2
+    && (humao.match(/animation:dsh-amb-hm-zzz /g) ?? []).length === 2)
+check('humao seeds the requested dust count', (humao.match(/class="hm-dust"/g) ?? []).length === 6)
+check('humao dust count is clamped', (api.humaoAmbientScene(99).match(/class="hm-dust"/g) ?? []).length === 20)
+check('humao dust carries per-mote inline geometry',
+  /class="hm-dust" style="[^"]*left:\d+%/.test(humao))
+check('humao grounds the cats on a sunlit sill with a hairline',
+  humao.includes('class="hm-sill"') && humao.includes('class="hm-sill-line"'))
+
+// ── 虎子阿黄（原创）────────────────────────────────────────────────────────────
+
+const ahuang = api.ahuangAmbientScene(5)
+check('ahuang has a scene root carrying its own positioning',
+  ahuang.startsWith('<div class="hz"') && /class="hz" style="[^"]*position:absolute/.test(ahuang))
+check('ahuang opens with its own golden haze',
+  (ahuang.match(/class="pet-haze"/g) ?? []).length === 1
+    && ahuang.includes('rgba(240,194,57,.42)'))
+check('ahuang draws one dog with the pastoral-dog markings',
+  (ahuang.match(/class="hz-dog"/g) ?? []).length === 1
+    && ahuang.includes('d="M28 40 C24 30 23 23 26 18 C30 21 34 28 35.5 36 Z"')
+    && ahuang.includes('d="M76 70 C92 66 100 50 92 36 C88 30 82 29 78 32"'))
+// Same detach guard for the dog: head-circle bottom minus torso-ellipse top >= 2.
+const hzHead = /<circle cx="42" cy="([\d.]+)" r="([\d.]+)"/.exec(ahuang)
+const hzTorso = /<ellipse cx="44" cy="([\d.]+)" rx="18" ry="([\d.]+)"/.exec(ahuang)
+check('the dog\u2019s head overlaps its body too (the reported detach)',
+  hzHead !== null && hzTorso !== null
+    && Number(hzHead[1]) + Number(hzHead[2]) - (Number(hzTorso[1]) - Number(hzTorso[2])) >= 2)
+check('the dog wags a sickle tail and tilts its head',
+  (ahuang.match(/animation:dsh-amb-hz-wag /g) ?? []).length === 1
+    && (ahuang.match(/animation:dsh-amb-hz-tilt /g) ?? []).length === 1)
+check('the dog wears a straw collar with a bell in the theme gold',
+  /stroke="#896C39" stroke-width="5"/.test(ahuang) && /fill="#F0C239" stroke="#B98A20"/.test(ahuang))
+check('ahuang sways dry grass tufts',
+  (ahuang.match(/class="hz-grass"/g) ?? []).length === 3
+    && (ahuang.match(/animation:dsh-amb-hz-grass /g) ?? []).length === 3)
+check('the ball is painted in the theme accent',
+  ahuang.includes('class="hz-ball"') && /fill="#F0C239" stroke="#C9A02F"/.test(ahuang))
+check('ahuang seeds the requested fluff count', (ahuang.match(/class="hz-fluff"/g) ?? []).length === 5)
+check('ahuang fluff count is clamped', (api.ahuangAmbientScene(99).match(/class="hz-fluff"/g) ?? []).length === 20)
+check('ahuang fluff carries per-puff inline geometry',
+  /class="hz-fluff" style="[^"]*top:\d+%/.test(ahuang))
+check('ahuang grounds the dog on a field bank with a hairline',
+  ahuang.includes('class="hz-bank"') && ahuang.includes('class="hz-bank-line"'))
+
 // ── every new scene's motion lives in the stylesheet ─────────────────────────
 //
 // Keyframes are the one construct that cannot be inlined: an element can carry its
@@ -317,9 +392,16 @@ const NEW_KEYFRAMES = [
   'dsh-amb-pj-smoke', 'dsh-amb-pj-dust',
   'dsh-amb-gc-ray', 'dsh-amb-gc-feather', 'dsh-amb-gc-fly', 'dsh-amb-gc-bob',
   'dsh-amb-gc-wing', 'dsh-amb-gc-dew',
+  'dsh-amb-hm-glow', 'dsh-amb-hm-dust', 'dsh-amb-hm-tail', 'dsh-amb-hm-breathe',
+  'dsh-amb-hm-ear', 'dsh-amb-hm-zzz',
+  'dsh-amb-hz-glow', 'dsh-amb-hz-fluff', 'dsh-amb-hz-wag', 'dsh-amb-hz-grass',
+  'dsh-amb-hz-tilt',
 ]
-const missingKeyframes = NEW_KEYFRAMES.filter((name) => !new RegExp(`@keyframes ${name}`).test(source))
-check('all 24 new-scene keyframes are defined in AMBIENT_CSS', missingKeyframes.length === 0)
+// The name must be followed by the opening brace: an unanchored match would also
+// hit a RENAMED keyframe (`dsh-amb-hm-tail-x` contains `dsh-amb-hm-tail`), and this
+// check exists to catch exactly that silent-invalid-animation shape.
+const missingKeyframes = NEW_KEYFRAMES.filter((name) => !new RegExp(`@keyframes ${name}\\s*\\{`).test(source))
+check('all 35 new-scene keyframes are defined in AMBIENT_CSS', missingKeyframes.length === 0)
 if (missingKeyframes.length > 0) console.error(`  missing: ${missingKeyframes.join(', ')}`)
 
 // A @keyframes name defined TWICE is a silent override: the later block wins for every
@@ -328,7 +410,7 @@ if (missingKeyframes.length > 0) console.error(`  missing: ${missingKeyframes.jo
 // user's decision, which is why only the NEW families are asserted here) — and it was
 // walked into again while adding the balloon wander, minutes after reading that note.
 // Hence the machine check instead of a resolution to be careful.
-const newKeyframeDefs = [...source.matchAll(/@keyframes\s+(dsh-amb-(?:ym|jp|xs|pj|gc)-[A-Za-z0-9-]+)\s*\{/g)]
+const newKeyframeDefs = [...source.matchAll(/@keyframes\s+(dsh-amb-(?:ym|jp|xs|pj|gc|hm|hz)-[A-Za-z0-9-]+)\s*\{/g)]
   .map((match) => match[1])
 const duplicatedKeyframes = [...new Set(newKeyframeDefs.filter((name, i) => newKeyframeDefs.indexOf(name) !== i))]
 check('every new-scene keyframe is defined exactly once (a duplicate silently wins)',
@@ -336,8 +418,8 @@ check('every new-scene keyframe is defined exactly once (a duplicate silently wi
 if (duplicatedKeyframes.length > 0) console.error(`  duplicated: ${duplicatedKeyframes.join(', ')}`)
 
 const sceneMarkupBlock = block('sceneMarkup')
-check('sceneMarkup dispatches every ported kind',
-  ['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen']
+check('sceneMarkup dispatches every ported and original kind',
+  ['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen', 'humao', 'ahuang']
     .every((kind) => sceneMarkupBlock.includes(`'${kind}'`)))
 
 // ── escaping and the script guard ────────────────────────────────────────────

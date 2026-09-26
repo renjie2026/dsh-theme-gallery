@@ -55,12 +55,7 @@ function readBundledThemes() {
 
 const bundled = readBundledThemes()
 check('the bundle carries an inlined theme array', Array.isArray(bundled))
-// FOUR, not seven: this is the PUBLISH copy, and its content is what ships. The dev
-// workspace carries three further skins that are still being polished, so the release
-// bundle deliberately does not contain them. The count is asserted rather than assumed
-// exactly because a mis-assembled release copy is the failure this catches.
-check('the bundle carries exactly the four released project themes',
-  Array.isArray(bundled) && bundled.length === 4)
+check('the bundle carries exactly the six published project themes', Array.isArray(bundled) && bundled.length === 6)
 if (Array.isArray(bundled)) {
   check('every bundled theme has an id', bundled.every((theme) => typeof theme.id === 'string' && theme.id !== ''))
   check('every bundled theme has tokens', bundled.every((theme) => theme.tokens !== undefined && Object.keys(theme.tokens).length > 0))
@@ -137,13 +132,13 @@ function contribute(theme, contributed) {
 const service = fakeThemeService()
 const contributed = new Set()
 
-check('first contribution registers all four released themes', contribute(service, contributed) === 4)
-check('the registry now lists all four', service.getTheme().themes.length === 4)
-check('the ids are the released project themes',
-  service.registered.join(',') === 'meng-hai-you-yu,pei-an-jie-xin,'
-    + 'shan-qing-ting-cai,ying-mu-cai-yun')
+check('first contribution registers all six themes', contribute(service, contributed) === 6)
+check('the registry now lists all six', service.getTheme().themes.length === 6)
+check('the ids are the project themes',
+  service.registered.join(',') === 'hu-po-mao-mi,hu-zi-a-huang,meng-hai-you-yu,'
+    + 'pei-an-jie-xin,shan-qing-ting-cai,ying-mu-cai-yun')
 check('a second contribution is a no-op (no duplicate throw)', contribute(service, contributed) === 0)
-check('the registry is unchanged after the second pass', service.getTheme().themes.length === 4)
+check('the registry is unchanged after the second pass', service.getTheme().themes.length === 6)
 
 // The regression this test now exists for: every registered token must be a
 // STRING. Object values reach CSS as "[object Object]", which paints nothing
@@ -178,7 +173,8 @@ const seeded = fakeThemeService([{ id: 'shan-qing-ting-cai', colorScheme: 'light
 const contributed2 = new Set()
 contribute(seeded, contributed2)
 check('an id another provider already owns is not re-registered',
-  seeded.registered.join(',') === 'meng-hai-you-yu,pei-an-jie-xin,ying-mu-cai-yun')
+  seeded.registered.join(',') === 'hu-po-mao-mi,hu-zi-a-huang,meng-hai-you-yu,'
+    + 'pei-an-jie-xin,ying-mu-cai-yun')
 check('the foreign theme stays in the registry', seeded.getTheme().themes.some((theme) => theme.id === 'shan-qing-ting-cai'))
 
 if (failed > 0) {

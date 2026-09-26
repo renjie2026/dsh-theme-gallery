@@ -46,7 +46,7 @@ const problems = []
  * scene that exists. Keeping the list here means a typo fails the build instead of
  * silently drawing nothing at runtime.
  */
-const AMBIENT_KINDS = ['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen']
+const AMBIENT_KINDS = ['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen', 'humao', 'ahuang']
 
 /**
  * Validated ranges for each scene's seed-count option.

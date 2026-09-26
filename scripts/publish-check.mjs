@@ -8,6 +8,8 @@
  *
  *   • 皮肤 JSON 改了但忘了 `embed-themes` —— 用户装到的皮肤被内联进 `lib/client.js`，
  *     所以**发出去的是旧皮肤**，而仓库里看起来是新的；
+ *   • README / npm description / 面板文案里的**皮肤数量、清单与入口位置落后于实际** ——
+ *     这类错误没有运行期信号，包能装、颜色能上，只有人去读才发现（本项目的复发最多次的一类）；
  *   • README 里留着本机绝对路径 —— 对外第一印象，且暴露开发机目录结构；
  *   • `files` 白名单漏了目录 —— 用户装到的包缺文件，加载失败；
  *   • `preference` 示例写成皮肤 id —— 照抄的用户**应用起不来**。
@@ -20,6 +22,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { copyConsistencyChecks } from './lib/copy-consistency.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -154,6 +157,19 @@ check('README 写了卸载/回滚方式',
 check('README 警告了 preference 不能写皮肤 id',
   /preference/.test(readmeRaw) && /light|dark|system/.test(readmeRaw))
 void readmeProse
+
+// ── 4b. 介绍文字必须与皮肤清单一致（长效机制的落点）─────────────────────────
+//
+// 规则与理由写在 `scripts/lib/copy-consistency.mjs` 里，**单独成模块**是为了让这里与
+// `tests/check-copy-consistency-logic.mjs`（含变异反证）跑同一份实现 —— 只在真实文件上
+// "通过"证明不了"文案落后时它会失败"。
+console.log('\n── 介绍文字与皮肤清单 ──')
+const previewSource = readFileSync(join(root, 'scripts', 'build-panel-preview.mjs'), 'utf8')
+for (const item of copyConsistencyChecks({
+  readme: readmeRaw, pkg, clientSource, previewSource, fileIds,
+})) {
+  check(item.label, item.ok, item.detail)
+}
 
 // ── 5. files 白名单必须覆盖所有运行期需要的东西 ──────────────────────────────
 console.log('\n── 打包内容 ──')
