@@ -28,6 +28,7 @@
 <style>
 /* ── the widget's own stylesheet, verbatim from lib/client.js ──────────── */
 #dsh-theme-pet{position:fixed;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:1200}
+body.dsh-dialog-open #dsh-theme-pet{display:none!important}
 .dsh-pet-actor,.dsh-pet-prop{position:absolute;left:0;top:0;pointer-events:auto;cursor:grab;will-change:transform}
 .dsh-pet-actor:active,.dsh-pet-prop:active{cursor:grabbing}
 .dsh-pet-flip,.dsh-pet-figure{display:block;width:100%;height:100%}

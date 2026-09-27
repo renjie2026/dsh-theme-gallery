@@ -52,7 +52,9 @@ function check(label, condition) {
  */
 function readClientInject() {
   const source = readFileSync(join(root, 'lib', 'client.js'), 'utf8')
-  const match = /exports\.inject\s*=\s*\[([^\]]*)\]/.exec(source)
+  // 锚定行首（m 模式）：注释里的历史示例若写成 `exports.inject = [...]` 会被这里
+  // 读到 —— 与 check-boot-safety 同一个坑（规则 7：断言被注释打红），同步修。
+  const match = /^\s*exports\.inject\s*=\s*\[([^\]]*)\]/m.exec(source)
   if (match === null) return null
   return match[1].split(',').map((part) => part.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean)
 }

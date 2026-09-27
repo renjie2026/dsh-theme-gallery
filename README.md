@@ -11,7 +11,7 @@
 | 自己做皮肤（或让 AI 做） | 在 `lib/themes/` 加 JSON 后重跑 `npm run embed-themes`，或装 `dsh-theme-skin-author` 技能让 AI 生成 |
 | 贡献一个皮肤给所有人 | 在 `lib/themes/` 放一个 JSON，提 PR |
 
-已随 **0.5.0** 发布 **7 套**皮肤：四套复刻自**蜂链商城**电商新零售系统管理后台
+已随 **0.6.0** 发布 **7 套**皮肤：四套复刻自**蜂链商城**电商新零售系统管理后台
 （[`renjie2026/fenglianshop-open`](https://github.com/renjie2026/fenglianshop-open) 的
 `admin-modular/src/utils/themes.js`），两套是本插件**原创**的宠物主题（同一套造色方法，色相取自中国传统色库），
 另有一套是**「纯色/拼色」配色选择器**卡片（15 个可点色值，见下）。
@@ -26,14 +26,17 @@
 | `hu-zi-a-huang` | **虎子阿黄**（原创） | `#896C39` 秋色（按钮/边框族） | `#F0C239` 缃色（中国传统色） |
 | `shi-liu-jin` | **纯色/拼色**（配色选择器） | `#F20C00` 石榴红（默认那套「石榴金」） | `#9D2933` 胭脂（按钮族） |
 
-面板里另有**两张内置外观卡**（`浅色` / `深色`）、**一张宠物挂件卡**（`宠物挂件 · 七只小伙伴`）
-和**一张心情问候卡**（`心情问候`）：它们**都不是皮肤**，所以**不计入上面这 7 套**。
+面板里另有**两张内置外观卡**（`浅色` / `深色`）、**一张宠物挂件卡**（`宠物挂件 · 七只小伙伴`）、
+**一张心情问候卡**（`心情问候`）和**一张菜单折叠卡**（`菜单折叠`）：它们**都不是皮肤**，
+所以**不计入上面这 7 套**。
 内置卡把配色切回官方的浅色 / 深色（与「设置 → 通用 → 外观」同一套），我们在官方浅色/深色上加了一点**小惊喜**
 —— 见 [效果预览](#效果预览) 最后一行。官方外观里的「跟随系统」**不出卡**：它就是浅色/深色二选一，
 再占一张卡只是重复。宠物挂件卡则完全**不碰主题**：点头像换宠物、点卡身开关挂件，
 与任何皮肤都能同时开启（见 [宠物挂件](#宠物挂件七只小伙伴)）。
 心情问候卡同样**不碰主题**：它控制标题栏上一条滚动的问候语，默认开启、35 分钟换一条，
 可调速度 / 方向 / 位置区域（见 [心情问候语](#心情问候语)）。
+菜单折叠卡也**不碰主题**：开启后侧栏不再显示入口，设置页里留一个**轻量一键入口**
+（打开面板 / 恢复侧栏），默认关闭（见 [菜单折叠](#菜单折叠)）。
 
 工作区里另有三套复刻皮肤仍在打磨，**尚未发布**：江畔冬云 `jiang-pan-dong-yun`、
 徐山军月 `xu-shan-jun-yue`、光彩凤晨 `guang-cai-feng-chen`。
@@ -627,6 +630,8 @@ document.body.setAttribute('data-dsh-theme-reading', reading.colorScheme)
   闲聊是单个可取消的定时器，拆台即清 —— 不会无界堆积（跑飞的事故见 [开发](#开发) 一节的背景）；
 - 名字等文本一律以 `textContent` 写入，**不进任何 HTML 字符串**；
 - 急停开关与侧栏素材同源：`cordis.patch.yml` 里 `config: { ambient: false }` 会把挂件一并停掉；
+- **任何模态弹窗打开时挂件自动隐藏**（设置弹窗、确认框等），关闭即恢复 —— 挂件层级
+  高于弹窗，不藏会浮在弹窗内容上；检测走语义属性（`role="dialog"` 等），不碰框架类名；
 - 挂件状态（开关 / 当前宠物 / 名字表 / 位置偏移）**只存 `localStorage`**，绝不写 `ui-theme.preference`；
   一期「小狗斑斑」的旧数据（名字 / 摆位）升级时**自动迁移**，不用重新设置。
 
@@ -661,6 +666,30 @@ document.body.setAttribute('data-dsh-theme-reading', reading.colorScheme)
 状态只存 `localStorage`，绝不写 `ui-theme.preference`；问候条是否真的建出来，
 面板诊断区有一行自检读数（警告无条件显示，例行读数走 debug 开关）。
 
+---
+
+## 菜单折叠
+
+面板里还有一张 **`菜单折叠`** 卡（序号 72，压轴）。它**不是主题，也不是皮肤**，
+管的是**面板入口放在哪**：
+
+- **默认关闭** —— 侧栏照常显示「主题皮肤」入口（就是装插件以来一直有的那个）；
+- **开启后**，左侧栏不再显示「主题皮肤」入口，腾出侧栏空间；同时
+  **左下角头像 → 设置 → 通用设置（agent预设 下方）**的分节里有一键入口：
+  **「打开主题皮肤面板」**（关掉设置弹窗、直接跳到侧栏的全屏面板）与
+  **「恢复侧栏入口」**（把侧栏的入口开回来）—— 卡面上就写着这条路径，
+  忘了从哪找回时看卡面即可；
+- 设置分节是**轻量入口**（当前皮肤 / 侧栏状态两行读数 + 上面两颗按钮），
+  不把整面板塞进弹窗：换肤是全屏效果，弹窗挡着看不全 —— 操作都在主区全屏面板完成
+  （跳转用的是外壳的官方 `layout.selectPanel` 面，关闭弹窗用的是契约自带的 `close`）；
+- **再点一次卡（或在设置分节里点「恢复侧栏入口」）就恢复侧栏显示 ——**
+  开关是双向的，即时生效、不用重启；卡面上还有一枚**胶囊滑块开关**（与心情卡同款，
+  「侧栏入口」一行）—— 点胶囊、点卡身，效果一样，状态一眼可见；
+- 收放用的是外壳槽位系统自己的注册/撤销机制（`sidebar.panellist` 的 disposer），
+  **不用 CSS 硬藏**（框架类名带构建哈希，藏不住也不该藏）；
+- 折叠状态**只存 `localStorage`**（`theme-gallery:menu-collapse`），
+  **绝不写 `ui-theme.preference`** —— 折叠只改入口显隐，**零主题写入**（一次 `setTheme` 都不发）；
+- 设置分节用官方 `settings.section` 槽位注册，**常驻**、不受折叠开关影响。
 
 ---
 
@@ -820,9 +849,9 @@ pnpm run bench     # 调参台
 
 1. **`tsc`（exit 0）**：`types/*.ts` 用官方发布的真实类型包校验插槽注册契约、`defineStore` 座位形状、主题注册与 token 契约。
 2. **契约与桩**：`check-schema`（真实 schemastery 解析 + **10 个反向用例**，含缺 `label`、缺 `description`、`reading.alpha` 越界）、`smoke-host`（**真机加载** `lib/index.js` 跑 `apply`，并守住 `inject` 清单与插槽门控）、`check-store-contract`（`handle.create()` 每次返回新实例）、`check-client-module`（bundle 形状、挂载失败必须可见）。
-3. **启动安全与端到端引导**：`check-boot-safety`（`inject` 清单、无 `modifies` 环）、`check-boot-timing`、`check-boot-path`（桩里跑完整引导：上色确认、默认皮肤、点内置卡不被弹回、切内置主题后素材保留 —— 每条都带**反证**）。
+3. **启动安全与端到端引导**：`check-boot-safety`（`inject` 清单、无 `modifies` 环）、`check-boot-timing`、`check-boot-path`（桩里跑完整引导：上色确认、默认皮肤、点内置卡不被弹回、切内置主题后素材保留、菜单折叠的侧栏收放与设置分节常驻 —— 每条都带**反证**）。
 4. **静态审计（含自检与变异反证）**：`check-declaration-order`、`check-tdz-order` + `check-tdz-logic`、`check-scope-reach` + `check-scope-reach-logic`、`check-undefined-calls`、`check-bounded-work`（有界工作量：指纹守卫、单一路径渲染、循环有截止）、`check-self-emit-guard` + `check-self-emit-guard-logic`（数出**全部**主题服务写入点）。
-5. **主题与皮肤**：`check-theme-contribution`（贡献逻辑与幂等，并断言**注册的 token 必须是字符串**——成对对象会变成 `[object Object]`）、`check-card-order`（卡片顺序、内置卡文案、默认皮肤、色块排版 `card.rows`，含 **17 处变异反证**）、`check-pet-registry`（宠物家族注册表：七只齐全、美术四件套、动画锚点与 PET_CSS 对得上、台词与步态参数在界内、斑斑一期资产指纹、预览页七只都在，含 **4 处变异反证**）、`check-ambient-render`（场景标记与关键帧）、`check-mood`（心情问候语：语料红线黑名单、时段/节日/洗牌轮换、5 等份区域几何、默认开与胶囊开关、shell.overlay 座位与有界性，含 **10 处变异反证**）。
+5. **主题与皮肤**：`check-theme-contribution`（贡献逻辑与幂等，并断言**注册的 token 必须是字符串**——成对对象会变成 `[object Object]`）、`check-card-order`（卡片顺序、内置卡文案、默认皮肤、色块排版 `card.rows`，含 **19 处变异反证**）、`check-pet-registry`（宠物家族注册表：七只齐全、美术四件套、动画锚点与 PET_CSS 对得上、台词与步态参数在界内、斑斑一期资产指纹、预览页七只都在，含 **4 处变异反证**）、`check-ambient-render`（场景标记与关键帧）、`check-mood`（心情问候语：语料红线黑名单、时段/节日/洗牌轮换、5 等份区域几何、默认开与胶囊开关、shell.overlay 座位与有界性，含 **11 处变异反证**）。
 6. **介绍文字不落后于实际**：`check-copy-consistency-logic` —— 核对 README 的皮肤清单 / 数量 / 版本 / 入口说法、面板与预览页的计数口径、README 里写的校验组数，与 `lib/themes`、`package.json`、`lib/client.js` 一致（**10 处变异反证 + 1 个"正式发布一套皮肤必须全过"的对照组**）。发布自检 `npm run publish:check` 用同一份实现，所以"改了皮肤忘了改文案"会在发布前被拦住。
 
 `scripts/embed-themes.mjs` 校验每套皮肤（形状 / id 唯一 / 双配色 / 12 必需 token / `reading`）后内联进 `lib/client.js`，幂等；两个预览页随后重建。

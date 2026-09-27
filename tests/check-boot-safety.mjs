@@ -113,7 +113,9 @@ check('the locale module is declared (the sidebar row label needs it)',
 check('every declared client module is a full package id',
   Array.isArray(clientInject) && clientInject.every((id) => id.includes('/')))
 
-const injectMatch = client.match(/exports\.inject\s*=\s*\[([^\]]*)\]/)
+// 锚定行首（m 模式）：注释里的历史示例若写成 `exports.inject = [...]` 会被这里读到 ——
+// 规则 7 的形状（断言被注释打红），本轮真踩到。行首锚定后块注释行（* 开头）不再命中。
+const injectMatch = client.match(/^\s*exports\.inject\s*=\s*\[([^\]]*)\]/m)
 check('the plugin declares its inject list', injectMatch !== null)
 
 const injected = injectMatch === null
@@ -121,16 +123,20 @@ const injected = injectMatch === null
   : injectMatch[1].split(',').map((s) => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean)
 
 // The declared services. `slots` and `locale` come from the statically-composed UI packages;
-// `theme` is provided by `@deepseek-ai/dsh-client-ui-theme`, whose MODULE is declared in
-// `dsh.client.inject` above — that pair is what makes a hard dependency safe, and it is exactly
+// `theme` is provided by `@deepseek-ai/dsh-client-ui-theme`, `layout` by
+// `@deepseek-ai/dsh-client-ui-layout` (the official Context merge declares `ctx.layout` —
+// the settings-section "open panel" jump reads it) — both MODULE ids are declared in
+// `dsh.client.inject` above; that pair is what makes a hard dependency safe, and it is exactly
 // the shape the working third-party client plugins on this machine use (`dsh-theme-firefly`
 // declares `theme` and nothing else). The earlier hangs came from a `modifies` cycle and from
-// the missing module declaration, NOT from `theme` being required.
-const ALLOWED_INJECT = new Set(['slots', 'locale', 'theme'])
+// the missing module declaration, NOT from `theme` being required. Layout earns the same
+// treatment: without the declaration `ctx.layout` is undefined and the jump silently dies
+// (实测读数 2026-09-27：按钮只关了弹窗，面板没打开).
+const ALLOWED_INJECT = new Set(['slots', 'locale', 'theme', 'layout'])
 check('every injected service is one the official composition provides',
   injected.length > 0 && injected.every((name) => ALLOWED_INJECT.has(name)))
-check('the inject list is exactly slots/locale/theme',
-  injected.length === 3 && ['slots', 'locale', 'theme'].every((n) => injected.includes(n)))
+check('the inject list is exactly slots/locale/theme/layout',
+  injected.length === 4 && ['slots', 'locale', 'theme', 'layout'].every((n) => injected.includes(n)))
 // `theme` is used DIRECTLY. A context given an empty inject list cannot read the service at all,
 // so a "soft" attempt is not a safer option here — it simply breaks the plugin, which is what
 // showed up on the page as a "服务不可用" banner and no panel.

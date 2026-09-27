@@ -1,7 +1,7 @@
 {
   "name": "dsh-theme-gallery",
-  "version": "0.5.0",
-  "description": "A theme gallery for DeepSeek Harness (DSH): JSON-defined skins with full-screen coverage and sidebar scenery, a 15-swatch palette-picker card, a pet-widget card (7 registry-driven pets playing by the chat input), and a mood-greeting card (a scrolling greeting on the title bar that rotates every 35 minutes), switched from the panel under the sidebar's Plugins icon — adding skins needs no code change",
+  "version": "0.6.0",
+  "description": "A theme gallery for DeepSeek Harness (DSH): JSON-defined skins with full-screen coverage and sidebar scenery, a 15-swatch palette-picker card, a pet-widget card (7 registry-driven pets playing by the chat input), a mood-greeting card (a scrolling greeting on the title bar that rotates every 35 minutes), and a menu-collapse card that moves the panel entry into Settings, switched from the panel under the sidebar's Plugins icon — adding skins needs no code change",
   "author": "renjie2026 (https://github.com/renjie2026)",
   "license": "MIT",
   "repository": {
@@ -39,6 +39,7 @@
       "platform": "web",
       "inject": [
         "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-layout",
         "@deepseek-ai/dsh-client-ui-theme"
       ]
     }
@@ -98,6 +99,7 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/dsh-client-store": "*",
+    "@deepseek-ai/dsh-client-ui-layout": "*",
     "@deepseek-ai/dsh-client-ui-slots": "*",
     "@deepseek-ai/dsh-client-ui-theme": "*"
   },

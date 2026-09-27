@@ -55,11 +55,11 @@ function check(label, condition) {
 const EXPECTED = [
   'light', 'dark', 'shi-liu-jin', 'ying-mu-cai-yun', 'shan-qing-ting-cai',
   'pei-an-jie-xin', 'meng-hai-you-yu',
-  'hu-po-mao-mi', 'hu-zi-a-huang', 'pet-family', 'mood-greeting',
+  'hu-po-mao-mi', 'hu-zi-a-huang', 'pet-family', 'mood-greeting', 'menu-collapse',
 ]
 
 /** 与 {@link EXPECTED} 一一对应的序号。 */
-const EXPECTED_RANKS = [99, 98, 97, 96, 95, 91, 80, 76, 75, 74, 73]
+const EXPECTED_RANKS = [99, 98, 97, 96, 95, 91, 80, 76, 75, 74, 73, 72]
 
 /** 内联皮肤数组的注册顺序（= embed 的字母序），发布顺序的断言在 check-theme-contribution。 */
 const ALPHA_ORDER = 'hu-po-mao-mi,hu-zi-a-huang,meng-hai-you-yu,pei-an-jie-xin,shan-qing-ting-cai,shi-liu-jin,ying-mu-cai-yun'
@@ -182,17 +182,20 @@ function extract(source) {
     BUILT_IN_DESCRIPTIONS: readConst(source, 'BUILT_IN_DESCRIPTIONS'),
     PET_WIDGET: readConst(source, 'PET_WIDGET'),
     MOOD_WIDGET: readConst(source, 'MOOD_WIDGET'),
+    MENU_COLLAPSE_WIDGET: readConst(source, 'MENU_COLLAPSE_WIDGET'),
     appendsPet: PUBLISH_APPENDS_PET.test(source),
     appendsMood: PUBLISH_APPENDS_MOOD.test(source),
+    appendsMenu: PUBLISH_APPENDS_MENU.test(source),
     bundled: readBundled(source),
   }
 }
 
 /**
- * 复刻 `publish()` 里的那一行：过滤掉不展示的，**追加挂件/问候两张"伪主题"**，再按展示顺序排序。
+ * 复刻 `publish()` 里的那一行：过滤掉不展示的，**追加挂件/问候/折叠三张"伪主题"**，
+ * 再按展示顺序排序。
  *
- * "是否追加"读自源码探针（`appendsPet` / `appendsMood`），所以这份复刻对"publish 忘了
- * 追加某张卡"的变异也忠实 —— 否则变异只能靠源码断言，测不到列表本身的变化。
+ * "是否追加"读自源码探针（`appendsPet` / `appendsMood` / `appendsMenu`），所以这份复刻对
+ * "publish 忘了追加某张卡"的变异也忠实 —— 否则变异只能靠源码断言，测不到列表本身的变化。
  * @param api - {@link extract} 的结果。
  * @returns 页面实际渲染的 id 序列。
  */
@@ -205,14 +208,20 @@ function shownOrder(api) {
   const withMood = api.appendsMood
     ? withWidgets.concat([{ id: api.MOOD_WIDGET.id, tokens: {} }])
     : withWidgets
-  return api.cardsInDisplayOrder(withMood).map((theme) => theme.id)
+  const withMenu = api.appendsMenu
+    ? withMood.concat([{ id: api.MENU_COLLAPSE_WIDGET.id, tokens: {} }])
+    : withMood
+  return api.cardsInDisplayOrder(withMenu).map((theme) => theme.id)
 }
 
-/** publish 真的把挂件卡追加进面板列表（删掉 concat，卡片就静默消失）。 */
-const PUBLISH_APPENDS_PET = /\.concat\(\[petWidgetCardTheme\(\), moodCardTheme\(\)\]\)/
+/** publish 真的把三张非主题卡（挂件/问候/折叠）一起追加进面板列表。 */
+const PUBLISH_APPENDS_PET = /\.concat\(\[petWidgetCardTheme\(\), moodCardTheme\(\), menuCollapseCardTheme\(\)\]\)/
 
 /** publish 真的把心情问候卡追加进面板列表（同上一条的理由）。 */
-const PUBLISH_APPENDS_MOOD = /\.concat\(\[petWidgetCardTheme\(\), moodCardTheme\(\)\]\)/
+const PUBLISH_APPENDS_MOOD = /\.concat\(\[petWidgetCardTheme\(\), moodCardTheme\(\), menuCollapseCardTheme\(\)\]\)/
+
+/** publish 真的把菜单折叠卡追加进面板列表（同上一条的理由）。 */
+const PUBLISH_APPENDS_MENU = /\.concat\(\[petWidgetCardTheme\(\), moodCardTheme\(\), menuCollapseCardTheme\(\)\]\)/
 
 /** `publish()` 真的把展示顺序作用在过滤后的列表上。 */
 const PUBLISH_USES_ORDER = /cardsInDisplayOrder\(\[\.\.\.snapshot\.themes\]\.filter\(/
@@ -242,6 +251,8 @@ function idIsKnown(api, id) {
     || id in api.BUILT_IN_LABELS
     || (api.PET_WIDGET !== null && typeof api.PET_WIDGET === 'object' && id === api.PET_WIDGET.id)
     || (api.MOOD_WIDGET !== null && typeof api.MOOD_WIDGET === 'object' && id === api.MOOD_WIDGET.id)
+    || (api.MENU_COLLAPSE_WIDGET !== null && typeof api.MENU_COLLAPSE_WIDGET === 'object'
+      && id === api.MENU_COLLAPSE_WIDGET.id)
 }
 
 check('表里每个 id 都真实存在（拼写错会让卡片静默掉到最后）',
@@ -405,8 +416,8 @@ function stripComments(text) {
 
 const themeCardBody = block(real, 'ThemeCard')
 const themeCardCode = stripComments(themeCardBody)
-check('配色卡/挂件卡/问候卡都不渲染 .tg-desc（description 只作 tooltip）',
-  /!hasPicker && !isWidget && !isMood && description[\s\S]{0,160}?tg-desc/.test(themeCardCode))
+check('配色卡/挂件卡/问候卡/折叠卡都不渲染 .tg-desc（description 只作 tooltip）',
+  /!hasPicker && !isWidget && !isMood && !isMenuCollapse && description[\s\S]{0,160}?tg-desc/.test(themeCardCode))
 check('"是不是配色卡"取自数据且过了消毒器，不按渲染结果判（jsx 桩返回 null）',
   /const shape = cardRowShape\(\{ card: \{ rows \} \}, PALETTE_SCHEMES\)/.test(themeCardCode)
   && !/blocks !== null/.test(themeCardCode))
@@ -476,8 +487,8 @@ check('挂件卡有自己的标题与 tooltip 文案（两者都非空）',
   && typeof petWidget.description === 'string' && petWidget.description.length > 0)
 check('publish() 把挂件卡追加进面板列表（漏掉 = 卡片静默消失）',
   PUBLISH_APPENDS_PET.test(real))
-check('展示列表的末尾是问候卡、倒数第二是挂件卡（74/73 是最小序号）',
-  shown.slice(-2).join(',') === [petWidget.id, api.MOOD_WIDGET.id].join(','))
+check('展示列表的末尾是 折叠卡/问候卡/挂件卡（72/73/74 是最小的三个序号）',
+  shown.slice(-3).join(',') === [petWidget.id, api.MOOD_WIDGET.id, api.MENU_COLLAPSE_WIDGET.id].join(','))
 check('挂件卡判型取自数据（id 表），不按渲染结果判（jsx 桩返回 null）',
   /const isWidget = id === PET_WIDGET\.id/.test(themeCardCode)
   && !/petCardArt\(\) !== null/.test(themeCardCode))
@@ -498,8 +509,8 @@ check('换宠走 selectPetWidget 且零主题写入（挂件与皮肤正交的�
   && !/selectPetWidget[\s\S]{0,400}?ctx\.theme\.setTheme/.test(real))
 check('publish 把"当前是哪只"报给 store（markPetKind，头像点亮靠它）',
   /storeActions\.markPetKind\(readPetState\(\)\.kind\)/.test(real))
-check('面板计数把挂件卡/问候卡与内置卡一起排除（皮肤数不含它们）',
-  /id === PET_WIDGET\.id \|\| id === MOOD_WIDGET\.id\)\.length/.test(real))
+check('面板计数把挂件卡/问候卡/折叠卡与内置卡一起排除（皮肤数不含它们）',
+  /id === PET_WIDGET\.id \|\| id === MOOD_WIDGET\.id \|\| id === MENU_COLLAPSE_WIDGET\.id\)\.length/.test(real))
 check('PAGE_CSS 里有挂件卡的样式（缺了图案或头像行会把卡片撑乱）',
   /\.tg-pet-card\{/.test(real) && /\.tg-pet-art\{/.test(real) && /\.tg-badge-off\{/.test(real)
   && /\.tg-petrow\{/.test(real) && /\.tg-petswatch\{/.test(real))
@@ -750,10 +761,10 @@ check('变异 12：重复的方案必须被报错（每一格是一个选项）'
   cardRowProblems(mutDupSlot, SCHEMES).some((problem) => /repeats/.test(problem)))
 
 // ── 变异 13..14：配色卡**渲染**侧的两条守卫 ─────────────────────────────────
-const mutDesc = real.replace('!hasPicker && !isWidget && !isMood && description', 'description')
-check('变异 13 真的改动了源码（拆掉"配色/挂件/问候卡不渲染正文"的守卫）', mutDesc !== real)
+const mutDesc = real.replace('!hasPicker && !isWidget && !isMood && !isMenuCollapse && description', 'description')
+check('变异 13 真的改动了源码（拆掉"配色/挂件/问候/折叠卡不渲染正文"的守卫）', mutDesc !== real)
 check('变异 13：拆掉守卫后，那条断言必须失败',
-  !/!hasPicker && !isWidget && description[\s\S]{0,160}?tg-desc/.test(stripComments(block(mutDesc, 'ThemeCard'))))
+  !/!hasPicker && !isWidget && !isMood && !isMenuCollapse && description[\s\S]{0,160}?tg-desc/.test(stripComments(block(mutDesc, 'ThemeCard'))))
 
 // 消毒器本身也要有行为断言（只断言源码里有这行字，证明不了它会拒绝坏数据）。
 const shape = readCardRowShape(real)
@@ -813,12 +824,13 @@ check('变异 17：拆掉门槛后，更旧的 publish 会把 store 清空（说
   })())
 
 // ── 变异 18..19：宠物挂件卡的两条守卫 ────────────────────────────────────────
-const mutNoPetCard = real.replace('.concat([petWidgetCardTheme(), moodCardTheme()])', '')
-check('变异 18 真的改动了源码（publish 不再追加挂件/问候卡）', mutNoPetCard !== real)
-check('变异 18：删掉 concat 后，源码断言与展示列表都必须失败（说明那两条测的是真通道）',
+const mutNoPetCard = real.replace('.concat([petWidgetCardTheme(), moodCardTheme(), menuCollapseCardTheme()])', '')
+check('变异 18 真的改动了源码（publish 不再追加挂件/问候/折叠卡）', mutNoPetCard !== real)
+check('变异 18：删掉 concat 后，源码断言与展示列表都必须失败（说明那三条测的是真通道）',
   !PUBLISH_APPENDS_PET.test(mutNoPetCard)
   && !shownOrder(extract(mutNoPetCard)).includes('pet-family')
-  && !shownOrder(extract(mutNoPetCard)).includes('mood-greeting'))
+  && !shownOrder(extract(mutNoPetCard)).includes('mood-greeting')
+  && !shownOrder(extract(mutNoPetCard)).includes('menu-collapse'))
 
 const mutPetSelect = real.replace('onClick: () => { onTogglePet() }', 'onClick: () => { onSelect(id) }')
 check('变异 19 真的改动了源码（挂件卡点了会切主题）', mutPetSelect !== real)

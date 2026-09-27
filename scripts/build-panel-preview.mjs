@@ -137,6 +137,7 @@ const VERSION = readLiteral('BUNDLED_VERSION')
 const zh = readLiteral('zh')
 const PET_WIDGET = readLiteral('PET_WIDGET')
 const MOOD_WIDGET = readLiteral('MOOD_WIDGET')
+const MENU_COLLAPSE_WIDGET = readLiteral('MENU_COLLAPSE_WIDGET')
 const bundled = readBundledThemes()
 
 // The shipping order logic, executed rather than re-implemented.
@@ -207,9 +208,17 @@ const moodCardTheme = {
   colorScheme: 'light',
   tokens: {},
 }
+/** 菜单折叠卡（与 publish 的 menuCollapseCardTheme 同构）。 */
+const menuCardTheme = {
+  id: MENU_COLLAPSE_WIDGET.id,
+  label: MENU_COLLAPSE_WIDGET.label,
+  description: MENU_COLLAPSE_WIDGET.description,
+  colorScheme: 'light',
+  tokens: {},
+}
 const visible = registry
   .filter((theme) => !OMITTED_IDS.has(theme.id))
-  .concat([petCardTheme, moodCardTheme])
+  .concat([petCardTheme, moodCardTheme, menuCardTheme])
 const shown = cardsInDisplayOrder(visible)
 
 /**
@@ -221,7 +230,8 @@ const shown = cardsInDisplayOrder(visible)
  * 运行期信号，正是发布自检现在守着的那一类。）
  */
 const builtInCardCount = shown.filter((theme) => BUILT_IN_LABELS[theme.id] !== undefined
-  || theme.id === PET_WIDGET.id || theme.id === MOOD_WIDGET.id).length
+  || theme.id === PET_WIDGET.id || theme.id === MOOD_WIDGET.id
+  || theme.id === MENU_COLLAPSE_WIDGET.id).length
 const skinCount = shown.length - builtInCardCount
 
 /** Mirror of the store's `pick`: resolve a `{light,dark}` pair to one string. */
@@ -309,21 +319,37 @@ const cards = shown.map((theme) => {
             <span class="tg-mood-zone"><span class="tg-mood-chip">左靠齐</span><span class="tg-mood-chip" aria-pressed="true">居中</span><span class="tg-mood-chip">左右缩进</span><span class="tg-mood-chip">右靠齐</span></span></div>
         </div>`
     : ''
-  // 挂件/问候卡的徽标常驻（它就是开关读数）；预览页恒为"开/关"缺省形态。
-  const widgetBadge = isPet || isMood
-    ? `<span class="tg-badge${isPet ? ' tg-badge-off' : ''}">${(isMood || !isPet) ? zh.petOn : zh.petOff}</span>`
+  // 折叠卡：卡面正文 = 胶囊行（侧栏入口开关，与心情卡同款）+ 路径提示 ——
+  // 与 ThemeCard 的菜单分支同构（div 卡身，卡内胶囊是 button，button 套 button 非法）。
+  const isMenu = theme.id === MENU_COLLAPSE_WIDGET.id
+  const menuBody = isMenu
+    ? `
+        <div class="tg-menu-body"><div class="tg-mood-row"><span class="tg-mood-row-label">${zh.menuPillLabel ?? '侧栏入口'}</span>
+          <button type="button" class="tg-mood-switch" role="switch" aria-checked="false" title="开=收起侧栏的「主题皮肤」入口；关=恢复显示（与点卡身等效）"><span class="tg-mood-pill" aria-hidden="true"></span><span class="tg-mood-state">${zh.menuShown}</span></button></div>
+        <span class="tg-path">${zh.menuHint}</span></div>`
+    : ''
+  // 挂件/问候/折叠卡的徽标常驻（它就是开关读数）；预览页按缺省形态渲染
+  // （挂件缺省关、问候缺省开、折叠缺省关=侧栏显示中）。
+  const widgetBadge = (isPet || isMood || isMenu)
+    ? `<span class="tg-badge${(isPet || isMenu) ? ' tg-badge-off' : ''}">${isPet ? zh.petOff : (isMood ? zh.petOn : zh.menuShown)}</span>`
     : ''
   const selected = theme.id === DEFAULT_SKIN
   const rank = cardRank(theme.id)
   const head = `
         <div class="tg-card-top">
           <span class="tg-name">${label}</span>
-          ${(isPet || isMood) ? widgetBadge : (selected ? `<span class="tg-badge">${zh.applied}</span>` : '')}
+          ${(isPet || isMood || isMenu) ? widgetBadge : (selected ? `<span class="tg-badge">${zh.applied}</span>` : '')}
         </div>`
-  const tail = `${rows === undefined && !isPet && !isMood && description ? `<span class="tg-desc">${description}</span>` : ''}
+  const tail = `${rows === undefined && !isPet && !isMood && !isMenu && description ? `<span class="tg-desc">${description}</span>` : ''}
         <span class="pv-rank">序号 ${rank}${rank < 0 ? '（未排名）' : ''} · ${theme.id}</span>`
-  // 配色卡/问候卡是 div（里面装着按钮），挂件卡与其余卡片是整块可点的 button —— 与面板一致。
-  const body = isPet ? petArt : (isMood ? moodBody : (rows === undefined ? strip : picker))
+  // 配色卡/问候卡/折叠卡是 div（里面装着按钮），挂件卡与其余卡片是整块可点的 button —— 与面板一致。
+  const body = isPet ? petArt : (isMood ? moodBody : (isMenu ? menuBody : (rows === undefined ? strip : picker)))
+  if (isMenu) {
+    return `
+      <div class="tg-card tg-menu-card" title="${description || label}">${head}${body}
+        ${tail}
+      </div>`
+  }
   if (isPet) {
     return `
       <button type="button" class="tg-card tg-pet-card" aria-pressed="false" title="${description || label}">${head}${body}

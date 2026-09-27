@@ -189,10 +189,10 @@ check('内联副本与语料文件逐字一致（embed 的读回校验之外的�
 
 check('CARD_ORDER 里有 mood-greeting，序号 73（挂件 74 之后，压轴段）',
   /'mood-greeting': 73,/.test(real))
-check('publish() 把挂件卡与问候卡一起追加进面板列表',
-  /\.concat\(\[petWidgetCardTheme\(\), moodCardTheme\(\)\]\)/.test(real))
-check('面板计数把问候卡与内置卡/挂件卡一起排除（皮肤数不含它）',
-  /id === PET_WIDGET\.id \|\| id === MOOD_WIDGET\.id\)\.length/.test(real))
+check('publish() 把挂件卡、问候卡与折叠卡一起追加进面板列表',
+  /\.concat\(\[petWidgetCardTheme\(\), moodCardTheme\(\), menuCollapseCardTheme\(\)\]\)/.test(real))
+check('面板计数把问候卡与内置卡/挂件卡/折叠卡一起排除（皮肤数不含它）',
+  /id === PET_WIDGET\.id \|\| id === MOOD_WIDGET\.id \|\| id === MENU_COLLAPSE_WIDGET\.id\)\.length/.test(real))
 const publishBody = stripComments(block(real, 'publish'))
 check('publish() 把问候状态报给 store（markMood）并顺路同步问候条（syncMoodBar）',
   publishBody.includes('storeActions.markMood(readMoodState())') && publishBody.includes('syncMoodBar()'))

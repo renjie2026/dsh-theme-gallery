@@ -48,6 +48,21 @@ import { blankNonCode } from './scope-reach.mjs'
 const WRITE_PATTERN = /(?:^|[^\w$.])(ctx\.theme\.(?:setTheme|overrideTokens)|[A-Za-z_$][\w$]*Dispose)\s*\(/g
 
 /**
+ * 名字以 Dispose 结尾、但**不是**主题叠加层 disposer 的标识符。
+ *
+ * `*Dispose(` 之所以算写入点，是因为叠加层 disposer 撤销层时也会发出 `theme/change`。
+ * 但槽位系统（`ctx.slots`）的句柄同样以 Dispose 结尾，而它撤销的是 UI 注册、
+ * 根本不碰主题服务 —— 把它算进来是**误报**，而误报不清掉，审计就不再可信。
+ *
+ * 失败方向是安全的：新增一个"非主题 disposer"忘了登记，审计会**误报**（FAIL），
+ * 提醒人来登记；绝不会反过来把真写入漏掉 —— 主题层的新 disposer 不需要登记，
+ * 仍然被宽模式扫到。
+ *
+ * @type {ReadonlyArray<string>}
+ */
+export const NON_THEME_DISPOSERS = ['sidebarEntryDispose']
+
+/**
  * 允许不带守卫的写入点，**每一条都必须写明理由**。
  *
  * 审计的强度来自这份清单很短：新增一个不守卫的写入点就会让它失败，
@@ -115,6 +130,8 @@ export function findThemeWrites(source) {
   const re = new RegExp(WRITE_PATTERN.source, 'g')
   let m
   while ((m = re.exec(structural)) !== null) {
+    // 显式排除非主题的 `*Dispose` 句柄（见 NON_THEME_DISPOSERS 的文档）。
+    if (NON_THEME_DISPOSERS.includes(m[1])) continue
     // `m.index` 指向匹配开头的分隔符（可能是换行或空格），真正的调用名从组 1 开始。
     const at = m.index + m[0].indexOf(m[1])
     writes.push({

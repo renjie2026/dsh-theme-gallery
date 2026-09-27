@@ -63,6 +63,12 @@ const petKindLogs = []
  */
 const moodMarkLogs = []
 
+/**
+ * 每次 `markMenuCollapse` 报上来的折叠状态（store 桩记录），由 runBoot 开头清空。
+ * 折叠卡的徽标与 aria-pressed 都读它 —— 与 petMarkLogs 同一条理由。
+ */
+const menuMarkLogs = []
+
 function loadBundle(window_, document_, recordJsx = () => {}, bundleSource = source) {  const registrations = []
   const windowStub = {
     ...window_,
@@ -79,13 +85,27 @@ function loadBundle(window_, document_, recordJsx = () => {}, bundleSource = sou
    */
   const seed = (id) => {
     if (id === '@deepseek-ai/dsh-client-store') {
-      const state = { themes: [], selected: undefined, note: undefined, revision: 0 }
+      // 桩 state 跟着真实 store 的 init 长（createGalleryStore 的 init 返回值）：
+      // MenuSettingsSection 经 useSyncExternalStore 读的就是这份 state，缺字段会让
+      // 分节渲染抛错或渲染出空页面 —— 桩 state 与真实 init 漂移 = 分节断言测不到
+      // （规则 8 的镜像：桩形状必须跟着真实数据长）。
+      const state = {
+        ids: [], labels: {}, descriptions: {}, swatches: {}, cardRows: {},
+        scheme: '', selected: 'system', status: '', revision: -1,
+        petEnabled: false, petKind: 'ban-ban',
+        moodOn: true, moodSpeed: 'medium', moodDirection: 'ltr', moodZone: 'center',
+        menuCollapsed: false,
+      }
       return {
         defineStore: () => ({
           create: () => ({
-            getState: () => state,
-            setState: (patch) => { Object.assign(state, patch) },
+            // 桩实例形状**对齐真实 StoreInstance 契约**：actions + getSnapshot +
+            // subscribe + clearPersisted —— 契约上没有 getState/setState。白屏事故
+            // 的根因正是分节按 getState 读（真实实例 undefined → 渲染抛错 → 弹窗
+            // 白屏）；桩曾带 getState 把缺陷盖住了 —— 桩形状跟真实契约长（规则 8）。
+            getSnapshot: () => state,
             subscribe: () => () => {},
+            clearPersisted() {},
             actions: {
               // 桩的 action 表必须**跟着真实 store 长**：少一个 `markScheme`，`publish()`
               // 就会抛 `storeActions.markScheme is not a function`，整个挂载被 guard 拦下 ——
@@ -93,8 +113,17 @@ function loadBundle(window_, document_, recordJsx = () => {}, bundleSource = sou
               //
               // `sync` 另外**记下每次报上来的选中卡片**：徽标会不会跟着跳转重试的中间态
               // 来回跳（用户报的那个 bug）只有把这一串值记下来才看得见。
-              // `sync(themes, selected, revision)` —— 真实 store 的第一个参数是 draft。
-              sync(_themes, selected) { syncSelectionLogs.push(selected) },
+              // 真实框架调 action 时注入 draft 作第一参；桩没有框架，publish 直呼本表，
+              // 所以这里是 `sync(themes, selected, revision)` —— 顺手把 themes 物化进
+              // state（MenuSettingsSection 的快照读它；不物化则分节页 ids 恒空，
+              // "分节渲染出完整面板"永远测不到）。
+              sync(themes, selected) {
+                syncSelectionLogs.push(selected)
+                Object.assign(state, {
+                  ids: themes.map((theme) => theme.id),
+                  labels: Object.fromEntries(themes.map((theme) => [theme.id, theme.label])),
+                })
+              },
               note() {}, select() {}, markScheme() {},
               // 挂件卡的开关状态也走 store（publish → markPet）。桩少一个 action，
               // publish 就抛错、整个挂载被 guard 拦下 —— 规则 8 的第 N 例。
@@ -104,12 +133,23 @@ function loadBundle(window_, document_, recordJsx = () => {}, bundleSource = sou
               // 心情问候卡的开关与三组设置走 markMood，同一条理由（规则 8）。
               // 记下每次报上来的开关状态，问候卡的断言读它。
               markMood(state) { moodMarkLogs.push(state) },
+              // 菜单折叠卡的开关状态走 markMenuCollapse，同一条理由（规则 8）。
+              // 与真实 action 同形：写进 state（设置分节的快照读它 —— 桩只记日志的
+              // 话分节永远读到 false，「恢复侧栏入口」按钮就测不到）。
+              markMenuCollapse(on) { menuMarkLogs.push(on); state.menuCollapsed = on === true },
             },
           }),
         }),
       }
     }
-    if (id === 'react') return { createElement: () => null, useState: () => [undefined, () => {}] }
+    if (id === 'react') return {
+      createElement: () => null,
+      useState: () => [undefined, () => {}],
+      // 设置分节组件（MenuSettingsSection）用它把 pinned store 绑成视图。真实 React
+      // 会订阅并在变化时重渲染；桩里一次性读出快照即可 —— 分节断言只关心渲染链路
+      // 与当时的快照值，不关心后续更新。
+      useSyncExternalStore: (_subscribe, getSnapshot) => getSnapshot(),
+    }
     // The jsx runtime records what the page BUILT, so a test can reach the very props the
     // shell would hand to a card — including its click handler. Returning `null` (as before)
     // is still correct: nothing here renders, only the element descriptions are collected.
@@ -230,6 +270,17 @@ function documentStub() {
         node.className = [...set].join(' ')
       },
       contains: (name) => String(node.className).split(' ').includes(name),
+      // 真实 DOM 的 classList 有 toggle（挂件的弹窗隐藏标记用它）—— 桩缺它，
+      // 那条路径就测不到（规则 8）。
+      toggle: (name, force) => {
+        const set = new Set(String(node.className).split(' ').filter(Boolean))
+        const has = set.has(name)
+        const want = force === undefined ? !has : Boolean(force)
+        if (want) set.add(name)
+        else set.delete(name)
+        node.className = [...set].join(' ')
+        return want
+      },
     }
     // 事件监听按类型记录下来，测试用它把"用户真的点了"演出来（_fire）。
     const listeners = new Map()
@@ -324,6 +375,9 @@ function documentStub() {
     // "生成中"信号钩子：默认查不到（=未在生成）；B9 断言往里塞节点来模拟 InputBar
     // 的 aria-label="停止生成" 按钮。真实环境由 composer 提供，桩里由测试控制。
     stopButton: null,
+    // 弹窗检测（挂件的"弹窗打开就隐藏"）：默认查不到（=没有弹窗开着）；
+    // 断言往里塞节点模拟弹窗开、置 null 模拟关 —— 与 stopButton 同一手法。
+    dialogNode: null,
     createElement: (tag) => {
       const node = makeNode(tag)
       created.push(node)
@@ -334,6 +388,9 @@ function documentStub() {
       if (selector.includes('aria-label="停止生成"') || selector.includes('aria-label="Stop generating"')) {
         return document_.stopButton
       }
+      // 弹窗检测：挂件的语义选择器（dialog[open] / role="dialog" / aria-modal）
+      // 一律回 dialogNode —— 桩不解析复合选择器，测试直接控制它的值。
+      if (selector.includes('dialog')) return document_.dialogNode
       if (selector.includes('sidebarCol')) return column
       // 宠物挂件的舞台节点（按 id 找，含"还在不在"的判定）。
       if (selector.includes('#dsh-theme-pet')) {
@@ -380,17 +437,21 @@ function installObserverStubs() {
     MutationObserver: globalThis.MutationObserver,
     ResizeObserver: globalThis.ResizeObserver,
   }
-  /** 只记录回调，不自动触发；由测试自行驱动。 */
+  /** 只记录回调，不自动触发；由测试自行驱动。实例收集进 mutationObservers 供断言。 */
   class MutationObserverStub {
-    constructor(callback) { this.callback = callback }
+    constructor(callback) {
+      this.callback = callback
+      this.disconnected = false
+      mutationObservers.push(this)
+    }
     observe() {}
-    disconnect() {}
+    disconnect() { this.disconnected = true }
     takeRecords() { return [] }
   }
   class ResizeObserverStub {
     constructor(callback) { this.callback = callback }
     observe() {}
-    disconnect() {}
+    disconnect() { this.disconnected = true }
     unobserve() {}
   }
   globalThis.MutationObserver = MutationObserverStub
@@ -404,6 +465,19 @@ function installObserverStubs() {
 }
 
 /**
+ * 每个 runBoot 创建的 MutationObserver 实例（按创建顺序），由 runBoot 开头清空。
+ * 挂件的"弹窗打开就隐藏"observer 也走这里 —— 断言要拿到实例手动驱动它的回调
+ * （桩不自动触发），并检查 removePetStage 时真的 disconnect。
+ */
+const mutationObservers = []
+
+/**
+ * 每次 `ctx.layout.selectPanel` 报上来的主区面板跳转（桩 ctx 记录），由 runBoot 清空。
+ * 设置分节的「打开面板」按钮 = close + 官方跳转面 —— 跳没跳、跳到哪，只有记下来才看得见。
+ */
+const layoutSelectCalls = []
+
+/**
  * 跑一次引导，返回观测结果。
  * @param options - 配置。
  * @param options.activeId - 主题服务一开始报告的活动主题。
@@ -411,6 +485,9 @@ function installObserverStubs() {
  * @param options.config - 组合配置（`ambient: false` 是急停开关）。
  * @param options.seedSkin - 预置的「记住的皮肤」；`null` 表示全新安装（从未选过）。
  * @param options.seedBuiltIn - 预置的「用户在面板里选过内置外观」标记。
+ * @param options.seedPet - 预置的挂件状态（原样 JSON 串）。
+ * @param options.seedMenu - 预置的「菜单折叠」状态（原样 JSON 串；种子折叠启动时
+ *   侧栏入口应从未注册，设置分节照常注册）。
  * @param options.wireSlots - 是否让 `slots.inject('main', …)` 真的执行回调，
  *   从而拿到页面 `inject` 面（`setTheme`）—— 用来测"点卡片"这条真实入口。
  * @param options.bundleSource - 用哪份源码加载 bundle（缺省即真实文件）。
@@ -424,6 +501,7 @@ function runBoot({
   seedSkin = 'shan-qing-ting-cai',
   seedBuiltIn,
   seedPet,
+  seedMenu,
   wireSlots = false,
   bundleSource = source,
 } = {}) {
@@ -432,6 +510,10 @@ function runBoot({
   syncSelectionLogs.length = 0
   petMarkLogs.length = 0
   petKindLogs.length = 0
+  moodMarkLogs.length = 0
+  menuMarkLogs.length = 0
+  mutationObservers.length = 0
+  layoutSelectCalls.length = 0
   try {
   const { document_, body, innerHTMLWrites, removals, sceneHtml, created } = documentStub()
   const setThemeCalls = []
@@ -586,6 +668,9 @@ function runBoot({
    * 与旧行为完全一致；只有需要走"用户点卡片"这条真实入口时才执行它。
    */
   const slotRegistrations = []
+  // 注入句柄 → 它撤销的安装动作。`inject('sidebar.panellist'|'settings.section', cb)` 返回的
+  // 撤销句柄必须撤销 cb 安装的注册 —— 菜单折叠的收放正是靠这个语义可断言。
+  const injectDisposers = new Map()
   let mainInjectCallback
   const ctx = {
     theme: ctxTheme,
@@ -599,14 +684,31 @@ function runBoot({
           mainInjectCallback = callback
           callback()
         }
-        return () => {}
+        // 侧栏入口与设置分节的注入：真实外壳声明这两个槽位后回调立即执行并事务性
+        // 安装注册；注入句柄=撤销它安装的东西（菜单折叠的收放正是靠这个语义）。
+        if (name === 'sidebar.panellist' || name === 'settings.section') {
+          const installed = callback()
+          injectDisposers.set(name, typeof installed === 'function' ? installed : () => {})
+        }
+        return () => {
+          const dispose = injectDisposers.get(name)
+          if (dispose !== undefined) dispose()
+          injectDisposers.delete(name)
+        }
       },
       register: (spec, component) => {
-        slotRegistrations.push({ name: spec?.name, spec, component })
-        return () => {}
+        const record = { name: spec?.name, spec, component, unregistered: false }
+        slotRegistrations.push(record)
+        // 注册的撤销把记录标记出来 —— "侧栏入口被收起"在桩里就是可断言的事实。
+        return () => { record.unregistered = true }
       },
     },
     effect: (cb) => { try { cb() } catch (error) { globalThis.__bootError = error } return () => {} },
+    // 官方布局面：设置分节的「打开面板」按钮走 ctx.layout.selectPanel 跳主区
+    // （契约原文：给其他插件做面板切换的横切面）。桩里只记录调用。
+    layout: {
+      selectPanel: (id) => { layoutSelectCalls.push(id) },
+    },
     // The subscription is REAL here: the plugin's echo guard is only meaningful if its own writes
     // actually reach it.
     on: (event, handler) => {
@@ -628,6 +730,9 @@ function runBoot({
   }
   // 预置挂件状态（原样字符串，形状由测试自己负责）。
   if (seedPet !== undefined) windowStub.localStorage.setItem('theme-gallery:pet', seedPet)
+  // 预置菜单折叠状态（原样字符串）。种子必须在 apply 之前落位 —— syncSidebarEntry
+  // 在挂载体里读它决定侧栏入口注册不注册。
+  if (seedMenu !== undefined) windowStub.localStorage.setItem('theme-gallery:menu-collapse', seedMenu)
 
   let applyError = null
   globalThis.__bootError = undefined
@@ -724,11 +829,14 @@ function runBoot({
       // 挂件的两条真实入口也一并传（头像点击的端到端断言会真的调用它们）。
       togglePet: face.togglePet,
       pickPet: face.pickPet,
+      // 菜单折叠卡的真实入口同构（点卡开关侧栏入口）。
+      toggleMenuCollapse: face.toggleMenuCollapse,
       useStore: (selector) => selector({
-        ids: ['light', 'shi-liu-jin', 'shan-qing-ting-cai', 'pet-family'],
+        ids: ['light', 'shi-liu-jin', 'shan-qing-ting-cai', 'pet-family', 'menu-collapse'],
         labels: {
           'shi-liu-jin': '石榴金 · 纯色拼色',
           'pet-family': '宠物挂件 · 七只小伙伴',
+          'menu-collapse': '菜单折叠',
         },
         descriptions,
         swatches: { 'shi-liu-jin': ['#9D2933', '#574266', '#3DE1AD'] },
@@ -742,13 +850,20 @@ function runBoot({
           try { return JSON.parse(windowStub.localStorage.getItem('theme-gallery:pet') ?? '{}').kind ?? 'ban-ban' }
           catch { return 'ban-ban' }
         })(),
+        // 折叠开关：与插件同一条来源（readMenuCollapseState 的消毒结果）。
+        menuCollapsed: (() => {
+          try {
+            return JSON.parse(windowStub.localStorage.getItem('theme-gallery:menu-collapse') ?? '{}').collapsed === true
+          } catch { return false }
+        })(),
         selected: 'light', status: '', revision: 1,
       }),
       usePanelInfo: (selector) => selector({ activePanelId: 'theme-gallery' }),
     })
     const card = jsxCalls.slice(before).find((call) => call.props?.id === id
       && (typeof call.props?.onSelect === 'function'
-        || typeof call.props?.onTogglePet === 'function'))
+        || typeof call.props?.onTogglePet === 'function'
+        || typeof call.props?.onToggleMenuCollapse === 'function'))
     if (card === undefined) throw new Error(`卡片 ${id} 没有被渲染出来`)
     const inside = jsxCalls.length
     card.type(card.props)
@@ -773,6 +888,15 @@ function runBoot({
     pageFace,
     petMarks: petMarkLogs,
     petKindMarks: petKindLogs,
+    moodMarks: moodMarkLogs,
+    menuMarks: menuMarkLogs,
+    // 槽位注册记录（main / sidebar.panellist / settings.section）—— 菜单折叠的
+    // "侧栏收放、分节常驻"断言读它（记录的 unregistered 标记即撤销事实）。
+    slotRegistrations,
+    // 本 run 创建的 MutationObserver 实例（弹窗隐藏 observer 的断言要驱动它）。
+    mutationObservers,
+    // ctx.layout.selectPanel 的实参序列（设置分节跳转断言读它）。
+    panelJumps: layoutSelectCalls,
     localStorage: windowStub.localStorage,
     jsxCalls,
     syncSelections: syncSelectionLogs,
@@ -1263,7 +1387,7 @@ check('配色数据不合法时退回默认色带（一排 → 不画色值按�
   && rottenBuilt.tree.some((call) => call.props?.className === 'tg-strip'))
 
 // 反证 4：拆掉"配色/挂件卡不渲染正文"的守卫，上面那条断言必须翻转。
-const mutBlockDesc = source.replace('!hasPicker && !isWidget && !isMood && description', 'description')
+const mutBlockDesc = source.replace('!hasPicker && !isWidget && !isMood && !isMenuCollapse && description', 'description')
 check('反证 4 真的改动了源码（配色卡的正文守卫被拆掉）', mutBlockDesc !== source)
 const leaked = runBoot({ activeId: 'light', wireSlots: true, bundleSource: mutBlockDesc })
 const leakedBuilt = leaked.cardTree(
@@ -1951,6 +2075,248 @@ const mutNoChatterClean = source.replace(
   '',
 )
 check('反证 N5 真的改动了源码（闲聊句柄不再被清）', mutNoChatterClean !== source)
+
+// ── 菜单折叠（第 15 张卡）：侧栏入口收放 + 设置分节常驻（方案二）──────────────
+// 渲染一半走 cardTree，行为一半走 pageFace().toggleMenuCollapse() —— 与用户点击
+// 同一条链。MENU_COLLAPSE_WIDGET 的文案直接从源码里求值，tooltip 断言钉的是出货文案，
+// 不是测试里另抄的一份。它是多行对象字面量，用花括号配平取完整字面量。
+const menuWidgetLiteral = (() => {
+  const marker = 'const MENU_COLLAPSE_WIDGET = '
+  const at = source.indexOf(marker)
+  if (at < 0) throw new Error('const MENU_COLLAPSE_WIDGET not found')
+  const from = at + marker.length
+  let depth = 0
+  let end = -1
+  for (let i = from; i < source.length; i += 1) {
+    const ch = source[i]
+    if (ch === '{') depth += 1
+    else if (ch === '}') {
+      depth -= 1
+      if (depth === 0) { end = i; break }
+    }
+  }
+  if (end < 0) throw new Error('const MENU_COLLAPSE_WIDGET literal not terminated')
+  return source.slice(from, end + 1)
+})()
+// eslint-disable-next-line no-new-func
+const MENU_WIDGET_DATA = new Function(`return ${menuWidgetLiteral}`)()
+const MENU_DESC = MENU_WIDGET_DATA.description
+
+// 渲染那一半：默认（从未折叠）的卡面形态。
+const menuRender = runBoot({ activeId: 'light', wireSlots: true })
+const menuBuilt = menuRender.cardTree('menu-collapse', {}, { 'menu-collapse': MENU_DESC })
+const menuCardEl = menuBuilt.tree.find((call) => call.props?.className === 'tg-card tg-menu-card')
+const menuPathEl = menuBuilt.tree.find((call) => call.props?.className === 'tg-path')
+check('折叠卡渲染出来，是 div.tg-card.tg-menu-card（卡内装胶囊按钮，button 套 button 非法）',
+  menuCardEl !== undefined && menuCardEl.type === 'div')
+const menuSwitchEl = menuBuilt.tree.find((call) => call.props?.className === 'tg-mood-switch')
+check('胶囊滑块在卡上（复用心情卡同款）：role=switch、默认 aria-checked=false、状态文字 menuShown',
+  menuSwitchEl !== undefined && menuSwitchEl.type === 'button'
+  && menuSwitchEl.props['aria-checked'] === false
+  // 子元素在 jsx 桩里返回 null（只有 jsxCalls 有记录），状态文字从渲染树里找。
+  && menuBuilt.tree.some((call) => call.props?.className === 'tg-mood-state'
+    && call.props.children === 'menuShown'))
+check('默认关：徽标走"侧栏显示中"态（tg-badge tg-badge-off + menuShown）',
+  menuBuilt.tree.some((call) => call.props?.className === 'tg-badge tg-badge-off'
+    && call.props.children === 'menuShown'))
+let menuSwitchStopped = false
+menuSwitchEl.props.onClick({ stopPropagation: () => { menuSwitchStopped = true } })
+check('点胶囊：拦住冒泡（卡身也响应点击 —— 不拦会翻转两次）', menuSwitchStopped === true)
+check('卡面正文是路径提示（.tg-path，t 桩返回键名 menuHint —— 用户要求把找回路径写在卡上）',
+  menuPathEl !== undefined && menuPathEl.props.children === 'menuHint')
+check('折叠卡不渲染正文介绍（与配色/挂件/问候卡同一条"不渲染 desc"分支）',
+  !menuBuilt.tree.some((call) => call.props?.className === 'tg-desc'))
+check('折叠卡的 tooltip 是 description（schema 那个字段在这里只作 tooltip）',
+  menuCardEl?.props.title === MENU_DESC,
+  `实际 ${JSON.stringify(menuCardEl?.props.title)}`)
+
+// 行为那一半：完整链路（点卡 → toggleMenuCollapse → localStorage + 槽位收放 + publish）。
+const menuLive = runBoot({ activeId: 'shan-qing-ting-cai', seedSkin: 'shan-qing-ting-cai', wireSlots: true })
+const menuWritesBefore = menuLive.setThemeCalls.length
+const liveSidebar = menuLive.slotRegistrations.find((r) => r.name === 'sidebar.panellist')
+const liveSection = menuLive.slotRegistrations.find((r) => r.name === 'settings.section')
+check('默认（从未折叠）：侧栏入口与设置分节都已注册、未撤销',
+  liveSidebar !== undefined && liveSidebar.unregistered === false
+  && liveSection !== undefined && liveSection.unregistered === false)
+menuLive.pageFace().toggleMenuCollapse()
+menuLive.drive(30)
+check('点折叠卡：状态写进 localStorage（下次启动还记得；键是 theme-gallery:menu-collapse）',
+  (menuLive.localStorage.getItem('theme-gallery:menu-collapse') ?? '').includes('"collapsed":true'))
+check('点折叠卡：侧栏注册被撤销（槽位自己的 disposer —— 官方机制，不是 CSS 硬藏）',
+  liveSidebar.unregistered === true)
+check('点折叠卡：设置分节仍在（面板常驻，不会把自己锁在外面 —— 方案二的核心）',
+  liveSection.unregistered === false)
+check('点折叠卡：主题服务一次都没被碰（零主题写入 —— 本功能的铁律）',
+  menuLive.setThemeCalls.length === menuWritesBefore,
+  `点击前后序列：${JSON.stringify(menuLive.setThemeCalls)}`)
+check('点折叠卡：面板徽标收到"已折叠"（store 桩记下 markMenuCollapse 的实参）',
+  menuLive.menuMarks[menuLive.menuMarks.length - 1] === true)
+// 再点一次：恢复。
+menuLive.pageFace().toggleMenuCollapse()
+menuLive.drive(30)
+const restoredSidebars = menuLive.slotRegistrations.filter((r) => r.name === 'sidebar.panellist')
+check('再点一次：折叠恢复，侧栏入口重新注册且未撤销（开关是双向的，不是单向门）',
+  (menuLive.localStorage.getItem('theme-gallery:menu-collapse') ?? '').includes('"collapsed":false')
+  && restoredSidebars.length === 2
+  && restoredSidebars[restoredSidebars.length - 1].unregistered === false
+  && menuLive.menuMarks[menuLive.menuMarks.length - 1] === false)
+
+// 种子折叠启动：侧栏入口**从未注册**（不是先出现再拆），设置分节照常注册。
+const menuSeeded = runBoot({ activeId: 'light', wireSlots: true, seedMenu: '{"collapsed":true}' })
+check('上次折叠时，启动即不再注册侧栏入口（从未出现，不是先出现再拆）',
+  !menuSeeded.slotRegistrations.some((r) => r.name === 'sidebar.panellist'))
+check('上次折叠时，设置分节仍然注册（面板从设置页可达 —— 方案二的保底）',
+  menuSeeded.slotRegistrations.some((r) => r.name === 'settings.section' && r.unregistered === false))
+
+// ── 弹窗打开时隐藏挂件（用户 2026-09-27 定）────────────────────────────────────
+// 挂件层 z-index 1200 高于模态弹窗 —— 不藏会浮在弹窗内容上（实机读数）。检测走
+// 语义属性（dialog[open] / role="dialog" / aria-modal），observer 事件驱动、随舞台起停。
+const petDialog = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_ON_SEED })
+check('挂件开着时，弹窗 observer 已随舞台安装（事件驱动，不轮询）',
+  petDialog.mutationObservers.length > 0)
+const dialogProbe = petDialog.document_.createElement('div')
+dialogProbe.setAttribute('role', 'dialog')
+petDialog.document_.dialogNode = dialogProbe
+for (const obs of petDialog.mutationObservers) obs.callback()
+check('弹窗出现 → body 打上标记类（PET_CSS 一条规则据此把挂件层 display:none）',
+  String(petDialog.document_.body.className).includes('dsh-dialog-open'))
+petDialog.document_.dialogNode = null
+for (const obs of petDialog.mutationObservers) obs.callback()
+check('弹窗关闭 → 标记类移除，挂件恢复显示',
+  !String(petDialog.document_.body.className).includes('dsh-dialog-open'))
+check('PET_CSS 里带"弹窗开着藏挂件层"的规则',
+  source.includes('body.dsh-dialog-open #dsh-theme-pet{display:none!important}'))
+petDialog.pageFace().togglePet()
+petDialog.drive(30)
+// 不按"最后一个"认 observer —— boot 里 mood 座位的 observer 建在挂件之后，尾部不是
+// 挂件的。本 runBoot 里只有挂件的 observer 会被断开（ambient/mood 的断开只发生在
+// 插件卸载，boot 不触发），some() 就足够精确；配对的证据是标记类同时被清掉。
+check('挂件拆除时，弹窗 observer 被断开、标记类清掉（不留任何痕迹）',
+  petDialog.mutationObservers.some((obs) => obs.disconnected === true)
+  && !String(petDialog.document_.body.className).includes('dsh-dialog-open'))
+
+// 设置分节（形态 A —— 用户 2026-09-27 定）：**轻量入口**。完整面板在弹窗里会白屏
+// （根因见反证 21），而且弹窗挡住换肤的全屏效果 —— 分节只报状态 + 跳转 + 恢复入口。
+// 渲染链路照真实外壳：props = t + close + inject 面的展开。
+const menuSection = runBoot({ activeId: 'light', wireSlots: true })
+const sectionReg = menuSection.slotRegistrations.find((r) => r.name === 'settings.section')
+if (sectionReg === undefined) throw new Error('settings.section 没有注册（菜单折叠链路断了）')
+const sectionCloses = []
+const sectionBefore = menuSection.jsxCalls.length
+sectionReg.component({ t: (k) => k, close: () => { sectionCloses.push(1) }, ...sectionReg.spec.inject() })
+const sectionTree = menuSection.jsxCalls.slice(sectionBefore)
+check('设置分节渲染出轻量入口（标题 + 说明 + 状态行 + 「打开面板」按钮）',
+  sectionTree.some((call) => call.props?.className === 'tg-section')
+  && sectionTree.some((call) => call.props?.children === 'sectionHint')
+  && sectionTree.some((call) => call.props?.className === 'tg-section-open'))
+check('分节不渲染完整卡片网格（方案 A：弹窗里没有 tg-grid，换肤回主区全屏做）',
+  !sectionTree.some((call) => call.props?.className === 'tg-grid'))
+const sectionOpenButton = sectionTree.find((call) => call.props?.className === 'tg-section-open')
+sectionOpenButton.props.onClick()
+check('点「打开面板」：ctx.layout.selectPanel 被调、目标是本面板（官方跳转面）',
+  menuSection.panelJumps[menuSection.panelJumps.length - 1] === 'theme-gallery',
+  `实参序列：${JSON.stringify(menuSection.panelJumps)}`)
+check('点「打开面板」：弹窗被关闭（close 是官方给分节的唯一句柄，明说用于离开设置）',
+  sectionCloses.length === 1)
+
+// 折叠开着时，分节给「恢复侧栏入口」—— 折叠后从设置找回面板的闭环（不会锁在外面）。
+const menuSeededSection = runBoot({ activeId: 'light', wireSlots: true, seedMenu: '{"collapsed":true}' })
+const seededSectionReg = menuSeededSection.slotRegistrations.find((r) => r.name === 'settings.section')
+const seededSectionBefore = menuSeededSection.jsxCalls.length
+seededSectionReg.component({ t: (k) => k, close: () => {}, ...seededSectionReg.spec.inject() })
+const seededSectionTree = menuSeededSection.jsxCalls.slice(seededSectionBefore)
+const restoreButton = seededSectionTree.find((call) => call.props?.className === 'tg-section-restore')
+check('折叠开着时，分节渲染「恢复侧栏入口」按钮', restoreButton !== undefined)
+restoreButton.props.onClick()
+menuSeededSection.drive(30)
+check('点「恢复侧栏入口」：折叠关回、侧栏重新注册（复用折叠卡同一条动作链）',
+  (menuSeededSection.localStorage.getItem('theme-gallery:menu-collapse') ?? '').includes('"collapsed":false')
+  && menuSeededSection.slotRegistrations.some((r) => r.name === 'sidebar.panellist' && r.unregistered === false)
+  && menuSeededSection.menuMarks[menuSeededSection.menuMarks.length - 1] === false)
+
+// ── 反证 21/22/23：轻量分节与挂件隐藏必须真的被测到（硬性规则 9）──────────────
+
+// 反证 21（白屏根因的回归钉）：快照读法退回 getState（真实 StoreInstance 契约上没有）
+// 且防御兜底一起消失 → 分节渲染当场抛错 —— 正是实机白屏的复现。
+const mutGetState = source.replace(
+  '() => (store?.getSnapshot ? store.getSnapshot() : SECTION_FALLBACK_SNAPSHOT)',
+  'store.getState',
+)
+check('反证 21 真的改动了源码（快照读法退回 getState、兜底被拆）', mutGetState !== source)
+const mutSnapBoot = runBoot({ activeId: 'light', wireSlots: true, bundleSource: mutGetState })
+const mutSnapReg = mutSnapBoot.slotRegistrations.find((r) => r.name === 'settings.section')
+let sectionThrew = false
+try {
+  mutSnapReg.component({ t: (k) => k, close: () => {}, ...mutSnapReg.spec.inject() })
+} catch {
+  sectionThrew = true
+}
+check('反证 21：快照读法退回 getState 后分节渲染抛错（= 实机白屏的复现，说明分节断言测的是真通道）',
+  sectionThrew)
+
+// 反证 22：拆掉 selectPanel 调用 → 「打开面板」只关弹窗、不跳转。
+const mutNoJump = source.replace('ctx.layout.selectPanel(PANEL_ID)', 'void PANEL_ID')
+check('反证 22 真的改动了源码（跳转调用被拆）', mutNoJump !== source)
+const noJumpBoot = runBoot({ activeId: 'light', wireSlots: true, bundleSource: mutNoJump })
+const noJumpReg = noJumpBoot.slotRegistrations.find((r) => r.name === 'settings.section')
+const noJumpCloses = []
+const noJumpBefore = noJumpBoot.jsxCalls.length
+noJumpReg.component({ t: (k) => k, close: () => { noJumpCloses.push(1) }, ...noJumpReg.spec.inject() })
+noJumpBoot.jsxCalls.slice(noJumpBefore)
+  .find((call) => call.props?.className === 'tg-section-open')
+  .props.onClick()
+check('反证 22：跳转被拆后 selectPanel 不再被调（说明跳转断言测的是真通道）',
+  noJumpBoot.panelJumps.length === 0 && noJumpCloses.length === 1)
+
+// 反证 23：标记类不再维护 → 弹窗开着 body 上也没有 dsh-dialog-open。
+const mutNoMark = source.replace("document.body?.classList?.toggle('dsh-dialog-open', open)", '')
+check('反证 23 真的改动了源码（标记类不再维护）', mutNoMark !== source)
+const noMarkBoot = runBoot({
+  activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_ON_SEED, bundleSource: mutNoMark,
+})
+noMarkBoot.document_.dialogNode = noMarkBoot.document_.createElement('div')
+for (const obs of noMarkBoot.mutationObservers) obs.callback()
+check('反证 23：标记类拆掉后弹窗开着也不打类（说明隐藏断言测的是真通道）',
+  !String(noMarkBoot.document_.body.className).includes('dsh-dialog-open'))
+
+// 反证 24：胶囊点击不再拦冒泡 → 卡身的 onClick 也会触发，一次点击翻转两次。
+const mutNoMenuStop = source.replace(
+  "if (event !== undefined && typeof event.stopPropagation === 'function') event.stopPropagation()\n"
+  + '                          onToggleMenuCollapse()',
+  'onToggleMenuCollapse()',
+)
+check('反证 24 真的改动了源码（胶囊不再拦冒泡）', mutNoMenuStop !== source)
+const noMenuStopBoot = runBoot({ activeId: 'light', wireSlots: true, bundleSource: mutNoMenuStop })
+const noMenuStopTree = noMenuStopBoot.cardTree('menu-collapse', {}, { 'menu-collapse': MENU_DESC })
+const noMenuSwitch = noMenuStopTree.tree.find((call) => call.props?.className === 'tg-mood-switch')
+let noMenuStopped = false
+noMenuSwitch.props.onClick({ stopPropagation: () => { noMenuStopped = true } })
+check('反证 24：不拦冒泡后 stopPropagation 不再被调用（说明胶囊拦截断言测的是真通道）',
+  noMenuStopped === false)
+
+// ── 反证 19/20：菜单折叠的收放与分节常驻必须真的被测到（硬性规则 9）────────────
+
+// 反证 19：拆掉"撤销侧栏注册"那一步（只置 undefined、不调槽位 disposer）→ 折叠后侧栏仍在。
+const mutNoTear = source.replace(
+  'sidebarEntryDispose()\n          sidebarEntryDispose = undefined',
+  'sidebarEntryDispose = undefined',
+)
+check('反证 19 真的改动了源码（撤销那一步被拆掉）', mutNoTear !== source)
+const noTearBoot = runBoot({
+  activeId: 'shan-qing-ting-cai', seedSkin: 'shan-qing-ting-cai', wireSlots: true, bundleSource: mutNoTear,
+})
+const noTearSidebar = noTearBoot.slotRegistrations.find((r) => r.name === 'sidebar.panellist')
+noTearBoot.pageFace().toggleMenuCollapse()
+noTearBoot.drive(30)
+check('反证 19：撤销被拆后，折叠时侧栏注册仍然活着（说明"侧栏注册被撤销"那条测的是真通道）',
+  noTearSidebar.unregistered === false)
+
+// 反证 20：把分节注册的 name 改掉 → 桩里找不到 settings.section 记录。
+const mutNoSection = source.replace("name: 'settings.section',", "name: 'settings.section-x',")
+check('反证 20 真的改动了源码（分节注册的名字被改掉）', mutNoSection !== source)
+const noSectionBoot = runBoot({ activeId: 'light', wireSlots: true, bundleSource: mutNoSection })
+check('反证 20：名字改掉后，设置分节在桩里缺失（说明"分节已注册且常驻"那两条测的是真通道）',
+  !noSectionBoot.slotRegistrations.some((r) => r.name === 'settings.section'))
 
 if (failed > 0) {
   console.error(`\n${failed} boot path check(s) failed`)
