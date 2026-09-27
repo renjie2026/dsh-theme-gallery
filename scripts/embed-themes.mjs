@@ -254,35 +254,138 @@ const embedded = next.slice(0, paletteAt)
   + `const BUNDLED_PALETTES = ${paletteLiteral}`
   + next.slice(paletteEnd + '\n    ]'.length)
 
+// ── the mood lines: validate the pack, then inline it the same way ────────────
+//
+// The greeting corpus is DATA the plugin ships (see docs/IMP-心情问候语-A), so it
+// travels inlined too — and it is validated here, at build time, because a bad
+// line must fail the BUILD (including the release CI's embed step) rather than
+// surface at runtime as a garbled or inappropriate greeting. The red line is the
+// user's: no negative, depressing, or sensitive wording may ship.
+const MOOD_CATEGORIES = ['morning', 'day', 'night', 'general', 'holiday']
+// Multi-character terms ONLY: single characters like 死 or 黑 would false-positive
+// on kept lines (#24 熬过漫长黑夜, #30 追思故人 — both explicitly retained by the
+// user). Every listed term was checked against the whole corpus: zero hits.
+const MOOD_BLACKLIST = [
+  '自杀', '轻生', '抑郁', '绝望', '厌世', '崩溃', '去死', '该死', '恨透', '仇视',
+  '暴力', '色情', '赌博', '毒品', '废物', '孤独终老', '生无可恋', '活不下去', '没意思透了',
+]
+const moodPath = join(root, 'lib', 'mood-lines.json')
+const moodPack = JSON.parse(readFileSync(moodPath, 'utf8'))
+if (moodPack === null || typeof moodPack !== 'object' || !Array.isArray(moodPack.lines)) {
+  throw new Error('lib/mood-lines.json: expected an object with a lines array')
+}
+{
+  const seenMood = new Map()
+  const countByCategory = new Map()
+  for (const line of moodPack.lines) {
+    const where = `mood ${typeof line?.id === 'string' ? line.id : '(no id)'}`
+    if (typeof line.id !== 'string' || /^m\d{3}$/.test(line.id) === false) fail(where, 'id must match m\\d{3}')
+    else if (seenMood.has(line.id)) fail(where, `duplicate id, already defined in ${seenMood.get(line.id)}`)
+    else seenMood.set(line.id, where)
+    if (typeof line.seq !== 'number' || !Number.isFinite(line.seq)) fail(where, 'seq must be a finite number')
+    if (typeof line.text !== 'string' || line.text.length === 0) fail(where, 'text must be a non-empty string')
+    else {
+      if (line.text.length > 100) fail(where, `text is ${line.text.length} chars (max 100)`)
+      for (const term of MOOD_BLACKLIST) {
+        if (line.text.includes(term)) fail(where, `text hits the blacklist term "${term}" (red line: no negative/sensitive wording)`)
+      }
+    }
+    if (!MOOD_CATEGORIES.includes(line.category)) fail(where, `category must be one of ${MOOD_CATEGORIES.join('/')}`)
+    if (line.category === 'holiday') {
+      const range = line.holiday
+      const valid = (edge) => typeof edge === 'string' && /^\d{2}-\d{2}$/.test(edge)
+        && Number(edge.slice(0, 2)) >= 1 && Number(edge.slice(0, 2)) <= 12
+        && Number(edge.slice(3, 5)) >= 1 && Number(edge.slice(3, 5)) <= 31
+      if (range === null || typeof range !== 'object' || !valid(range.from) || !valid(range.to)) {
+        fail(where, 'holiday lines need holiday: { from: "MM-DD", to: "MM-DD" }')
+      }
+    } else if (line.holiday !== undefined) {
+      fail(where, 'only holiday lines may carry a holiday range')
+    }
+    countByCategory.set(line.category, (countByCategory.get(line.category) ?? 0) + 1)
+  }
+  // An empty pool would leave the marquee with nothing to say at that hour — the
+  // silent-failure shape this project keeps paying for. Every category must be
+  // populated, and the 40 site-seeded lines must never be dropped.
+  for (const category of MOOD_CATEGORIES) {
+    if ((countByCategory.get(category) ?? 0) < 1) fail(`mood pool ${category}`, 'category pool is empty')
+  }
+  if (moodPack.lines.length < 40) fail('mood pack', `only ${moodPack.lines.length} lines (the 40 site seeds must stay)`)
+}
+if (problems.length > 0) {
+  console.error(`theme pack: ${problems.length} problem(s) found`)
+  for (const problem of problems) console.error(`  - ${problem}`)
+  process.exit(1)
+}
+const moodLiteral = JSON.stringify(moodPack, null, 2)
+  .split('\n')
+  .map((line, index) => (index === 0 ? line : `    ${line}`))
+  .join('\n')
+// The pack is an OBJECT: its own closing brace is the only line that is exactly
+// `    }` (inner line objects close eight spaces out) — same terminator logic as
+// the two array constants above.
+const moodAt = embedded.indexOf('const BUNDLED_MOOD_LINES = ')
+let withMood
+if (moodAt < 0) {
+  // First run: insert the declaration right after the palette literal, so the
+  // browser half reads it before the mood module (later in the factory body).
+  // The palette literal is an ARRAY — its terminator line is `    ]`.
+  const insertAt = embedded.indexOf('const BUNDLED_PALETTES = ')
+  const insertEnd = embedded.indexOf('\n    ]', insertAt)
+  if (insertAt < 0 || insertEnd < 0) {
+    throw new Error('lib/client.js: could not find the BUNDLED_PALETTES declaration to insert the mood lines after')
+  }
+  const at = insertEnd + '\n    ]'.length
+  withMood = embedded.slice(0, at) + `\n\n    const BUNDLED_MOOD_LINES = ${moodLiteral}` + embedded.slice(at)
+} else {
+  const moodOpen = embedded.indexOf('{', moodAt)
+  const moodEnd = moodOpen < 0 ? -1 : embedded.indexOf('\n    }', moodOpen)
+  if (moodOpen < 0 || moodEnd < 0) {
+    throw new Error('lib/client.js: could not find the BUNDLED_MOOD_LINES declaration to replace')
+  }
+  withMood = embedded.slice(0, moodAt)
+    + `const BUNDLED_MOOD_LINES = ${moodLiteral}`
+    + embedded.slice(moodEnd + '\n    }'.length)
+}
+
 // ── READ THE LITERALS BACK OUT OF THE NEW TEXT, AND PARSE THE WHOLE FILE ──────
 //
 // Both assertions exist because of the truncation above: the file stayed syntactically
 // plausible while carrying a broken literal, and nothing downstream looks at its raw
 // shape. Reading them back makes "what I wrote is what a reader will find" a checked
 // fact rather than an assumption.
-const readAt = embedded.indexOf('const BUNDLED_THEMES = ')
-const readEnd = embedded.indexOf('\n    ]', readAt) + '\n    ]'.length
-const readBack = JSON.parse(embedded.slice(readAt + 'const BUNDLED_THEMES = '.length, readEnd))
+const readAt = withMood.indexOf('const BUNDLED_THEMES = ')
+const readEnd = withMood.indexOf('\n    ]', readAt) + '\n    ]'.length
+const readBack = JSON.parse(withMood.slice(readAt + 'const BUNDLED_THEMES = '.length, readEnd))
 if (readBack.length !== themes.length
   || readBack.map((theme) => theme.id).join(',') !== themes.map((theme) => theme.id).join(',')) {
   throw new Error('embed-themes: the inlined literal does not read back as the themes it was built from')
 }
-const paletteReadAt = embedded.indexOf('const BUNDLED_PALETTES = ')
-const paletteReadEnd = embedded.indexOf('\n    ]', paletteReadAt) + '\n    ]'.length
-const paletteReadBack = JSON.parse(embedded.slice(paletteReadAt + 'const BUNDLED_PALETTES = '.length, paletteReadEnd))
+const paletteReadAt = withMood.indexOf('const BUNDLED_PALETTES = ')
+const paletteReadEnd = withMood.indexOf('\n    ]', paletteReadAt) + '\n    ]'.length
+const paletteReadBack = JSON.parse(withMood.slice(paletteReadAt + 'const BUNDLED_PALETTES = '.length, paletteReadEnd))
 if (paletteReadBack.map((scheme) => scheme.id).join(',') !== schemes.map((scheme) => scheme.id).join(',')) {
   throw new Error('embed-themes: the inlined palette does not read back as the schemes it was built from')
 }
+// The mood pack reads back too — same checked fact, same reason.
+const moodReadAt = withMood.indexOf('const BUNDLED_MOOD_LINES = ')
+const moodReadOpen = withMood.indexOf('{', moodReadAt)
+const moodReadEnd = withMood.indexOf('\n    }', moodReadOpen) + '\n    }'.length
+const moodReadBack = JSON.parse(withMood.slice(moodReadOpen, moodReadEnd))
+if (moodReadBack.lines.length !== moodPack.lines.length
+  || moodReadBack.lines.map((line) => line.id).join(',') !== moodPack.lines.map((line) => line.id).join(',')) {
+  throw new Error('embed-themes: the inlined mood pack does not read back as the lines it was built from')
+}
 try {
   // eslint-disable-next-line no-new-func
-  new Function(embedded)
+  new Function(withMood)
 } catch (error) {
   throw new Error(`lib/client.js would not PARSE after embedding: ${String(error.message ?? error)}`)
 }
 
 writeFileSync(
   clientPath,
-  embedded.replace(versionMarker, `const BUNDLED_VERSION = '${pkg.version}'`),
+  withMood.replace(versionMarker, `const BUNDLED_VERSION = '${pkg.version}'`),
 )
 console.log(`embedded ${themes.length} theme(s) from ${files.length} file(s): ${[...seen.keys()].join(', ')}`)
-console.log(`inlined ${schemes.length} palette scheme(s) and version ${pkg.version}`)
+console.log(`inlined ${schemes.length} palette scheme(s) and ${moodPack.lines.length} mood line(s), version ${pkg.version}`)

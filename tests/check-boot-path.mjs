@@ -45,6 +45,24 @@ function check(label, condition) {
  */
 const syncSelectionLogs = []
 
+/**
+ * 每次 `markPet` 报上来的挂件开关状态（store 桩记录），由 runBoot 开头清空。
+ * 挂件卡的徽标与 aria-pressed 都读它 —— 状态没走到 store，面板就会显示错的开关。
+ */
+const petMarkLogs = []
+
+/**
+ * 每次 `markPetKind` 报上来的"当前是哪只宠物"（store 桩记录），由 runBoot 开头清空。
+ * 头像选择行的点亮态与卡面图案都读它 —— 二期新增，与 petMarkLogs 同一条理由。
+ */
+const petKindLogs = []
+
+/**
+ * 每次 `markMood` 报上来的问候状态（store 桩记录），由 runBoot 开头清空。
+ * 胶囊开关与三组 chips 的点亮态都读它 —— 与 petMarkLogs 同一条理由。
+ */
+const moodMarkLogs = []
+
 function loadBundle(window_, document_, recordJsx = () => {}, bundleSource = source) {  const registrations = []
   const windowStub = {
     ...window_,
@@ -78,6 +96,14 @@ function loadBundle(window_, document_, recordJsx = () => {}, bundleSource = sou
               // `sync(themes, selected, revision)` —— 真实 store 的第一个参数是 draft。
               sync(_themes, selected) { syncSelectionLogs.push(selected) },
               note() {}, select() {}, markScheme() {},
+              // 挂件卡的开关状态也走 store（publish → markPet）。桩少一个 action，
+              // publish 就抛错、整个挂载被 guard 拦下 —— 规则 8 的第 N 例。
+              markPet(on) { petMarkLogs.push(on) },
+              // 二期：头像选择行的点亮态走 markPetKind，同一条理由（规则 8）。
+              markPetKind(id) { petKindLogs.push(id) },
+              // 心情问候卡的开关与三组设置走 markMood，同一条理由（规则 8）。
+              // 记下每次报上来的开关状态，问候卡的断言读它。
+              markMood(state) { moodMarkLogs.push(state) },
             },
           }),
         }),
@@ -144,38 +170,84 @@ function documentStub() {
     closest: () => null,
   }
   /** 装饰层节点。 */
-  const makeNode = (tag) => ({    tagName: String(tag).toUpperCase(),
-    id: '', className: '',
-    dataset: {},
-    attributes: new Map(),
-    style: { setProperty() {}, getPropertyValue: () => '' },
-    children: [], childElementCount: 0, firstElementChild: null,
-    // Records every scene write, which is how a remaining "drawn twice" path would be caught.
-    _html: '',
-    get innerHTML() { return this._html },
-    set innerHTML(value) {
-      this._html = String(value)
-      innerHTMLWrites.push({ tag: this.tagName, len: this._html.length })
-    },
-    textContent: '',
-    getBoundingClientRect: () => ({
-      left: 0, top: 620, right: 280, bottom: 850, width: 280, height: 230, x: 0, y: 620,
-    }),
-    querySelectorAll: () => [],
-    querySelector: () => null,
-    append() {}, appendChild() {}, replaceChildren() {},
-    setAttribute(name, value) { this.attributes.set(name, String(value)) },
-    getAttribute(name) { return this.attributes.get(name) ?? null },
-    removeAttribute(name) { this.attributes.delete(name) },
-    hasAttribute(name) { return this.attributes.has(name) },
-    _removed: false,
-    remove() {
-      if (this._removed) return
-      this._removed = true
-      removals.push({ id: this.id, className: String(this.className) })
-    },
-    closest: () => null,
-  })
+  const makeNode = (tag) => {
+    const node = {
+      tagName: String(tag).toUpperCase(),
+      id: '', className: '',
+      dataset: {},
+      attributes: new Map(),
+      style: { setProperty() {}, getPropertyValue: () => '' },
+      children: [], childElementCount: 0, firstElementChild: null,
+      // Records every scene write, which is how a remaining "drawn twice" path would be caught.
+      _html: '',
+      get innerHTML() { return this._html },
+      set innerHTML(value) {
+        this._html = String(value)
+        innerHTMLWrites.push({ tag: this.tagName, len: this._html.length })
+      },
+      textContent: '',
+      getBoundingClientRect: () => ({
+        left: 0, top: 620, right: 280, bottom: 850, width: 280, height: 230, x: 0, y: 620,
+      }),
+      querySelectorAll: () => [],
+      // 结构节点是 createElement 逐个建的（宠物挂件的舞台如此），真实 DOM 里父节点能
+      // 按类名找到孩子；桩里按"创建顺序在本节点之后 + 类名匹配"近似同一件事 —— 返回
+      // null 的话，buildPetStage 拿不到子节点引用，整个挂件在桩里静默失效（规则 8）。
+      querySelector(selector) {
+        if (typeof selector !== 'string' || !selector.startsWith('.')) return null
+        const wanted = selector.slice(1)
+        const myAt = created.indexOf(this)
+        if (myAt < 0) return null
+        return created.find((n, at) => at > myAt && !n._removed
+          && String(n.className).split(' ').includes(wanted)) ?? null
+      },
+      append(...kids) { for (const kid of kids) this.children.push(kid) },
+      appendChild(kid) { this.children.push(kid) },
+      setAttribute(name, value) { this.attributes.set(name, String(value)) },
+      getAttribute(name) { return this.attributes.get(name) ?? null },
+      removeAttribute(name) { this.attributes.delete(name) },
+      hasAttribute(name) { return this.attributes.has(name) },
+      _removed: false,
+      remove() {
+        if (this._removed) return
+        this._removed = true
+        removals.push({ id: this.id, className: String(this.className) })
+      },
+      closest: () => null,
+    }
+    // classList 以 className 字符串为唯一事实来源 —— 真实 DOM 也是这样。
+    // 缺了它，挂件的 run/bark/改名类名切换会在桩里抛 TypeError（被 effect 的 try 吞掉），
+    // 测试却照样绿 —— 规则 8 的又一例，本轮真踩到。
+    node.classList = {
+      add: (...names) => {
+        const set = new Set(String(node.className).split(' ').filter(Boolean))
+        for (const item of names) set.add(item)
+        node.className = [...set].join(' ')
+      },
+      remove: (...names) => {
+        const set = new Set(String(node.className).split(' ').filter(Boolean))
+        for (const item of names) set.delete(item)
+        node.className = [...set].join(' ')
+      },
+      contains: (name) => String(node.className).split(' ').includes(name),
+    }
+    // 事件监听按类型记录下来，测试用它把"用户真的点了"演出来（_fire）。
+    const listeners = new Map()
+    node.addEventListener = (type, handler) => {
+      if (!listeners.has(type)) listeners.set(type, [])
+      listeners.get(type).push(handler)
+    }
+    node.removeEventListener = (type, handler) => {
+      const list = listeners.get(type) ?? []
+      const at = list.indexOf(handler)
+      if (at >= 0) list.splice(at, 1)
+    }
+    /** 触发一类事件（测试专用）：按记录顺序调全部监听。 */
+    node._fire = (type, event) => {
+      for (const handler of [...(listeners.get(type) ?? [])]) handler(event)
+    }
+    return node
+  }
   const body = makeNode('body')
   body.style = {
     _v: new Map(),
@@ -185,6 +257,28 @@ function documentStub() {
   }
   const head = makeNode('head')
   const documentElement = makeNode('html')
+
+  /**
+   * 对话输入框链：centerCol → composer 座位 → contenteditable。
+   *
+   * 宠物挂件锚定输入框（阅读态用的同一套查找），桩里不补这条链，挂件同步就会
+   * "找不到锚点"而静默收起 —— 挂件的行为断言一个都测不到（规则 8）。
+   */
+  const composerSeat = makeNode('div')
+  composerSeat.getBoundingClientRect = () => ({
+    left: 300, top: 700, right: 1000, bottom: 780, width: 700, height: 80, x: 300, y: 700,
+  })
+  const composerNode = makeNode('div')
+  // 阅读态的 transcriptHasContent 会从 composer 往上走两层（座位 → 父容器）再遍历兄弟，
+  // 所以补一个空包裹层，让这条链在桩里也是通的（兄弟无内容 → 判"无消息"，与旧行为一致）。
+  const composerWrap = makeNode('div')
+  composerWrap.children = [composerSeat]
+  composerWrap.childElementCount = 1
+  composerSeat.parentElement = composerWrap
+  composerNode.parentElement = composerSeat
+  const centreColumnNode = makeNode('div')
+  centreColumnNode.querySelector = (selector) =>
+    (typeof selector === 'string' && selector.includes('contenteditable') ? composerNode : null)
 
   /**
    * Every node `createElement` has produced, so `querySelector` can find them by class.
@@ -227,6 +321,9 @@ function documentStub() {
   const document_ = {
     head, body, documentElement,
     visibilityState: 'visible',
+    // "生成中"信号钩子：默认查不到（=未在生成）；B9 断言往里塞节点来模拟 InputBar
+    // 的 aria-label="停止生成" 按钮。真实环境由 composer 提供，桩里由测试控制。
+    stopButton: null,
     createElement: (tag) => {
       const node = makeNode(tag)
       created.push(node)
@@ -234,7 +331,16 @@ function documentStub() {
     },
     querySelector(selector) {
       if (typeof selector !== 'string') return null
+      if (selector.includes('aria-label="停止生成"') || selector.includes('aria-label="Stop generating"')) {
+        return document_.stopButton
+      }
       if (selector.includes('sidebarCol')) return column
+      // 宠物挂件的舞台节点（按 id 找，含"还在不在"的判定）。
+      if (selector.includes('#dsh-theme-pet')) {
+        return created.find((n) => n.id === 'dsh-theme-pet' && !n._removed) ?? null
+      }
+      // 宠物挂件 / 阅读态的输入框锚点。
+      if (selector.includes('centerCol')) return centreColumnNode
       // The ambient stylesheet is installed with `dataset.pluginCss` and looked up by attribute.
       // Answering `null` here made `ensureAmbientStylesheet` create a fresh sheet on every pass,
       // and because `syncAmbient` bails out while the sheet is "absent", the scene was never
@@ -258,9 +364,8 @@ function documentStub() {
     querySelectorAll: (selector) => findAll(selector),
     addEventListener() {}, removeEventListener() {},
   }
-  return { document_, body, innerHTMLWrites, removals, sceneHtml }
+  return { document_, body, innerHTMLWrites, removals, sceneHtml, created }
 }
-
 /**
  * 装上浏览器观察器桩。
  *
@@ -318,14 +423,17 @@ function runBoot({
   config,
   seedSkin = 'shan-qing-ting-cai',
   seedBuiltIn,
+  seedPet,
   wireSlots = false,
   bundleSource = source,
 } = {}) {
   const restoreObservers = installObserverStubs()
-  // 每个 run 一份干净的"选中卡片"序列（模块级容器，见它的文档）。
+  // 每个 run 一份干净的"选中卡片"、"挂件开关"与"当前宠物"序列（模块级容器，见它们的文档）。
   syncSelectionLogs.length = 0
+  petMarkLogs.length = 0
+  petKindLogs.length = 0
   try {
-  const { document_, body, innerHTMLWrites, removals, sceneHtml } = documentStub()
+  const { document_, body, innerHTMLWrites, removals, sceneHtml, created } = documentStub()
   const setThemeCalls = []
   let accentLayers = 0
   const registrations = []
@@ -343,13 +451,13 @@ function runBoot({
   ]
   // 本插件提供的皮肤 id：表现层对它们都是慢写入（桩里按此建模）。
   const SKIN_IDS = [
+    'meng-hai-you-yu',
+    'shan-qing-ting-cai',
+    'ying-mu-cai-yun',
+    'pei-an-jie-xin',
     'hu-po-mao-mi',
     'hu-zi-a-huang',
-    'meng-hai-you-yu',
-    'pei-an-jie-xin',
-    'shan-qing-ting-cai',
     'shi-liu-jin',
-    'ying-mu-cai-yun',
   ]
 
   const timers = []
@@ -366,6 +474,8 @@ function runBoot({
       clear() { this.store.clear() },
     },
     innerHeight: 950,
+    // 挂件的钳位需要视口宽度 —— 桩缺它时 clamp 全变 NaN（本轮实测踩到，规则 8）。
+    innerWidth: 1280,
     addEventListener() {}, removeEventListener() {},
     setTimeout: (fn, delay) => { timers.push({ fn, delay }); return timers.length },
     clearTimeout: () => {},
@@ -516,8 +626,11 @@ function runBoot({
   if (seedBuiltIn !== undefined) {
     windowStub.localStorage.setItem('theme-gallery:built-in-choice', seedBuiltIn)
   }
+  // 预置挂件状态（原样字符串，形状由测试自己负责）。
+  if (seedPet !== undefined) windowStub.localStorage.setItem('theme-gallery:pet', seedPet)
 
   let applyError = null
+  globalThis.__bootError = undefined
   try { exports_.apply(ctx) } catch (error) { applyError = error }
 
   /**
@@ -608,24 +721,38 @@ function runBoot({
       t: (key) => key,
       setTheme: face.setTheme,
       pickScheme: onPick === undefined ? face.pickScheme : onPick,
+      // 挂件的两条真实入口也一并传（头像点击的端到端断言会真的调用它们）。
+      togglePet: face.togglePet,
+      pickPet: face.pickPet,
       useStore: (selector) => selector({
-        ids: ['light', 'shi-liu-jin', 'shan-qing-ting-cai'],
-        labels: { 'shi-liu-jin': '石榴金 · 纯色拼色' },
+        ids: ['light', 'shi-liu-jin', 'shan-qing-ting-cai', 'pet-family'],
+        labels: {
+          'shi-liu-jin': '石榴金 · 纯色拼色',
+          'pet-family': '宠物挂件 · 七只小伙伴',
+        },
         descriptions,
         swatches: { 'shi-liu-jin': ['#9D2933', '#574266', '#3DE1AD'] },
         cardRows,
         // 与真实 store 同形：`sync` 每次 publish 都会写 `scheme`（见 markScheme）。
         scheme: rememberedSchemeValue(),
+        // 挂件开关：与插件同一条来源（localStorage 里的 on:true）。
+        petEnabled: (windowStub.localStorage.getItem('theme-gallery:pet') ?? '').includes('"on":true'),
+        // 当前是哪只宠物：与插件同一条来源（localStorage 里的 kind；坏值回落 ban-ban）。
+        petKind: (() => {
+          try { return JSON.parse(windowStub.localStorage.getItem('theme-gallery:pet') ?? '{}').kind ?? 'ban-ban' }
+          catch { return 'ban-ban' }
+        })(),
         selected: 'light', status: '', revision: 1,
       }),
       usePanelInfo: (selector) => selector({ activePanelId: 'theme-gallery' }),
     })
     const card = jsxCalls.slice(before).find((call) => call.props?.id === id
-      && typeof call.props?.onSelect === 'function')
+      && (typeof call.props?.onSelect === 'function'
+        || typeof call.props?.onTogglePet === 'function'))
     if (card === undefined) throw new Error(`卡片 ${id} 没有被渲染出来`)
     const inside = jsxCalls.length
     card.type(card.props)
-    return { card, tree: jsxCalls.slice(inside) }
+    return { card, tree: jsxCalls.slice(inside), page: jsxCalls.slice(before, inside) }
   }
 
   /** store 里那一格应该点亮什么 —— 与插件同一条规则（记住的 → 否则默认石榴金）。 */
@@ -633,13 +760,19 @@ function runBoot({
 
   return {
     setThemeCalls, registrations, body, applyError, themeState, document_,
-    accentLayers, innerHTMLWrites,
+    accentLayers, innerHTMLWrites, created,
+    // effect 桩把回调里的异常吞进这个全局 —— 它非空说明某条路径在桩里抛错了
+    //（规则 8：桩缺副作用会把缺陷藏起来，这里反过来把抛错暴露给断言）。
+    get bootError() { return globalThis.__bootError },
     paintedProbe: body.style.getPropertyValue('--dsw-alias-bg-base'),
     overrides: ctxTheme.overrides,
     adoptPersistedPreference,
     drive,
     clickCard,
     cardTree,
+    pageFace,
+    petMarks: petMarkLogs,
+    petKindMarks: petKindLogs,
     localStorage: windowStub.localStorage,
     jsxCalls,
     syncSelections: syncSelectionLogs,
@@ -1129,8 +1262,8 @@ check('配色数据不合法时退回默认色带（一排 → 不画色值按�
   !rottenBuilt.tree.some((call) => call.props?.className === 'tg-picker')
   && rottenBuilt.tree.some((call) => call.props?.className === 'tg-strip'))
 
-// 反证 4：拆掉"配色卡不渲染正文"的守卫，上面那条断言必须翻转。
-const mutBlockDesc = source.replace('!hasPicker && description', 'description')
+// 反证 4：拆掉"配色/挂件卡不渲染正文"的守卫，上面那条断言必须翻转。
+const mutBlockDesc = source.replace('!hasPicker && !isWidget && !isMood && description', 'description')
 check('反证 4 真的改动了源码（配色卡的正文守卫被拆掉）', mutBlockDesc !== source)
 const leaked = runBoot({ activeId: 'light', wireSlots: true, bundleSource: mutBlockDesc })
 const leakedBuilt = leaked.cardTree(
@@ -1358,6 +1491,466 @@ check('主动点浅色卡时，最后报给 store 的选中卡片是浅色',
 
 // 反证 8 已在上面的「判定函数」那一组里做（同一份 mutBadge）—— 端到端那条在这里不需要
 // 再来一次：空转的正是"跑一遍再断言序列"，所以这里**刻意只留判定函数的反证**。
+
+// ── 宠物挂件卡（宠物家族 × 7）：开关不碰主题、舞台真的建得起来 ────────────────
+//
+// 挂件卡与主题服务正交：点它**绝不 setTheme**（这是"可与任何皮肤同时开启"的前提），
+// 状态写 localStorage，舞台画在自己的固定层里、锚定对话输入框。渲染那一半走 cardTree
+// （挂件 id 已在桩的 ids 里），行为那一半走 pageFace().togglePet()/pickPet() —— 与用户
+// 点击同一条链。PET_WIDGET 的文案直接从源码里求值，tooltip 断言钉的是出货文案，
+// 不是测试里另抄的一份。它是多行对象字面量，constOf 的单行正则取不了 —— 用花括号
+// 配平取完整字面量。
+const petWidgetLiteral = (() => {
+  const marker = 'const PET_WIDGET = '
+  const at = source.indexOf(marker)
+  if (at < 0) throw new Error('const PET_WIDGET not found')
+  const from = at + marker.length
+  let depth = 0
+  let end = -1
+  for (let i = from; i < source.length; i += 1) {
+    const ch = source[i]
+    if (ch === '{') depth += 1
+    else if (ch === '}') {
+      depth -= 1
+      if (depth === 0) { end = i; break }
+    }
+  }
+  if (end < 0) throw new Error('const PET_WIDGET literal not terminated')
+  return source.slice(from, end + 1)
+})()
+// eslint-disable-next-line no-new-func
+const PET_WIDGET_DATA = new Function(`return ${petWidgetLiteral}`)()
+const PET_DESC = PET_WIDGET_DATA.description
+const PET_ON_SEED = JSON.stringify({ on: true })
+
+// 渲染那一半：卡面形态（div 卡身 + 7 颗头像 + 与舞台同源的卡面图案）。
+const petRender = runBoot({ activeId: 'light', wireSlots: true })
+petRender.localStorage.setItem('theme-gallery:pet', PET_ON_SEED)
+const petBuilt = petRender.cardTree('pet-family', {}, { 'pet-family': PET_DESC })
+const petCardEl = petBuilt.tree.find((call) => call.props?.className === 'tg-card tg-pet-card')
+const petSwatches = petBuilt.tree.filter((call) => call.props?.className === 'tg-petswatch')
+const petArtEl = petBuilt.tree.find((call) => call.props?.className === 'tg-pet-art')
+check('挂件卡渲染出来，是 div（内含 7 颗头像按钮，button 套 button 非法）',
+  petCardEl !== undefined && petCardEl.type === 'div')
+check('头像选择行 7 颗齐全，当前宠物（ban-ban）那颗 aria-pressed=true、其余 false',
+  petSwatches.length === 7
+  && petSwatches.every((call) => call.type === 'button')
+  && petSwatches.filter((call) => call.props['aria-pressed'] === true).length === 1
+  && petSwatches[0].props['aria-pressed'] === true
+  && petSwatches[0].props.title === '斑斑 · 小奶狗')
+check('挂件卡不渲染正文介绍（与配色卡同一条"不渲染 desc"分支）',
+  !petBuilt.tree.some((call) => call.props?.className === 'tg-desc'))
+check('挂件卡的 tooltip 是 description（schema 那个字段在这里只作 tooltip）',
+  petCardEl?.props.title === PET_DESC,
+  `实际 ${JSON.stringify(petCardEl?.props.title)}`)
+check('卡面图案与舞台同源（dangerouslySetInnerHTML 里是注册表的 side markup + 道具）',
+  petArtEl !== undefined
+  && String(petArtEl.props.dangerouslySetInnerHTML.__html).includes('M15 36 Q4 31 6.5 21')
+  && String(petArtEl.props.dangerouslySetInnerHTML.__html).includes('#E06A4E'))
+check('开启时徽标显示"开启"态（t 桩返回键名，所以看到的是 petOn）',
+  petBuilt.tree.some((call) => call.props?.className === 'tg-badge' && call.props.children === 'petOn'))
+const petOffBuilt = runBoot({ activeId: 'light', wireSlots: true })
+  .cardTree('pet-family', {}, { 'pet-family': PET_DESC })
+const petOffEl = petOffBuilt.tree.find((call) => call.props?.className === 'tg-card tg-pet-card')
+check('关闭时徽标走"关"态（卡身是 div 没有 pressed 语义，开关状态由徽标文字承载）',
+  petOffBuilt.tree.some((call) => call.props?.className === 'tg-badge tg-badge-off'
+    && call.props.children === 'petOff')
+  && petOffEl !== undefined)
+
+// 行为那一半：完整链路（点卡片 → togglePet → togglePetWidget → 舞台 + publish + markPet）。
+const petLive = runBoot({ activeId: 'shan-qing-ting-cai', seedSkin: 'shan-qing-ting-cai', wireSlots: true })
+const petWritesBefore = petLive.setThemeCalls.length
+petLive.pageFace().togglePet()
+petLive.drive(30)
+check('点挂件卡：状态写进 localStorage（下次启动还记得）',
+  (petLive.localStorage.getItem('theme-gallery:pet') ?? '').includes('"on":true'))
+check('点挂件卡：主题服务一次都没被碰（setTheme 序列不变 —— 可与任何皮肤同时开启的前提）',
+  petLive.setThemeCalls.length === petWritesBefore,
+  `点击前后序列：${JSON.stringify(petLive.setThemeCalls)}`)
+check('点挂件卡：舞台真的建起来了（#dsh-theme-pet 在文档里）',
+  petLive.document_.querySelector('#dsh-theme-pet') !== null)
+check('点挂件卡：面板徽标收到"已开启"（store 桩记下 markPet 的实参）',
+  petLive.petMarks[petLive.petMarks.length - 1] === true)
+check('publish 把"当前是哪只"报给 store（markPetKind 链路通，头像点亮靠它）',
+  petLive.petKindMarks[petLive.petKindMarks.length - 1] === 'ban-ban')
+// 再点一次：关掉，舞台拆掉。
+petLive.pageFace().togglePet()
+petLive.drive(30)
+check('再点一次：挂件关闭，舞台被拆除（开关是双向的，不是单向门）',
+  petLive.document_.querySelector('#dsh-theme-pet') === null
+  && petLive.petMarks[petLive.petMarks.length - 1] === false)
+
+// 启用状态随启动恢复：上次开着，这次启动舞台就在（不用再点一次）。
+const petRestore = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_ON_SEED })
+check('上次开着时，启动即建舞台（不用再点一次）',
+  petRestore.document_.querySelector('#dsh-theme-pet') !== null)
+
+// 急停开关一并停掉挂件：它是与 ambient 同源的装饰层刹车。
+const petKilled = runBoot({
+  activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_ON_SEED, config: { ambient: false },
+})
+check('ambient:false 时挂件也不启动（急停开关管全部装饰层）',
+  petKilled.document_.querySelector('#dsh-theme-pet') === null)
+
+// ── 二期：点头像换宠物（完整链路 pickPet → selectPetWidget → 舞台重建）────────
+const petPick = runBoot({ activeId: 'shan-qing-ting-cai', seedSkin: 'shan-qing-ting-cai', wireSlots: true })
+const pickWritesBefore = petPick.setThemeCalls.length
+petPick.pageFace().pickPet('da-ju')
+petPick.drive(30)
+const pickStage = petPick.document_.querySelector('#dsh-theme-pet')
+check('点头像：kind 落盘（da-ju），舞台按新宠物重建（dataset.petKind）',
+  pickStage !== null && pickStage.dataset.petKind === 'da-ju'
+  && (petPick.localStorage.getItem('theme-gallery:pet') ?? '').includes('"kind":"da-ju"'))
+check('点头像：舞台上真的是橘猫（figure 的 markup 含橘猫本体色 #F2A65A，注册表独家）',
+  (() => {
+    const figure = pickStage === null ? null : pickStage.querySelector('.dsh-pet-figure')
+    return figure !== null && figure.innerHTML.includes('#F2A65A')
+  })())
+check('点头像：placed 复位为 false（切宠按新宠物缺省摆位重新入座）',
+  (() => {
+    try { return JSON.parse(petPick.localStorage.getItem('theme-gallery:pet')).placed === false } catch { return false }
+  })())
+check('点头像：跑动类名按新宠物步态挂上（橘猫 = run）',
+  (() => {
+    const actor = pickStage === null ? null : pickStage.children.find((n) => String(n.className).includes('dsh-pet-actor'))
+    return actor !== undefined && actor.classList.contains('dsh-pet-run')
+  })())
+check('点头像全程不碰主题服务（挂件与皮肤正交的另一半证据）',
+  petPick.setThemeCalls.length === pickWritesBefore,
+  `点击前后序列：${JSON.stringify(petPick.setThemeCalls)}`)
+check('点头像后，store 收到新的 kind（头像点亮跟着换）',
+  petPick.petKindMarks[petPick.petKindMarks.length - 1] === 'da-ju')
+check('不认识的宠物 id 被静默拒绝（照 chooseScheme 的规矩，localStorage 不被污染）',
+  (() => {
+    petPick.pageFace().pickPet('no-such-pet')
+    return !(petPick.localStorage.getItem('theme-gallery:pet') ?? '').includes('no-such-pet')
+  })())
+
+// 关着时点头像 = 顺路打开（"点哪只出哪只"）。
+const petPickOn = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true })
+petPickOn.pageFace().pickPet('bo-bo')
+petPickOn.drive(30)
+check('挂件关着时点头像：连 on:true 一起落盘，舞台直接建出来',
+  (petPickOn.localStorage.getItem('theme-gallery:pet') ?? '').includes('"on":true')
+  && petPickOn.document_.querySelector('#dsh-theme-pet')?.dataset.petKind === 'bo-bo')
+
+// 头像按钮必须拦冒泡（配色卡踩过的坑：不拦会被卡身处理器覆盖）。
+const petBubbleGuard = runBoot({ activeId: 'light', wireSlots: true })
+petBubbleGuard.localStorage.setItem('theme-gallery:pet', PET_ON_SEED)
+const guardTree = petBubbleGuard.cardTree('pet-family', {}, { 'pet-family': PET_DESC })
+const guardSwatch = guardTree.tree.find((call) => call.props?.className === 'tg-petswatch'
+  && call.props['aria-pressed'] === false)
+let guardStopped = false
+guardSwatch.props.onClick({ stopPropagation: () => { guardStopped = true } })
+check('点头像先拦冒泡、再走换宠链路（kind 落盘 = 拦截没把点击吞掉）',
+  guardStopped === true
+  && (petBubbleGuard.localStorage.getItem('theme-gallery:pet') ?? '').includes('"kind"'))
+
+// ── 旧状态迁移：一期形状 {on,name,placed,dog,ball} 原地升级 ────────────────────
+const PET_OLD_SEED = JSON.stringify({
+  on: true, name: '小白', placed: true,
+  dog: { dx: -200, dy: -100 }, ball: { dx: -260, dy: -40 },
+})
+const petMigrated = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_OLD_SEED })
+const migratedStage = petMigrated.document_.querySelector('#dsh-theme-pet')
+check('一期形状迁移：启动即建舞台（on:true 被读懂），kind 落回 ban-ban',
+  migratedStage !== null && migratedStage.dataset.petKind === 'ban-ban')
+check('一期形状迁移：名字"小白"没丢（name → names["ban-ban"]）',
+  migratedStage?.querySelector('.dsh-pet-name')?.textContent === '小白')
+check('一期形状迁移：拖动后保存的是新键（pet/prop），不再是 dog/ball',
+  (() => {
+    const actor = migratedStage.children.find((n) => String(n.className).includes('dsh-pet-actor'))
+    actor._fire('pointerdown', { clientX: 500, clientY: 400, pointerId: 1, currentTarget: actor })
+    actor._fire('pointermove', { clientX: 400, clientY: 400 })
+    actor._fire('pointerup', {})
+    try {
+      const saved = JSON.parse(petMigrated.localStorage.getItem('theme-gallery:pet'))
+      return saved.pet !== undefined && saved.dog === undefined
+        && saved.names?.['ban-ban'] === '小白'
+    } catch { return false }
+  })())
+
+// ── 闲聊的时间闸：桩的 drive() 会立即执行定时器，闸门必须挡住伪闲聊 ────────────
+// 种子把宠物摆成"宠物左上角与道具中心重合"（petDistanceToProp 的语义）：出生即
+// idle（桩里 rAF 连发、dt 常为 0，跑动永远跑不完 —— 不强制 idle 的话，"没有闲聊
+// 气泡"测的是"它在跑"而不是"闸门生效"）。偏移按**显示尺寸**（PET_SCALE=1.15，
+// ban-ban 73.6×64.4 / 毛线团 29.9×25.3）反推：宠物 {dx:-160,dy:-90} → 左上角
+// (1120,860)；道具要与宠物**中心**同点 → 中心 (1156.8,892.2) → propY=879.55。
+const PET_IDLE_SEED = JSON.stringify({
+  on: true, placed: true,
+  pet: { dx: -160, dy: -90 }, prop: { dx: -160, dy: -70.45 },
+})
+const petChatGate = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_IDLE_SEED })
+petChatGate.drive(200)
+check('闲聊不误触：桩里跑完 200 轮定时器，一个闲聊气泡都没冒（时间闸生效）',
+  !petChatGate.created.some((n) => String(n.className).includes('dsh-pet-bubble')))
+
+// ── 生成中反应：桩里塞一个"停止生成"按钮 → 加油；拿走 → 完成庆祝 ───────────────
+const petWork = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_ON_SEED })
+petWork.document_.stopButton = petWork.document_.createElement('button')
+petWork.pageFace().pickPet('ban-ban')   // 同宠重建 → 触发一次完整同步（含信号检测）
+const cheerBubbles = petWork.created.filter((n) => String(n.className).includes('dsh-pet-bubble'))
+check('检测到"停止生成"按钮：加油气泡出现（文本 = 注册表的 cheer）',
+  cheerBubbles.some((n) => n.textContent === '汪汪！加油！'))
+petWork.document_.stopButton = null
+petWork.pageFace().pickPet('ban-ban')
+check('信号消失：完成气泡出现（文本 = 注册表的 done，且只在忙过之后）',
+  petWork.created.some((n) => n.textContent === '汪汪！完成啦！'))
+const petIdleWork = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_ON_SEED })
+petIdleWork.pageFace().pickPet('ban-ban')
+check('从没忙过就不庆祝（下降沿只在"忙过"之后才有反应）',
+  !petIdleWork.created.some((n) => n.textContent === '汪汪！完成啦！'))
+
+// 交互那一半：桩把事件监听记了下来，这里把"用户真的操作了"演出来 ——
+// 戳一下、改名、拖拽，是这次需求点名的三个动作，各自断言到可观测的结果上。
+const petPlay = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_ON_SEED })
+check('挂件启动路径干净：effect 里没有抛错（桩缺副作用时在这里现形）',
+  petPlay.bootError === undefined, `实际 ${String(petPlay.bootError)}`)
+const petStageNode = petPlay.document_.querySelector('#dsh-theme-pet')
+const playActor = petStageNode.children.find((n) => String(n.className).includes('dsh-pet-actor'))
+const playProp = petStageNode.children.find((n) => String(n.className).includes('dsh-pet-prop'))
+check('舞台里真的有宠物、有道具（结构节点齐全，不是一张空层）',
+  playActor !== undefined && playProp !== undefined)
+// 显示放大（实机验收"整体偏小"）：舞台宽高 = 注册表 size × PET_SCALE（1.15）。
+// 注册表与 viewBox 保持 1:1（check-pet-registry P3 钉住），放大只发生在消费侧 ——
+// 这里量的是舞台 actor 的内联宽高，正是运行时真正画出来的尺寸。
+check('宠物显示尺寸 = 注册表 × 1.15（斑斑 64×56 → 73.6×64.4）',
+  Math.abs(parseFloat(playActor.style.width) - 64 * 1.15) < 0.01
+  && Math.abs(parseFloat(playActor.style.height) - 56 * 1.15) < 0.01)
+const pokeButton = petStageNode.querySelector('.dsh-pet-poke')
+const renameButton = petStageNode.querySelector('.dsh-pet-rename')
+const petInput = petStageNode.querySelector('.dsh-pet-input')
+const petTag = petStageNode.querySelector('.dsh-pet-tag')
+const petName = petStageNode.querySelector('.dsh-pet-name')
+// 拖拽先测（react 期间会被忽略 —— 那是刻意的，但桩里不会自动推进时钟）。
+// 按住宠物拖到左边松手 → 位置偏移存盘，且全程不碰主题服务。
+const dragWritesBefore = petPlay.setThemeCalls.length
+playActor._fire('pointerdown', { clientX: 500, clientY: 400, pointerId: 1, currentTarget: playActor })
+playActor._fire('pointermove', { clientX: 400, clientY: 400 })
+playActor._fire('pointerup', {})
+check('拖宠物松手：新位置写进 localStorage（视口相对偏移 + placed 标记，键名是 pet）',
+  (() => {
+    try {
+      const state = JSON.parse(petPlay.localStorage.getItem('theme-gallery:pet'))
+      return state.placed === true && typeof state.pet?.dx === 'number' && state.pet.dx < 0
+        && typeof state.pet?.dy === 'number'
+    } catch { return false }
+  })())
+check('拖宠物全程不碰主题服务（挂件与皮肤正交的另一半证据）',
+  petPlay.setThemeCalls.length === dragWritesBefore)
+// 松手后宠物要跑向道具：跑动类名应已挂上（拖完道具/宠物都会追）。
+check('松手后进入跑动状态（拖完道具/宠物都会追）',
+  playActor.classList.contains('dsh-pet-run'))
+// 朝向与镜像：flip 层独立于跑步动画层 —— 同层时动画覆盖内联 transform，
+// 宠物会朝左跑却头朝右（真机事故"倒着跑"的根因）。
+const playFlip = petStageNode.querySelector('.dsh-pet-flip')
+check('镜像写在独立的 flip 层（figure 是它的子节点，动画与朝向分离）',
+  playFlip !== undefined && playFlip.children.some((n) => String(n.className).includes('dsh-pet-figure')))
+check('缺省朝左（道具在左侧 → flip 层 scaleX(-1)）',
+  playFlip !== undefined && playFlip.style.transform === 'scaleX(-1)',
+  `实际 ${JSON.stringify(playFlip === undefined ? undefined : playFlip.style.transform)}`)
+
+// 反证 14：把"先停跑、再进拖拽态"的顺序反过来，petDragMove 会因 mode 不是 drag 而
+// 拒绝跟手 —— 拖动整个静默失效（这个 bug 在修好前真实存在，症状与"点了没反应"同族）。
+const mutDragOrder = source.replace(
+  '        petStopRun()\n        petRun.mode = \'drag\'',
+  '        petRun.mode = \'drag\'\n        petStopRun()',
+)
+check('反证 14 真的改动了源码（先进拖拽态、再停跑 —— mode 被覆写）',
+  mutDragOrder !== source && mutDragOrder.includes("petRun.mode = 'drag'\n        petStopRun()"))
+const dragBroken = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_ON_SEED, bundleSource: mutDragOrder })
+const brokenActor = dragBroken.document_.querySelector('#dsh-theme-pet')
+  .children.find((n) => String(n.className).includes('dsh-pet-actor'))
+brokenActor._fire('pointerdown', { clientX: 500, clientY: 400, pointerId: 1, currentTarget: brokenActor })
+brokenActor._fire('pointermove', { clientX: 400, clientY: 400 })
+brokenActor._fire('pointerup', {})
+check('反证 14：顺序反过来后，拖动不再跟手（保存的偏移还是没动过的缺省值 -100）',
+  (() => {
+    try {
+      const state = JSON.parse(dragBroken.localStorage.getItem('theme-gallery:pet'))
+      return state.pet?.dx === -100
+    } catch { return false }
+  })())
+pokeButton._fire('click')
+check('戳一下：叫声气泡真的出现在舞台上',
+  petStageNode.children.some((n) => String(n.className).includes('dsh-pet-bubble')))
+renameButton._fire('click')
+check('点改名：名牌进入编辑态（输入框接管，不依赖悬停）',
+  petTag !== undefined && petTag.classList.contains('dsh-pet-editing'))
+petInput.value = '小白'
+petInput._fire('keydown', { key: 'Enter' })
+check('回车提交：新名字写进 localStorage 的 names 表（按宠记忆，重启后还记得）',
+  (() => {
+    try { return JSON.parse(petPlay.localStorage.getItem('theme-gallery:pet')).names['ban-ban'] === '小白' }
+    catch { return false }
+  })())
+check('提交后名牌显示新名字、退出编辑态',
+  petName.textContent === '小白' && !petTag.classList.contains('dsh-pet-editing'))
+
+// 反证 12：开关不再写运行态，点卡片就建不出舞台。
+const mutPetToggle = source.replace('petRun.enabled = next', 'petRun.enabled = false')
+check('反证 12 真的改动了源码（开关不再写运行态）', mutPetToggle !== source)
+const noPetBuild = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, bundleSource: mutPetToggle })
+noPetBuild.pageFace().togglePet()
+noPetBuild.drive(30)
+check('反证 12：开关不写运行态后，点卡片不再建出舞台（说明上面那条测的是真通道）',
+  noPetBuild.document_.querySelector('#dsh-theme-pet') === null)
+
+// 反证 13：挂件开关一旦顺路写主题服务，setTheme 序列就不再为空 —— 正是那条"零接触"断言的镜像。
+const mutPetTheme = source.replace(
+  'savePetState({ on: next })',
+  "savePetState({ on: next })\n          ctx.theme.setTheme('meng-hai-you-yu')",
+)
+check('反证 13 真的改动了源码（挂件开关顺路写了一次主题）', mutPetTheme !== source)
+const petThemeLeak = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, bundleSource: mutPetTheme })
+const leakBefore = petThemeLeak.setThemeCalls.length
+petThemeLeak.pageFace().togglePet()
+check('反证 13：挂件开关碰了主题服务后，setTheme 序列不再不变（说明那条断言测的是真通道）',
+  petThemeLeak.setThemeCalls.length > leakBefore
+  && petThemeLeak.setThemeCalls.includes('meng-hai-you-yu'))
+
+// ── 挂件自检行：失败必须能被面板看见 ─────────────────────────────────────────
+//
+// "开了但什么都不出现"是挂件最典型的静默失败。自检行随页面渲染：健康时只进调试开关，
+// 警告（舞台没建出 / 被收起 / 样式缺失）无条件显示 —— 与 sceneryLine 同一条纪律。
+// 健康读数（调试开关打开时可见，且不是警告）。二期读数多了 品种= 与 活动= 两段。
+const petDebug = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_ON_SEED })
+petDebug.localStorage.setItem('theme-gallery:debug', '1')
+const petDebugTree = petDebug.cardTree('pet-family', {}, { 'pet-family': PET_DESC })
+check('挂件健康时，调试读数行出现在面板（含自检通过与几何读数）',
+  petDebugTree.page.some((call) => call.props?.className === 'tg-debug'
+    && String(call.props.children).includes('挂件自检通过')
+    && String(call.props.children).includes('宠x=')))
+check('调试读数含 品种= 与 活动= 段（二期的两只新读数）',
+  petDebugTree.page.some((call) => call.props?.className === 'tg-debug'
+    && String(call.props.children).includes('品种=ban-ban')
+    && String(call.props.children).includes('活动=')))
+check('挂件健康时没有 ⚠ 警告行',
+  !petDebugTree.page.some((call) => String(call.props?.className ?? '').includes('tg-warn')
+    && String(call.props.children).includes('挂件')))
+
+// 锚点断裂（真机事故的真正根因：.centerCol 是带哈希的类名，精确匹配永远落空）：
+// 现在的行为是回退到视口右下（dsh-pet 式），挂件绝不消失。
+// 变异直接让 petAnchorBox 恒返 null（桩的松散类名匹配会"救活"单个选择器的变异）。
+const mutPetAnchor = source.replace(
+  '    function petAnchorBox() {\n      if (typeof document === \'undefined\') return null',
+  '    function petAnchorBox() {\n      return null\n      if (typeof document === \'undefined\') return null',
+)
+check('反证 16 真的改动了源码（挂件找不到输入框锚点）', mutPetAnchor !== source)
+const petBroken = runBoot({
+  activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_ON_SEED, bundleSource: mutPetAnchor,
+})
+petBroken.localStorage.setItem('theme-gallery:debug', '1')
+const petBrokenTree = petBroken.cardTree('pet-family', {}, { 'pet-family': PET_DESC })
+check('锚点断裂时，舞台按视口右下回退建出（dsh-pet 式），绝不"开了却消失"',
+  petBroken.document_.querySelector('#dsh-theme-pet') !== null)
+check('回退模式下自检行不告警（挂件可见即健康），但读数写明"视口回退"',
+  !petBrokenTree.page.some((call) => String(call.props?.className ?? '').includes('tg-warn')
+    && String(call.props.children).includes('挂件'))
+  && petBrokenTree.page.some((call) => call.props?.className === 'tg-debug'
+    && String(call.props.children).includes('视口回退')))
+
+// 回退地面线的抬量（实机验收：主题面板页 composer 隐藏 → 视口回退 → 宠物贴窗底
+// 被裁掉一截）。桩视口高 950：抬 48 后地面 = 950 - 48 - 2 = 900，宠物完整在窗内。
+// 锚点找到时地面贴输入框下缘，一个像素都不变 —— 那条路由真机保证，桩里测不到。
+check('回退时地面线抬高 48px（地面=900，宠物不再贴窗底被裁）',
+  petBrokenTree.page.some((call) => call.props?.className === 'tg-debug'
+    && String(call.props.children).includes('视口回退')
+    && String(call.props.children).includes('地面=900')))
+
+// 反证 17：拆掉抬量（回退仍贴窗底）。在"锚点恒 null"的变异上再拆抬量 ——
+// 只拆抬量而不拆锚点的话，桩里锚点若是好的，这条断言就在测别的路径。
+const mutNoGap = mutPetAnchor.replace(
+  'viewport.height - PET_FALLBACK_GROUND_GAP : anchor.bottom',
+  'viewport.height : anchor.bottom',
+)
+check('反证 17 真的改动了源码（回退抬量被拆掉）', mutNoGap !== mutPetAnchor)
+const noGapBoot = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_ON_SEED, bundleSource: mutNoGap })
+noGapBoot.localStorage.setItem('theme-gallery:debug', '1')
+const noGapTree = noGapBoot.cardTree('pet-family', {}, { 'pet-family': PET_DESC })
+check('反证 17：拆掉抬量后地面读数回到窗底（944 = min(950-2,950-6)，说明上面那条测的是真通道）',
+  noGapTree.page.some((call) => call.props?.className === 'tg-debug'
+    && String(call.props.children).includes('地面=944')))
+
+// 反证 18：PET_SCALE 改回 1（放大被拆）→ 舞台宽高回到注册表尺寸。
+const mutNoScale = source.replace('const PET_SCALE = 1.15', 'const PET_SCALE = 1')
+check('反证 18 真的改动了源码（PET_SCALE 改回 1）', mutNoScale !== source)
+const noScaleBoot = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_ON_SEED, bundleSource: mutNoScale })
+const noScaleActor = noScaleBoot.document_.querySelector('#dsh-theme-pet')
+  ?.children.find((n) => String(n.className).includes('dsh-pet-actor'))
+check('反证 18：放大拆掉后舞台宽高 = 注册表原值（64px，说明上面那条测的是真通道）',
+  noScaleActor !== undefined && noScaleActor.style.width === '64px')
+
+// 反证 15：拆掉"警告不经调试开关也要显示"的守卫，上面那条必须翻转。
+const mutPetWarnHidden = source.replace(
+  'const showPet = petLine !== null && (debugEnabled() || petLineIsWarning(petLine))',
+  'const showPet = petLine !== null && debugEnabled()',
+)
+check('反证 15 真的改动了源码（警告改回只跟调试开关）', mutPetWarnHidden !== source)
+const petWarnHidden = runBoot({
+  activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_ON_SEED, bundleSource: mutPetWarnHidden,
+})
+const petWarnHiddenTree = petWarnHidden.cardTree('pet-family', {}, { 'pet-family': PET_DESC })
+check('反证 15：警告守卫被拆后，锚点断裂在面板上不再可见（说明上面那条测的是真通道）',
+  !petWarnHiddenTree.page.some((call) => String(call.props?.className ?? '').includes('tg-warn')
+    && String(call.props.children).includes('挂件')))
+
+// ── 二期反证 N1..N4 + 闲聊句柄清理性（源码级，配反证）────────────────────────
+
+// 反证 N1：切宠不再复位 placed → "重新入座"断言翻转。
+const mutNoReplace = source.replace('const patch = { kind: kindId, placed: false }', 'const patch = { kind: kindId }')
+check('反证 N1 真的改动了源码（切宠不再复位 placed）', mutNoReplace !== source)
+const noReplaceBoot = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_OLD_SEED, bundleSource: mutNoReplace })
+noReplaceBoot.pageFace().pickPet('da-ju')
+check('反证 N1：不复位后 placed 仍是 true（上面"重新入座"那条测的是真通道）',
+  (() => {
+    try { return JSON.parse(noReplaceBoot.localStorage.getItem('theme-gallery:pet')).placed === true } catch { return false }
+  })())
+
+// 反证 N2：拆掉加油分支 → "停止生成"出现时不再有 cheer 气泡。
+const mutNoCheer = source.replace('if (working) petCheer()', 'if (false) petCheer()')
+check('反证 N2 真的改动了源码（加油分支被拆）', mutNoCheer !== source)
+const noCheerBoot = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_ON_SEED, bundleSource: mutNoCheer })
+noCheerBoot.document_.stopButton = noCheerBoot.document_.createElement('button')
+noCheerBoot.pageFace().pickPet('ban-ban')
+check('反证 N2：加油分支拆掉后，"停止生成"出现也不再冒加油气泡',
+  !noCheerBoot.created.some((n) => n.textContent === '汪汪！加油！'))
+
+// 反证 N3：拆掉闲聊的时间闸 → 桩的立即定时器立刻冒出闲聊气泡。
+const mutNoGate = source.replace(
+  'if (petLastInteractAt === 0 || idleFor < CHATTER_FIRST_MS) { schedulePetChatter(); return }',
+  'if (false) { schedulePetChatter(); return }',
+)
+check('反证 N3 真的改动了源码（闲聊时间闸被拆）', mutNoGate !== source)
+const noGateBoot = runBoot({ activeId: 'light', seedSkin: null, wireSlots: true, seedPet: PET_IDLE_SEED, bundleSource: mutNoGate })
+noGateBoot.drive(200)
+check('反证 N3：时间闸拆掉后，桩里立刻冒出闲聊气泡（说明 B10 测的是真通道）',
+  noGateBoot.created.some((n) => String(n.className).includes('dsh-pet-bubble')))
+
+// 反证 N4：头像 onClick 不再拦冒泡 → 拦截断言翻转。
+const mutNoStop = source.replace(
+  'onClick: (event) => {\n            if (event !== undefined && typeof event.stopPropagation === \'function\') event.stopPropagation()\n            onPick(kind.id)\n          },',
+  'onClick: (event) => { onPick(kind.id) },',
+)
+check('反证 N4 真的改动了源码（头像点击不再拦冒泡）', mutNoStop !== source)
+const noStopBoot = runBoot({ activeId: 'light', wireSlots: true, bundleSource: mutNoStop, seedPet: PET_ON_SEED })
+const noStopTree = noStopBoot.cardTree('pet-family', {}, { 'pet-family': PET_DESC })
+const noStopSwatch = noStopTree.tree.find((call) => call.props?.className === 'tg-petswatch'
+  && call.props['aria-pressed'] === false)
+let noStopStopped = false
+noStopSwatch.props.onClick({ stopPropagation: () => { noStopStopped = true } })
+check('反证 N4：不拦冒泡后 stopPropagation 不再被调用（说明 B6 测的是真通道）',
+  noStopStopped === false)
+
+// 闲聊句柄的清理性（源码级 + 反证）：removePetStage 必须清掉闲聊句柄与 input 监听。
+check('removePetStage 清闲聊句柄与 document input 监听（有界性的最后一道闸）',
+  /if \(typeof window\.clearTimeout === 'function'\) window\.clearTimeout\(petChatterTimer\)/.test(source)
+  && source.includes("document.removeEventListener('input', petOnTyping, true)"))
+const mutNoChatterClean = source.replace(
+  "if (typeof window.clearTimeout === 'function') window.clearTimeout(petChatterTimer)\n      petChatterTimer = 0",
+  '',
+)
+check('反证 N5 真的改动了源码（闲聊句柄不再被清）', mutNoChatterClean !== source)
 
 if (failed > 0) {
   console.error(`\n${failed} boot path check(s) failed`)

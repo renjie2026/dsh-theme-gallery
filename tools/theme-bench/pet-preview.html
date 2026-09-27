@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>DSH 宠物挂件 · 宠物家族 × 7 预览</title>
+<style>
+  body{margin:0;padding:24px;background:#F7F5F0;color:#2B2B2B;
+    font:14px/1.7 system-ui,"Segoe UI","Microsoft YaHei",sans-serif}
+  h1{font-size:16px;margin:0 0 4px}
+  p.note{margin:0 0 18px;font-size:12.5px;color:#666}
+  h2{font-size:14px;margin:26px 0 10px}
+  h2 .meta{font-weight:400;font-size:12px;color:#888;margin-left:10px}
+  .row{display:flex;flex-wrap:wrap;gap:22px}
+  .cell{margin:0}
+  .cell figcaption{margin-top:8px;font-size:12px;color:#555;text-align:center}
+  /* 预览壳：模拟输入框与地面线。真实位置由运行时按 composer 计算，这里只摆造型。 */
+  .stage{position:relative;width:560px;height:230px;background:#FBFAF7;
+    border:.5px solid #DDD6C8;border-radius:12px;overflow:hidden}
+  .mock-composer{position:absolute;left:44px;right:96px;top:96px;height:74px;
+    background:#FFFFFF;border:1px solid #E2DCCC;border-radius:14px;
+    display:flex;align-items:center;padding:0 16px;color:#B9B2A4;font-size:13px}
+  .ground{position:absolute;left:0;right:0;top:170px;height:0;border-top:1px dashed #E4DECF}
+  .dsh-theme-pet-demo{position:absolute;left:0;top:0;width:560px;height:230px}
+  .chips{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
+  .chip{margin:0;text-align:center}
+  .chip figcaption{font-size:11px;color:#666;margin-top:4px}
+</style>
+<style>
+/* ── the widget's own stylesheet, verbatim from lib/client.js ──────────── */
+#dsh-theme-pet{position:fixed;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:1200}
+.dsh-pet-actor,.dsh-pet-prop{position:absolute;left:0;top:0;pointer-events:auto;cursor:grab;will-change:transform}
+.dsh-pet-actor:active,.dsh-pet-prop:active{cursor:grabbing}
+.dsh-pet-flip,.dsh-pet-figure{display:block;width:100%;height:100%}
+.dsh-pet-side,.dsh-pet-front{display:block;width:100%;height:100%}
+.dsh-pet-front{display:none}
+.dsh-pet-react .dsh-pet-side{display:none}
+.dsh-pet-react .dsh-pet-front{display:block}
+.dsh-pet-eye{transform-box:fill-box;transform-origin:center;animation:dsh-pet-blink 4.6s infinite}
+@keyframes dsh-pet-blink{0%,91%,94.5%,100%{transform:scaleY(1)}92.8%{transform:scaleY(.12)}}
+.dsh-pet-tail{animation:dsh-pet-wag 1.5s ease-in-out infinite}
+@keyframes dsh-pet-wag{from{transform:rotate(-7deg)}to{transform:rotate(9deg)}}
+.dsh-pet-ear{animation:dsh-pet-ear-flop 3.4s ease-in-out infinite}
+@keyframes dsh-pet-ear-flop{0%,86%,100%{transform:rotate(0)}91%{transform:rotate(7deg)}96%{transform:rotate(-5deg)}}
+.dsh-pet-wing{animation:dsh-pet-wing-idle 3s ease-in-out infinite}
+@keyframes dsh-pet-wing-idle{0%,88%,100%{transform:rotate(0)}93%{transform:rotate(-8deg)}}
+.dsh-pet-belly{animation:dsh-pet-breathe 3.8s ease-in-out infinite}
+@keyframes dsh-pet-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+@keyframes dsh-pet-gallop-a{0%,100%{transform:rotate(17deg)}50%{transform:rotate(-17deg)}}
+@keyframes dsh-pet-gallop-b{0%,100%{transform:rotate(-15deg)}50%{transform:rotate(15deg)}}
+.dsh-pet-run .dsh-pet-leg-a{animation:dsh-pet-gallop-a .3s linear infinite}
+.dsh-pet-run .dsh-pet-leg-b{animation:dsh-pet-gallop-b .3s linear infinite}
+.dsh-pet-run .dsh-pet-figure{animation:dsh-pet-bob .3s ease-in-out infinite}
+@keyframes dsh-pet-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.6px)}}
+.dsh-pet-waddle .dsh-pet-figure{animation:dsh-pet-rock .46s ease-in-out infinite}
+@keyframes dsh-pet-rock{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes dsh-pet-hop{0%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}60%{transform:translateY(-2px)}}
+.dsh-pet-react .dsh-pet-figure{animation:dsh-pet-hop .55s ease-in-out 2}
+.dsh-pet-cheer .dsh-pet-figure{animation:dsh-pet-hop .5s ease-in-out 2}
+.dsh-pet-perk .dsh-pet-figure{animation:dsh-pet-perk .9s ease-out 1}
+@keyframes dsh-pet-perk{0%{transform:scale(1)}30%{transform:scale(1.045)}100%{transform:scale(1)}}
+.dsh-pet-tag{display:inline-flex;position:absolute;left:50%;bottom:calc(100% + 5px);
+transform:translateX(-50%);pointer-events:auto;white-space:nowrap;z-index:3;
+align-items:center;gap:4px;padding:3px 6px;border-radius:8px;background:rgba(40,33,28,.92);
+color:#fff;font:11.5px/1.5 system-ui,"Segoe UI","Microsoft YaHei",sans-serif;
+box-shadow:0 3px 10px rgba(0,0,0,.22);opacity:0;visibility:hidden;
+transition:opacity .18s ease,visibility 0s linear 1.2s}
+.dsh-pet-tag::before{content:"";position:absolute;left:0;right:0;bottom:-12px;height:12px}
+.dsh-pet-actor:hover .dsh-pet-tag,.dsh-pet-tag.dsh-pet-editing{opacity:1;visibility:visible;transition-delay:0s}
+.dsh-pet-name{max-width:96px;overflow:hidden;text-overflow:ellipsis}
+.dsh-pet-actions{display:inline-flex;gap:4px}
+.dsh-pet-tag button{border:none;border-radius:5px;padding:1px 7px;cursor:pointer;
+font:11px/1.6 inherit;color:#fff;background:rgba(255,255,255,.18)}
+.dsh-pet-tag button:hover{background:rgba(255,255,255,.34)}
+.dsh-pet-input{display:none;width:88px;border:none;border-radius:5px;padding:2px 6px;
+font:11.5px/1.5 inherit;color:#2b2320}
+.dsh-pet-editing .dsh-pet-name,.dsh-pet-editing .dsh-pet-actions{display:none}
+.dsh-pet-editing .dsh-pet-input{display:block}
+.dsh-pet-dragging .dsh-pet-figure{filter:drop-shadow(0 7px 6px rgba(0,0,0,.28))}
+.dsh-pet-trailmark{position:absolute;left:0;top:0;opacity:.5;
+pointer-events:none;animation:dsh-pet-trail-fade 3.4s ease-out forwards}
+@keyframes dsh-pet-trail-fade{0%{opacity:.5}70%{opacity:.34}100%{opacity:0}}
+.dsh-pet-bubble{position:absolute;left:0;top:0;pointer-events:none;white-space:nowrap;
+padding:2px 8px;border-radius:9px;background:#fff;color:#3B2B23;border:1px solid #E4CBA2;
+font:12px/1.6 system-ui,"Segoe UI","Microsoft YaHei",sans-serif;
+box-shadow:0 2px 7px rgba(0,0,0,.16);animation:dsh-pet-bubble 1.15s ease-out forwards}
+@keyframes dsh-pet-bubble{0%{opacity:0;transform-origin:bottom left;scale:.6}
+14%{opacity:1;scale:1}78%{opacity:1;scale:1}100%{opacity:0;scale:1;translate:0 -9px}}
+@media (prefers-reduced-motion:reduce){
+#dsh-theme-pet *{animation:none!important}
+#dsh-theme-pet .dsh-pet-tag{transition:visibility 0s linear 1.2s}}
+</style>
+<style>
+  /* 预览专用：不悬停也强制显示名牌（无头浏览器没有 hover）。名牌的显隐机制是
+     opacity/visibility（透明桥 + 延迟隐藏），不是 display —— 强制类跟着同一机制。 */
+  .dsh-pet-tag.dsh-pet-force{opacity:1;visibility:visible;transition:none}
+</style>
+</head>
+<body>
+  <h1>宠物挂件 · 宠物家族（预览页，由 scripts/build-pet-preview.mjs 从 lib/client.js 生成）</h1>
+  <p class="note">美术、参数、台词全部读自出货源码的 PET_KINDS 注册表。每只三格：静止 / 各自步态 / 戳一下；
+  末尾是七枚脚印与七颗头像。眨眼、尾巴、耳朵、翅膀、肚皮呼吸等待机动画在本页即为实际效果。</p>
+  
+  <section class="family">
+    <h2>斑斑 · 小奶狗<span class="meta">步态 run · 130px/s · 道具在左，面朝左</span></h2>
+    <div class="row">
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:29.9px;height:25.299999999999997px;transform:translate(376.5px,144.7px)"><svg viewBox="0 0 26 22" aria-hidden="true"><circle cx="13" cy="12" r="9.5" fill="#E06A4E"/><path d="M5 8.5 Q13 4 21 8.5" stroke="#B84A33" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M4.5 14 Q13 10 21.5 14" stroke="#B84A33" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M8 18.6 Q13 15 18 18.6" stroke="#B84A33" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M21.6 11 q5 1.4 3.8 6.4" stroke="#B84A33" stroke-width="1.5" fill="none" stroke-linecap="round"/><ellipse cx="9.6" cy="7.4" rx="2.6" ry="1.5" fill="#FFFFFF" opacity=".3" transform="rotate(-24 9.6 7.4)"/></svg></div>
+          <div class="dsh-pet-actor " style="width:73.6px;height:64.39999999999999px;transform:translate(442.4px,105.60000000000001px)">
+            <span class="dsh-pet-tag dsh-pet-force">
+              <span class="dsh-pet-name">斑斑</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 64 56" aria-hidden="true"><path class="dsh-pet-tail" d="M15 36 Q4 31 6.5 21" stroke="#A9744F" stroke-width="5" fill="none" stroke-linecap="round" style="transform-origin:14px 36px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="19" y="41" width="7" height="13" rx="3" fill="#C79A6B" style="transform-origin:22px 42px"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="41" y="41" width="7" height="13" rx="3" fill="#C79A6B" style="transform-origin:44px 42px"/><ellipse cx="32" cy="35" rx="17.5" ry="13.5" fill="#F5E7CE"/><ellipse cx="25" cy="31.5" rx="7" ry="5" fill="#C79A6B" opacity=".9"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="25" y="42" width="7" height="13" rx="3" fill="#F5E7CE" style="transform-origin:28px 43px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="37" y="42" width="7" height="13" rx="3" fill="#FBF3E4" style="transform-origin:40px 43px"/><circle cx="46" cy="18" r="12.5" fill="#F5E7CE"/><circle cx="51.5" cy="9.5" r="5.2" fill="#C79A6B"/><ellipse cx="40" cy="10.5" rx="6" ry="8.6" fill="#A9744F" transform="rotate(-20 40 10.5)"/><ellipse cx="55" cy="22.5" rx="6.2" ry="5" fill="#FBF3E4"/><circle cx="58.6" cy="20.6" r="2.2" fill="#4A372F"/><circle cx="49" cy="16" r="1.9" fill="#3B2B23" class="dsh-pet-eye"/><path d="M54.5 27 q2.2 2 4.4 .4" stroke="#4A372F" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg><svg class="dsh-pet-front" viewBox="0 0 64 56" aria-hidden="true"><path d="M50 40 q7 -3 6 -9" stroke="#A9744F" stroke-width="4.6" fill="none" stroke-linecap="round"/><ellipse cx="24" cy="12" rx="5.6" ry="9" fill="#A9744F" transform="rotate(-17 24 12)"/><ellipse cx="40" cy="12" rx="5.6" ry="9" fill="#A9744F" transform="rotate(17 40 12)"/><circle cx="32" cy="19" r="13" fill="#F5E7CE"/><circle cx="38.5" cy="10.5" r="5" fill="#C79A6B"/><circle cx="27" cy="17.5" r="1.9" fill="#3B2B23" class="dsh-pet-eye"/><circle cx="37" cy="17.5" r="1.9" fill="#3B2B23" class="dsh-pet-eye"/><ellipse cx="32" cy="24.5" rx="7" ry="5.4" fill="#FBF3E4"/><circle cx="32" cy="22.4" r="2.2" fill="#4A372F"/><ellipse cx="32" cy="28.4" rx="2.9" ry="2.4" fill="#7C4A3A"/><ellipse cx="32" cy="41.5" rx="14" ry="10.5" fill="#F5E7CE"/><ellipse cx="32" cy="44" rx="8" ry="6.2" fill="#FBF3E4"/><ellipse cx="22.5" cy="38" rx="4.6" ry="3.6" fill="#C79A6B" opacity=".9"/><ellipse cx="25" cy="51" rx="4.2" ry="3.1" fill="#FBF3E4"/><ellipse cx="39" cy="51" rx="4.2" ry="3.1" fill="#FBF3E4"/></svg></span>
+            </span>
+          </div>
+          
+        </div>
+      </div>
+      <figcaption>① 静止：待机微动画（悬停出名牌）</figcaption>
+    </figure>
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:29.9px;height:25.299999999999997px;transform:translate(376.5px,144.7px)"><svg viewBox="0 0 26 22" aria-hidden="true"><circle cx="13" cy="12" r="9.5" fill="#E06A4E"/><path d="M5 8.5 Q13 4 21 8.5" stroke="#B84A33" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M4.5 14 Q13 10 21.5 14" stroke="#B84A33" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M8 18.6 Q13 15 18 18.6" stroke="#B84A33" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M21.6 11 q5 1.4 3.8 6.4" stroke="#B84A33" stroke-width="1.5" fill="none" stroke-linecap="round"/><ellipse cx="9.6" cy="7.4" rx="2.6" ry="1.5" fill="#FFFFFF" opacity=".3" transform="rotate(-24 9.6 7.4)"/></svg></div>
+          <div class="dsh-pet-actor dsh-pet-run" style="width:73.6px;height:64.39999999999999px;transform:translate(442.4px,105.60000000000001px)">
+            <span class="dsh-pet-tag">
+              <span class="dsh-pet-name">斑斑</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 64 56" aria-hidden="true"><path class="dsh-pet-tail" d="M15 36 Q4 31 6.5 21" stroke="#A9744F" stroke-width="5" fill="none" stroke-linecap="round" style="transform-origin:14px 36px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="19" y="41" width="7" height="13" rx="3" fill="#C79A6B" style="transform-origin:22px 42px"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="41" y="41" width="7" height="13" rx="3" fill="#C79A6B" style="transform-origin:44px 42px"/><ellipse cx="32" cy="35" rx="17.5" ry="13.5" fill="#F5E7CE"/><ellipse cx="25" cy="31.5" rx="7" ry="5" fill="#C79A6B" opacity=".9"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="25" y="42" width="7" height="13" rx="3" fill="#F5E7CE" style="transform-origin:28px 43px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="37" y="42" width="7" height="13" rx="3" fill="#FBF3E4" style="transform-origin:40px 43px"/><circle cx="46" cy="18" r="12.5" fill="#F5E7CE"/><circle cx="51.5" cy="9.5" r="5.2" fill="#C79A6B"/><ellipse cx="40" cy="10.5" rx="6" ry="8.6" fill="#A9744F" transform="rotate(-20 40 10.5)"/><ellipse cx="55" cy="22.5" rx="6.2" ry="5" fill="#FBF3E4"/><circle cx="58.6" cy="20.6" r="2.2" fill="#4A372F"/><circle cx="49" cy="16" r="1.9" fill="#3B2B23" class="dsh-pet-eye"/><path d="M54.5 27 q2.2 2 4.4 .4" stroke="#4A372F" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg><svg class="dsh-pet-front" viewBox="0 0 64 56" aria-hidden="true"><path d="M50 40 q7 -3 6 -9" stroke="#A9744F" stroke-width="4.6" fill="none" stroke-linecap="round"/><ellipse cx="24" cy="12" rx="5.6" ry="9" fill="#A9744F" transform="rotate(-17 24 12)"/><ellipse cx="40" cy="12" rx="5.6" ry="9" fill="#A9744F" transform="rotate(17 40 12)"/><circle cx="32" cy="19" r="13" fill="#F5E7CE"/><circle cx="38.5" cy="10.5" r="5" fill="#C79A6B"/><circle cx="27" cy="17.5" r="1.9" fill="#3B2B23" class="dsh-pet-eye"/><circle cx="37" cy="17.5" r="1.9" fill="#3B2B23" class="dsh-pet-eye"/><ellipse cx="32" cy="24.5" rx="7" ry="5.4" fill="#FBF3E4"/><circle cx="32" cy="22.4" r="2.2" fill="#4A372F"/><ellipse cx="32" cy="28.4" rx="2.9" ry="2.4" fill="#7C4A3A"/><ellipse cx="32" cy="41.5" rx="14" ry="10.5" fill="#F5E7CE"/><ellipse cx="32" cy="44" rx="8" ry="6.2" fill="#FBF3E4"/><ellipse cx="22.5" cy="38" rx="4.6" ry="3.6" fill="#C79A6B" opacity=".9"/><ellipse cx="25" cy="51" rx="4.2" ry="3.1" fill="#FBF3E4"/><ellipse cx="39" cy="51" rx="4.2" ry="3.1" fill="#FBF3E4"/></svg></span>
+            </span>
+          </div>
+          
+        </div>
+      </div>
+      <figcaption>② 跑动（腿部摆动、身体起伏）</figcaption>
+    </figure>
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:29.9px;height:25.299999999999997px;transform:translate(376.5px,144.7px)"><svg viewBox="0 0 26 22" aria-hidden="true"><circle cx="13" cy="12" r="9.5" fill="#E06A4E"/><path d="M5 8.5 Q13 4 21 8.5" stroke="#B84A33" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M4.5 14 Q13 10 21.5 14" stroke="#B84A33" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M8 18.6 Q13 15 18 18.6" stroke="#B84A33" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M21.6 11 q5 1.4 3.8 6.4" stroke="#B84A33" stroke-width="1.5" fill="none" stroke-linecap="round"/><ellipse cx="9.6" cy="7.4" rx="2.6" ry="1.5" fill="#FFFFFF" opacity=".3" transform="rotate(-24 9.6 7.4)"/></svg></div>
+          <div class="dsh-pet-actor dsh-pet-react" style="width:73.6px;height:64.39999999999999px;transform:translate(442.4px,105.60000000000001px)">
+            <span class="dsh-pet-tag">
+              <span class="dsh-pet-name">斑斑</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 64 56" aria-hidden="true"><path class="dsh-pet-tail" d="M15 36 Q4 31 6.5 21" stroke="#A9744F" stroke-width="5" fill="none" stroke-linecap="round" style="transform-origin:14px 36px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="19" y="41" width="7" height="13" rx="3" fill="#C79A6B" style="transform-origin:22px 42px"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="41" y="41" width="7" height="13" rx="3" fill="#C79A6B" style="transform-origin:44px 42px"/><ellipse cx="32" cy="35" rx="17.5" ry="13.5" fill="#F5E7CE"/><ellipse cx="25" cy="31.5" rx="7" ry="5" fill="#C79A6B" opacity=".9"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="25" y="42" width="7" height="13" rx="3" fill="#F5E7CE" style="transform-origin:28px 43px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="37" y="42" width="7" height="13" rx="3" fill="#FBF3E4" style="transform-origin:40px 43px"/><circle cx="46" cy="18" r="12.5" fill="#F5E7CE"/><circle cx="51.5" cy="9.5" r="5.2" fill="#C79A6B"/><ellipse cx="40" cy="10.5" rx="6" ry="8.6" fill="#A9744F" transform="rotate(-20 40 10.5)"/><ellipse cx="55" cy="22.5" rx="6.2" ry="5" fill="#FBF3E4"/><circle cx="58.6" cy="20.6" r="2.2" fill="#4A372F"/><circle cx="49" cy="16" r="1.9" fill="#3B2B23" class="dsh-pet-eye"/><path d="M54.5 27 q2.2 2 4.4 .4" stroke="#4A372F" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg><svg class="dsh-pet-front" viewBox="0 0 64 56" aria-hidden="true"><path d="M50 40 q7 -3 6 -9" stroke="#A9744F" stroke-width="4.6" fill="none" stroke-linecap="round"/><ellipse cx="24" cy="12" rx="5.6" ry="9" fill="#A9744F" transform="rotate(-17 24 12)"/><ellipse cx="40" cy="12" rx="5.6" ry="9" fill="#A9744F" transform="rotate(17 40 12)"/><circle cx="32" cy="19" r="13" fill="#F5E7CE"/><circle cx="38.5" cy="10.5" r="5" fill="#C79A6B"/><circle cx="27" cy="17.5" r="1.9" fill="#3B2B23" class="dsh-pet-eye"/><circle cx="37" cy="17.5" r="1.9" fill="#3B2B23" class="dsh-pet-eye"/><ellipse cx="32" cy="24.5" rx="7" ry="5.4" fill="#FBF3E4"/><circle cx="32" cy="22.4" r="2.2" fill="#4A372F"/><ellipse cx="32" cy="28.4" rx="2.9" ry="2.4" fill="#7C4A3A"/><ellipse cx="32" cy="41.5" rx="14" ry="10.5" fill="#F5E7CE"/><ellipse cx="32" cy="44" rx="8" ry="6.2" fill="#FBF3E4"/><ellipse cx="22.5" cy="38" rx="4.6" ry="3.6" fill="#C79A6B" opacity=".9"/><ellipse cx="25" cy="51" rx="4.2" ry="3.1" fill="#FBF3E4"/><ellipse cx="39" cy="51" rx="4.2" ry="3.1" fill="#FBF3E4"/></svg></span>
+            </span>
+          </div>
+          <span class="dsh-pet-bubble" style="transform:translate(522px,71.60000000000001px)">汪！</span>
+          <span class="dsh-pet-bubble" style="transform:translate(476.4px,43.60000000000001px)">汪汪！</span>
+        </div>
+      </div>
+      <figcaption>③ 戳一下：转身面对用户，说两句</figcaption>
+    </figure>
+    </div>
+  </section>
+  <section class="family">
+    <h2>大橘 · 橘猫<span class="meta">步态 run · 140px/s · 道具在左，面朝左</span></h2>
+    <div class="row">
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:27.599999999999998px;height:20.7px;transform:translate(381.09999999999997px,149.3px)"><svg viewBox="0 0 24 18" aria-hidden="true"><path d="M17 9 l5 -3.5 l-1.4 3.5 l1.4 3.5 z" fill="#D99A3F"/><ellipse cx="10" cy="9" rx="8" ry="4" fill="#E8B15C"/><path d="M7 6.4 q1 2.6 0 5.2" stroke="#D99A3F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M11 6 q1 2.8 0 5.6" stroke="#D99A3F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="4.6" cy="8.2" r="1" fill="#5B4632"/></svg></div>
+          <div class="dsh-pet-actor " style="width:71.3px;height:62.099999999999994px;transform:translate(444.7px,107.9px)">
+            <span class="dsh-pet-tag dsh-pet-force">
+              <span class="dsh-pet-name">大橘</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 62 54" aria-hidden="true"><path class="dsh-pet-tail" d="M14 36 Q2 28 7 13" stroke="#F2A65A" stroke-width="5" fill="none" stroke-linecap="round" style="transform-origin:14px 36px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="18" y="40" width="7" height="12" rx="3" fill="#E0A060" style="transform-origin:21px 41px"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="40" y="40" width="7" height="12" rx="3" fill="#F2A65A" style="transform-origin:43px 41px"/><ellipse cx="29" cy="36" rx="17" ry="12.5" fill="#F2A65A"/><path d="M17 34 q7 -9 15 -9" stroke="#D98032" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M26 28 q7 -7 14 -6" stroke="#D98032" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M35 27 q6 -5 11 -2" stroke="#D98032" stroke-width="2.2" fill="none" stroke-linecap="round"/><ellipse cx="40" cy="39" rx="6.5" ry="5" fill="#FBE8CC"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="24" y="41" width="7" height="11" rx="3" fill="#F2A65A" style="transform-origin:27px 42px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="35" y="41" width="7" height="11" rx="3" fill="#F2A65A" style="transform-origin:38px 42px"/><ellipse cx="27.5" cy="51.4" rx="3" ry="1.8" fill="#FBE8CC"/><ellipse cx="38.5" cy="51.4" rx="3" ry="1.8" fill="#FBE8CC"/><circle cx="45" cy="19" r="11" fill="#F2A65A"/><path d="M36 13 L33.5 4 L43.5 8 Z" fill="#F2A65A"/><path d="M37.4 11.6 L36.2 6.6 L41.4 9 Z" fill="#E79B72"/><path d="M48.5 9 L55.5 3.5 L54.5 12 Z" fill="#F2A65A"/><path d="M50.3 9.6 L54.4 5.6 L53.9 10.7 Z" fill="#E79B72"/><path d="M42 8.5 l1.6 3.6" stroke="#D98032" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M46 8 l.6 3.8" stroke="#D98032" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M49.6 8.8 l-.6 3.4" stroke="#D98032" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="49.5" cy="16.5" r="1.9" fill="#3F3A36" class="dsh-pet-eye"/><path d="M54.8 19.9 l2.5 .9 l-1.9 1.9 z" fill="#C96F5E"/><path d="M56.4 23.2 q-1.5 1.5 -3.1 .8" stroke="#B98A5F" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M51.6 20.6 l5.3 -1.1 M52.1 22.7 l5.3 .5" stroke="#B98A5F" stroke-width=".9" fill="none" stroke-linecap="round"/><path d="M18 27 Q26 20.5 36 19" stroke="#F8C48C" stroke-width="2" fill="none" stroke-linecap="round" opacity=".8"/></svg><svg class="dsh-pet-front" viewBox="0 0 62 54" aria-hidden="true"><path d="M45 46 q9 -2 8 -9" stroke="#F2A65A" stroke-width="4.6" fill="none" stroke-linecap="round"/><path d="M21 10 L18.5 1.5 L27.5 5.5 Z" fill="#F2A65A"/><path d="M22 8.6 L20.6 4.2 L25.8 6.4 Z" fill="#E79B72"/><path d="M41 10 L43.5 1.5 L34.5 5.5 Z" fill="#F2A65A"/><path d="M40 8.6 L41.4 4.2 L36.2 6.4 Z" fill="#E79B72"/><ellipse cx="31" cy="42" rx="13.5" ry="9.5" fill="#F2A65A"/><ellipse cx="31" cy="43" rx="8" ry="6.5" fill="#FBE8CC"/><path d="M20 40 q-2 4 1 7" stroke="#D98032" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M42 40 q2 4 -1 7" stroke="#D98032" stroke-width="1.8" fill="none" stroke-linecap="round"/><ellipse cx="25" cy="50.6" rx="3.4" ry="2.4" fill="#F2A65A"/><ellipse cx="37" cy="50.6" rx="3.4" ry="2.4" fill="#F2A65A"/><circle cx="31" cy="17" r="12" fill="#F2A65A"/><path d="M27 6.5 l1.2 3.2" stroke="#D98032" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M31 5.8 l.4 3.4" stroke="#D98032" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M35 6.5 l-.8 3.2" stroke="#D98032" stroke-width="1.5" fill="none" stroke-linecap="round"/><circle cx="26" cy="16" r="2" fill="#3F3A36" class="dsh-pet-eye"/><circle cx="36" cy="16" r="2" fill="#3F3A36" class="dsh-pet-eye"/><path d="M29.8 20 l2.4 0 l-1.2 1.8 z" fill="#C96F5E"/><path d="M31 21.8 q-1.6 2 -3.4 1" stroke="#B98A5F" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M31 21.8 q1.6 2 3.4 1" stroke="#B98A5F" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M20 18 l-6 -1.6 M20 20.5 l-6 .4 M42 18 l6 -1.6 M42 20.5 l6 .4" stroke="#B98A5F" stroke-width=".9" fill="none" stroke-linecap="round"/></svg></span>
+            </span>
+          </div>
+          
+        </div>
+      </div>
+      <figcaption>① 静止：待机微动画（悬停出名牌）</figcaption>
+    </figure>
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:27.599999999999998px;height:20.7px;transform:translate(381.09999999999997px,149.3px)"><svg viewBox="0 0 24 18" aria-hidden="true"><path d="M17 9 l5 -3.5 l-1.4 3.5 l1.4 3.5 z" fill="#D99A3F"/><ellipse cx="10" cy="9" rx="8" ry="4" fill="#E8B15C"/><path d="M7 6.4 q1 2.6 0 5.2" stroke="#D99A3F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M11 6 q1 2.8 0 5.6" stroke="#D99A3F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="4.6" cy="8.2" r="1" fill="#5B4632"/></svg></div>
+          <div class="dsh-pet-actor dsh-pet-run" style="width:71.3px;height:62.099999999999994px;transform:translate(444.7px,107.9px)">
+            <span class="dsh-pet-tag">
+              <span class="dsh-pet-name">大橘</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 62 54" aria-hidden="true"><path class="dsh-pet-tail" d="M14 36 Q2 28 7 13" stroke="#F2A65A" stroke-width="5" fill="none" stroke-linecap="round" style="transform-origin:14px 36px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="18" y="40" width="7" height="12" rx="3" fill="#E0A060" style="transform-origin:21px 41px"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="40" y="40" width="7" height="12" rx="3" fill="#F2A65A" style="transform-origin:43px 41px"/><ellipse cx="29" cy="36" rx="17" ry="12.5" fill="#F2A65A"/><path d="M17 34 q7 -9 15 -9" stroke="#D98032" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M26 28 q7 -7 14 -6" stroke="#D98032" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M35 27 q6 -5 11 -2" stroke="#D98032" stroke-width="2.2" fill="none" stroke-linecap="round"/><ellipse cx="40" cy="39" rx="6.5" ry="5" fill="#FBE8CC"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="24" y="41" width="7" height="11" rx="3" fill="#F2A65A" style="transform-origin:27px 42px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="35" y="41" width="7" height="11" rx="3" fill="#F2A65A" style="transform-origin:38px 42px"/><ellipse cx="27.5" cy="51.4" rx="3" ry="1.8" fill="#FBE8CC"/><ellipse cx="38.5" cy="51.4" rx="3" ry="1.8" fill="#FBE8CC"/><circle cx="45" cy="19" r="11" fill="#F2A65A"/><path d="M36 13 L33.5 4 L43.5 8 Z" fill="#F2A65A"/><path d="M37.4 11.6 L36.2 6.6 L41.4 9 Z" fill="#E79B72"/><path d="M48.5 9 L55.5 3.5 L54.5 12 Z" fill="#F2A65A"/><path d="M50.3 9.6 L54.4 5.6 L53.9 10.7 Z" fill="#E79B72"/><path d="M42 8.5 l1.6 3.6" stroke="#D98032" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M46 8 l.6 3.8" stroke="#D98032" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M49.6 8.8 l-.6 3.4" stroke="#D98032" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="49.5" cy="16.5" r="1.9" fill="#3F3A36" class="dsh-pet-eye"/><path d="M54.8 19.9 l2.5 .9 l-1.9 1.9 z" fill="#C96F5E"/><path d="M56.4 23.2 q-1.5 1.5 -3.1 .8" stroke="#B98A5F" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M51.6 20.6 l5.3 -1.1 M52.1 22.7 l5.3 .5" stroke="#B98A5F" stroke-width=".9" fill="none" stroke-linecap="round"/><path d="M18 27 Q26 20.5 36 19" stroke="#F8C48C" stroke-width="2" fill="none" stroke-linecap="round" opacity=".8"/></svg><svg class="dsh-pet-front" viewBox="0 0 62 54" aria-hidden="true"><path d="M45 46 q9 -2 8 -9" stroke="#F2A65A" stroke-width="4.6" fill="none" stroke-linecap="round"/><path d="M21 10 L18.5 1.5 L27.5 5.5 Z" fill="#F2A65A"/><path d="M22 8.6 L20.6 4.2 L25.8 6.4 Z" fill="#E79B72"/><path d="M41 10 L43.5 1.5 L34.5 5.5 Z" fill="#F2A65A"/><path d="M40 8.6 L41.4 4.2 L36.2 6.4 Z" fill="#E79B72"/><ellipse cx="31" cy="42" rx="13.5" ry="9.5" fill="#F2A65A"/><ellipse cx="31" cy="43" rx="8" ry="6.5" fill="#FBE8CC"/><path d="M20 40 q-2 4 1 7" stroke="#D98032" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M42 40 q2 4 -1 7" stroke="#D98032" stroke-width="1.8" fill="none" stroke-linecap="round"/><ellipse cx="25" cy="50.6" rx="3.4" ry="2.4" fill="#F2A65A"/><ellipse cx="37" cy="50.6" rx="3.4" ry="2.4" fill="#F2A65A"/><circle cx="31" cy="17" r="12" fill="#F2A65A"/><path d="M27 6.5 l1.2 3.2" stroke="#D98032" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M31 5.8 l.4 3.4" stroke="#D98032" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M35 6.5 l-.8 3.2" stroke="#D98032" stroke-width="1.5" fill="none" stroke-linecap="round"/><circle cx="26" cy="16" r="2" fill="#3F3A36" class="dsh-pet-eye"/><circle cx="36" cy="16" r="2" fill="#3F3A36" class="dsh-pet-eye"/><path d="M29.8 20 l2.4 0 l-1.2 1.8 z" fill="#C96F5E"/><path d="M31 21.8 q-1.6 2 -3.4 1" stroke="#B98A5F" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M31 21.8 q1.6 2 3.4 1" stroke="#B98A5F" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M20 18 l-6 -1.6 M20 20.5 l-6 .4 M42 18 l6 -1.6 M42 20.5 l6 .4" stroke="#B98A5F" stroke-width=".9" fill="none" stroke-linecap="round"/></svg></span>
+            </span>
+          </div>
+          
+        </div>
+      </div>
+      <figcaption>② 跑动（腿部摆动、身体起伏）</figcaption>
+    </figure>
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:27.599999999999998px;height:20.7px;transform:translate(381.09999999999997px,149.3px)"><svg viewBox="0 0 24 18" aria-hidden="true"><path d="M17 9 l5 -3.5 l-1.4 3.5 l1.4 3.5 z" fill="#D99A3F"/><ellipse cx="10" cy="9" rx="8" ry="4" fill="#E8B15C"/><path d="M7 6.4 q1 2.6 0 5.2" stroke="#D99A3F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M11 6 q1 2.8 0 5.6" stroke="#D99A3F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="4.6" cy="8.2" r="1" fill="#5B4632"/></svg></div>
+          <div class="dsh-pet-actor dsh-pet-react" style="width:71.3px;height:62.099999999999994px;transform:translate(444.7px,107.9px)">
+            <span class="dsh-pet-tag">
+              <span class="dsh-pet-name">大橘</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 62 54" aria-hidden="true"><path class="dsh-pet-tail" d="M14 36 Q2 28 7 13" stroke="#F2A65A" stroke-width="5" fill="none" stroke-linecap="round" style="transform-origin:14px 36px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="18" y="40" width="7" height="12" rx="3" fill="#E0A060" style="transform-origin:21px 41px"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="40" y="40" width="7" height="12" rx="3" fill="#F2A65A" style="transform-origin:43px 41px"/><ellipse cx="29" cy="36" rx="17" ry="12.5" fill="#F2A65A"/><path d="M17 34 q7 -9 15 -9" stroke="#D98032" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M26 28 q7 -7 14 -6" stroke="#D98032" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M35 27 q6 -5 11 -2" stroke="#D98032" stroke-width="2.2" fill="none" stroke-linecap="round"/><ellipse cx="40" cy="39" rx="6.5" ry="5" fill="#FBE8CC"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="24" y="41" width="7" height="11" rx="3" fill="#F2A65A" style="transform-origin:27px 42px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="35" y="41" width="7" height="11" rx="3" fill="#F2A65A" style="transform-origin:38px 42px"/><ellipse cx="27.5" cy="51.4" rx="3" ry="1.8" fill="#FBE8CC"/><ellipse cx="38.5" cy="51.4" rx="3" ry="1.8" fill="#FBE8CC"/><circle cx="45" cy="19" r="11" fill="#F2A65A"/><path d="M36 13 L33.5 4 L43.5 8 Z" fill="#F2A65A"/><path d="M37.4 11.6 L36.2 6.6 L41.4 9 Z" fill="#E79B72"/><path d="M48.5 9 L55.5 3.5 L54.5 12 Z" fill="#F2A65A"/><path d="M50.3 9.6 L54.4 5.6 L53.9 10.7 Z" fill="#E79B72"/><path d="M42 8.5 l1.6 3.6" stroke="#D98032" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M46 8 l.6 3.8" stroke="#D98032" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M49.6 8.8 l-.6 3.4" stroke="#D98032" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="49.5" cy="16.5" r="1.9" fill="#3F3A36" class="dsh-pet-eye"/><path d="M54.8 19.9 l2.5 .9 l-1.9 1.9 z" fill="#C96F5E"/><path d="M56.4 23.2 q-1.5 1.5 -3.1 .8" stroke="#B98A5F" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M51.6 20.6 l5.3 -1.1 M52.1 22.7 l5.3 .5" stroke="#B98A5F" stroke-width=".9" fill="none" stroke-linecap="round"/><path d="M18 27 Q26 20.5 36 19" stroke="#F8C48C" stroke-width="2" fill="none" stroke-linecap="round" opacity=".8"/></svg><svg class="dsh-pet-front" viewBox="0 0 62 54" aria-hidden="true"><path d="M45 46 q9 -2 8 -9" stroke="#F2A65A" stroke-width="4.6" fill="none" stroke-linecap="round"/><path d="M21 10 L18.5 1.5 L27.5 5.5 Z" fill="#F2A65A"/><path d="M22 8.6 L20.6 4.2 L25.8 6.4 Z" fill="#E79B72"/><path d="M41 10 L43.5 1.5 L34.5 5.5 Z" fill="#F2A65A"/><path d="M40 8.6 L41.4 4.2 L36.2 6.4 Z" fill="#E79B72"/><ellipse cx="31" cy="42" rx="13.5" ry="9.5" fill="#F2A65A"/><ellipse cx="31" cy="43" rx="8" ry="6.5" fill="#FBE8CC"/><path d="M20 40 q-2 4 1 7" stroke="#D98032" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M42 40 q2 4 -1 7" stroke="#D98032" stroke-width="1.8" fill="none" stroke-linecap="round"/><ellipse cx="25" cy="50.6" rx="3.4" ry="2.4" fill="#F2A65A"/><ellipse cx="37" cy="50.6" rx="3.4" ry="2.4" fill="#F2A65A"/><circle cx="31" cy="17" r="12" fill="#F2A65A"/><path d="M27 6.5 l1.2 3.2" stroke="#D98032" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M31 5.8 l.4 3.4" stroke="#D98032" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M35 6.5 l-.8 3.2" stroke="#D98032" stroke-width="1.5" fill="none" stroke-linecap="round"/><circle cx="26" cy="16" r="2" fill="#3F3A36" class="dsh-pet-eye"/><circle cx="36" cy="16" r="2" fill="#3F3A36" class="dsh-pet-eye"/><path d="M29.8 20 l2.4 0 l-1.2 1.8 z" fill="#C96F5E"/><path d="M31 21.8 q-1.6 2 -3.4 1" stroke="#B98A5F" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M31 21.8 q1.6 2 3.4 1" stroke="#B98A5F" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M20 18 l-6 -1.6 M20 20.5 l-6 .4 M42 18 l6 -1.6 M42 20.5 l6 .4" stroke="#B98A5F" stroke-width=".9" fill="none" stroke-linecap="round"/></svg></span>
+            </span>
+          </div>
+          <span class="dsh-pet-bubble" style="transform:translate(522px,73.9px)">喵～？</span>
+          <span class="dsh-pet-bubble" style="transform:translate(478.7px,45.900000000000006px)">喵喵！</span>
+        </div>
+      </div>
+      <figcaption>③ 戳一下：转身面对用户，说两句</figcaption>
+    </figure>
+    </div>
+  </section>
+  <section class="family">
+    <h2>雪球 · 垂耳兔<span class="meta">步态 hop · 150px/s · 道具在左，面朝左</span></h2>
+    <div class="row">
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:27.599999999999998px;height:25.299999999999997px;transform:translate(385.7px,144.7px)"><svg viewBox="0 0 24 22" aria-hidden="true"><path d="M12 8 q-2.5 -5 -6 -6 q2 5 6 6 z" fill="#67B35F"/><path d="M13 8 q2.5 -5 6 -6 q-2 5 -6 6 z" fill="#4E9B4A"/><path d="M12 7 Q16 10 15 15 Q14 20 12 21 Q10 20 9 15 Q8 10 12 7 Z" fill="#EF8A3C"/><path d="M10 11.5 q2 1 4 0 M9.7 15 q2.3 1 4.6 0" stroke="#D9702A" stroke-width="1.1" fill="none" stroke-linecap="round"/></svg></div>
+          <div class="dsh-pet-actor " style="width:66.69999999999999px;height:64.39999999999999px;transform:translate(449.3px,105.60000000000001px)">
+            <span class="dsh-pet-tag dsh-pet-force">
+              <span class="dsh-pet-name">雪球</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 58 56" aria-hidden="true"><circle cx="7.5" cy="36" r="4.5" fill="#FFFFFF"/><ellipse cx="20" cy="42" rx="7.5" ry="6" fill="#EFE6D8"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="26" y="42" width="5.5" height="10" rx="2.7" fill="#FBF6EF" style="transform-origin:28.7px 43px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="34" y="42" width="5.5" height="10" rx="2.7" fill="#F4EADF" style="transform-origin:36.7px 43px"/><ellipse cx="26" cy="38" rx="16" ry="12.5" fill="#FBF6EF"/><ellipse cx="28" cy="42" rx="9" ry="6" fill="#F4EADF" opacity=".7"/><path class="dsh-pet-ear" d="M37 5 Q30 6 31 16 Q31.5 24 35 24 Q38.5 24 38.5 16 Q38.5 8 37 5 Z" fill="#FBF6EF" style="transform-origin:37px 6px"/><path d="M34.6 9.5 Q32.6 11 33 17 Q33.3 21.5 35 21.5 Q36.7 21.5 36.7 16.5 Q36.6 11.5 34.6 9.5 Z" fill="#F2C9C4"/><circle cx="40" cy="23" r="10.5" fill="#FBF6EF"/><path d="M33 17 Q37 12.5 43 12" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="44.5" cy="21.5" r="1.8" fill="#4A4038" class="dsh-pet-eye"/><path d="M49.5 23.8 l2.4 .6 l-1.7 1.7 z" fill="#EFA8A0"/><path d="M50.6 26.2 q-1.2 1.4 -2.8 .8" stroke="#C9A9A0" stroke-width="1" fill="none" stroke-linecap="round"/><circle cx="46.5" cy="25" r="1.6" fill="#F6CFC9" opacity=".85"/></svg><svg class="dsh-pet-front" viewBox="0 0 58 56" aria-hidden="true"><path class="dsh-pet-ear" d="M9 6 Q3 8 4.5 17 Q5.6 23.5 9 23 Q12 22.6 11.6 15 Q11.2 8.6 9 6 Z" fill="#FBF6EF" style="transform-origin:9px 7px"/><path d="M7.4 10.5 Q5.8 12 6.4 17 Q6.9 21 8.8 20.8 Q10.4 20.6 10.2 15.4 Q10 11.5 7.4 10.5 Z" fill="#F2C9C4"/><path class="dsh-pet-ear" d="M49 6 Q55 8 53.5 17 Q52.4 23.5 49 23 Q46 22.6 46.4 15 Q46.8 8.6 49 6 Z" fill="#FBF6EF" style="transform-origin:49px 7px"/><path d="M50.6 10.5 Q52.2 12 51.6 17 Q51.1 21 49.2 20.8 Q47.6 20.6 47.8 15.4 Q48 11.5 50.6 10.5 Z" fill="#F2C9C4"/><ellipse cx="29" cy="41" rx="12.5" ry="10" fill="#FBF6EF"/><ellipse cx="29" cy="42" rx="7.5" ry="6.5" fill="#FFFFFF"/><ellipse cx="24.5" cy="36" rx="2.6" ry="2" fill="#F4EADF"/><ellipse cx="33.5" cy="36" rx="2.6" ry="2" fill="#F4EADF"/><ellipse cx="24" cy="50.6" rx="2.8" ry="2.2" fill="#FBF6EF"/><ellipse cx="34" cy="50.6" rx="2.8" ry="2.2" fill="#FBF6EF"/><circle cx="29" cy="17" r="11.5" fill="#FBF6EF"/><circle cx="24" cy="16" r="1.9" fill="#4A4038" class="dsh-pet-eye"/><circle cx="34" cy="16" r="1.9" fill="#4A4038" class="dsh-pet-eye"/><path d="M28 20 l2 0 l-1 1.6 z" fill="#EFA8A0"/><path d="M29 21.6 q-1.4 1.6 -2.8 .8 M29 21.6 q1.4 1.6 2.8 .8" stroke="#C9A9A0" stroke-width="1" fill="none" stroke-linecap="round"/><rect x="27.2" y="22.6" width="1.7" height="2.2" rx=".6" fill="#FFFFFF"/><rect x="29.9" y="22.6" width="1.7" height="2.2" rx=".6" fill="#FFFFFF"/><circle cx="20.5" cy="19.5" r="1.8" fill="#F6CFC9"/><circle cx="37.5" cy="19.5" r="1.8" fill="#F6CFC9"/></svg></span>
+            </span>
+          </div>
+          
+        </div>
+      </div>
+      <figcaption>① 静止：待机微动画（悬停出名牌）</figcaption>
+    </figure>
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:27.599999999999998px;height:25.299999999999997px;transform:translate(385.7px,144.7px)"><svg viewBox="0 0 24 22" aria-hidden="true"><path d="M12 8 q-2.5 -5 -6 -6 q2 5 6 6 z" fill="#67B35F"/><path d="M13 8 q2.5 -5 6 -6 q-2 5 -6 6 z" fill="#4E9B4A"/><path d="M12 7 Q16 10 15 15 Q14 20 12 21 Q10 20 9 15 Q8 10 12 7 Z" fill="#EF8A3C"/><path d="M10 11.5 q2 1 4 0 M9.7 15 q2.3 1 4.6 0" stroke="#D9702A" stroke-width="1.1" fill="none" stroke-linecap="round"/></svg></div>
+          <div class="dsh-pet-actor " style="width:66.69999999999999px;height:64.39999999999999px;transform:translate(449.3px,105.60000000000001px)">
+            <span class="dsh-pet-tag">
+              <span class="dsh-pet-name">雪球</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:translateY(-9px)"><svg class="dsh-pet-side" viewBox="0 0 58 56" aria-hidden="true"><circle cx="7.5" cy="36" r="4.5" fill="#FFFFFF"/><ellipse cx="20" cy="42" rx="7.5" ry="6" fill="#EFE6D8"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="26" y="42" width="5.5" height="10" rx="2.7" fill="#FBF6EF" style="transform-origin:28.7px 43px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="34" y="42" width="5.5" height="10" rx="2.7" fill="#F4EADF" style="transform-origin:36.7px 43px"/><ellipse cx="26" cy="38" rx="16" ry="12.5" fill="#FBF6EF"/><ellipse cx="28" cy="42" rx="9" ry="6" fill="#F4EADF" opacity=".7"/><path class="dsh-pet-ear" d="M37 5 Q30 6 31 16 Q31.5 24 35 24 Q38.5 24 38.5 16 Q38.5 8 37 5 Z" fill="#FBF6EF" style="transform-origin:37px 6px"/><path d="M34.6 9.5 Q32.6 11 33 17 Q33.3 21.5 35 21.5 Q36.7 21.5 36.7 16.5 Q36.6 11.5 34.6 9.5 Z" fill="#F2C9C4"/><circle cx="40" cy="23" r="10.5" fill="#FBF6EF"/><path d="M33 17 Q37 12.5 43 12" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="44.5" cy="21.5" r="1.8" fill="#4A4038" class="dsh-pet-eye"/><path d="M49.5 23.8 l2.4 .6 l-1.7 1.7 z" fill="#EFA8A0"/><path d="M50.6 26.2 q-1.2 1.4 -2.8 .8" stroke="#C9A9A0" stroke-width="1" fill="none" stroke-linecap="round"/><circle cx="46.5" cy="25" r="1.6" fill="#F6CFC9" opacity=".85"/></svg><svg class="dsh-pet-front" viewBox="0 0 58 56" aria-hidden="true"><path class="dsh-pet-ear" d="M9 6 Q3 8 4.5 17 Q5.6 23.5 9 23 Q12 22.6 11.6 15 Q11.2 8.6 9 6 Z" fill="#FBF6EF" style="transform-origin:9px 7px"/><path d="M7.4 10.5 Q5.8 12 6.4 17 Q6.9 21 8.8 20.8 Q10.4 20.6 10.2 15.4 Q10 11.5 7.4 10.5 Z" fill="#F2C9C4"/><path class="dsh-pet-ear" d="M49 6 Q55 8 53.5 17 Q52.4 23.5 49 23 Q46 22.6 46.4 15 Q46.8 8.6 49 6 Z" fill="#FBF6EF" style="transform-origin:49px 7px"/><path d="M50.6 10.5 Q52.2 12 51.6 17 Q51.1 21 49.2 20.8 Q47.6 20.6 47.8 15.4 Q48 11.5 50.6 10.5 Z" fill="#F2C9C4"/><ellipse cx="29" cy="41" rx="12.5" ry="10" fill="#FBF6EF"/><ellipse cx="29" cy="42" rx="7.5" ry="6.5" fill="#FFFFFF"/><ellipse cx="24.5" cy="36" rx="2.6" ry="2" fill="#F4EADF"/><ellipse cx="33.5" cy="36" rx="2.6" ry="2" fill="#F4EADF"/><ellipse cx="24" cy="50.6" rx="2.8" ry="2.2" fill="#FBF6EF"/><ellipse cx="34" cy="50.6" rx="2.8" ry="2.2" fill="#FBF6EF"/><circle cx="29" cy="17" r="11.5" fill="#FBF6EF"/><circle cx="24" cy="16" r="1.9" fill="#4A4038" class="dsh-pet-eye"/><circle cx="34" cy="16" r="1.9" fill="#4A4038" class="dsh-pet-eye"/><path d="M28 20 l2 0 l-1 1.6 z" fill="#EFA8A0"/><path d="M29 21.6 q-1.4 1.6 -2.8 .8 M29 21.6 q1.4 1.6 2.8 .8" stroke="#C9A9A0" stroke-width="1" fill="none" stroke-linecap="round"/><rect x="27.2" y="22.6" width="1.7" height="2.2" rx=".6" fill="#FFFFFF"/><rect x="29.9" y="22.6" width="1.7" height="2.2" rx=".6" fill="#FFFFFF"/><circle cx="20.5" cy="19.5" r="1.8" fill="#F6CFC9"/><circle cx="37.5" cy="19.5" r="1.8" fill="#F6CFC9"/></svg></span>
+            </span>
+          </div>
+          <div class="dsh-pet-trailmark" style="transform:translate(455.3px,163px)"><svg viewBox="0 0 10 8" width="10" height="8" aria-hidden="true"><g fill="#C9BCA8"><circle cx="3" cy="4.5" r="1.3"/><circle cx="7" cy="3.5" r="1.3"/></g></svg></div>
+        </div>
+      </div>
+      <figcaption>② 蹦跳（起伏由运行时驱动，此处摆空中姿态）</figcaption>
+    </figure>
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:27.599999999999998px;height:25.299999999999997px;transform:translate(385.7px,144.7px)"><svg viewBox="0 0 24 22" aria-hidden="true"><path d="M12 8 q-2.5 -5 -6 -6 q2 5 6 6 z" fill="#67B35F"/><path d="M13 8 q2.5 -5 6 -6 q-2 5 -6 6 z" fill="#4E9B4A"/><path d="M12 7 Q16 10 15 15 Q14 20 12 21 Q10 20 9 15 Q8 10 12 7 Z" fill="#EF8A3C"/><path d="M10 11.5 q2 1 4 0 M9.7 15 q2.3 1 4.6 0" stroke="#D9702A" stroke-width="1.1" fill="none" stroke-linecap="round"/></svg></div>
+          <div class="dsh-pet-actor dsh-pet-react" style="width:66.69999999999999px;height:64.39999999999999px;transform:translate(449.3px,105.60000000000001px)">
+            <span class="dsh-pet-tag">
+              <span class="dsh-pet-name">雪球</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 58 56" aria-hidden="true"><circle cx="7.5" cy="36" r="4.5" fill="#FFFFFF"/><ellipse cx="20" cy="42" rx="7.5" ry="6" fill="#EFE6D8"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="26" y="42" width="5.5" height="10" rx="2.7" fill="#FBF6EF" style="transform-origin:28.7px 43px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="34" y="42" width="5.5" height="10" rx="2.7" fill="#F4EADF" style="transform-origin:36.7px 43px"/><ellipse cx="26" cy="38" rx="16" ry="12.5" fill="#FBF6EF"/><ellipse cx="28" cy="42" rx="9" ry="6" fill="#F4EADF" opacity=".7"/><path class="dsh-pet-ear" d="M37 5 Q30 6 31 16 Q31.5 24 35 24 Q38.5 24 38.5 16 Q38.5 8 37 5 Z" fill="#FBF6EF" style="transform-origin:37px 6px"/><path d="M34.6 9.5 Q32.6 11 33 17 Q33.3 21.5 35 21.5 Q36.7 21.5 36.7 16.5 Q36.6 11.5 34.6 9.5 Z" fill="#F2C9C4"/><circle cx="40" cy="23" r="10.5" fill="#FBF6EF"/><path d="M33 17 Q37 12.5 43 12" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="44.5" cy="21.5" r="1.8" fill="#4A4038" class="dsh-pet-eye"/><path d="M49.5 23.8 l2.4 .6 l-1.7 1.7 z" fill="#EFA8A0"/><path d="M50.6 26.2 q-1.2 1.4 -2.8 .8" stroke="#C9A9A0" stroke-width="1" fill="none" stroke-linecap="round"/><circle cx="46.5" cy="25" r="1.6" fill="#F6CFC9" opacity=".85"/></svg><svg class="dsh-pet-front" viewBox="0 0 58 56" aria-hidden="true"><path class="dsh-pet-ear" d="M9 6 Q3 8 4.5 17 Q5.6 23.5 9 23 Q12 22.6 11.6 15 Q11.2 8.6 9 6 Z" fill="#FBF6EF" style="transform-origin:9px 7px"/><path d="M7.4 10.5 Q5.8 12 6.4 17 Q6.9 21 8.8 20.8 Q10.4 20.6 10.2 15.4 Q10 11.5 7.4 10.5 Z" fill="#F2C9C4"/><path class="dsh-pet-ear" d="M49 6 Q55 8 53.5 17 Q52.4 23.5 49 23 Q46 22.6 46.4 15 Q46.8 8.6 49 6 Z" fill="#FBF6EF" style="transform-origin:49px 7px"/><path d="M50.6 10.5 Q52.2 12 51.6 17 Q51.1 21 49.2 20.8 Q47.6 20.6 47.8 15.4 Q48 11.5 50.6 10.5 Z" fill="#F2C9C4"/><ellipse cx="29" cy="41" rx="12.5" ry="10" fill="#FBF6EF"/><ellipse cx="29" cy="42" rx="7.5" ry="6.5" fill="#FFFFFF"/><ellipse cx="24.5" cy="36" rx="2.6" ry="2" fill="#F4EADF"/><ellipse cx="33.5" cy="36" rx="2.6" ry="2" fill="#F4EADF"/><ellipse cx="24" cy="50.6" rx="2.8" ry="2.2" fill="#FBF6EF"/><ellipse cx="34" cy="50.6" rx="2.8" ry="2.2" fill="#FBF6EF"/><circle cx="29" cy="17" r="11.5" fill="#FBF6EF"/><circle cx="24" cy="16" r="1.9" fill="#4A4038" class="dsh-pet-eye"/><circle cx="34" cy="16" r="1.9" fill="#4A4038" class="dsh-pet-eye"/><path d="M28 20 l2 0 l-1 1.6 z" fill="#EFA8A0"/><path d="M29 21.6 q-1.4 1.6 -2.8 .8 M29 21.6 q1.4 1.6 2.8 .8" stroke="#C9A9A0" stroke-width="1" fill="none" stroke-linecap="round"/><rect x="27.2" y="22.6" width="1.7" height="2.2" rx=".6" fill="#FFFFFF"/><rect x="29.9" y="22.6" width="1.7" height="2.2" rx=".6" fill="#FFFFFF"/><circle cx="20.5" cy="19.5" r="1.8" fill="#F6CFC9"/><circle cx="37.5" cy="19.5" r="1.8" fill="#F6CFC9"/></svg></span>
+            </span>
+          </div>
+          <span class="dsh-pet-bubble" style="transform:translate(522px,71.60000000000001px)">哼哼！</span>
+          <span class="dsh-pet-bubble" style="transform:translate(483.3px,43.60000000000001px)">蹦！</span>
+        </div>
+      </div>
+      <figcaption>③ 戳一下：转身面对用户，说两句</figcaption>
+    </figure>
+    </div>
+  </section>
+  <section class="family">
+    <h2>波波 · 小企鹅<span class="meta">步态 waddle · 110px/s · 道具在左，面朝左</span></h2>
+    <div class="row">
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:27.599999999999998px;height:16.099999999999998px;transform:translate(392.59999999999997px,153.9px)"><svg viewBox="0 0 24 14" aria-hidden="true"><path d="M18 7 l4.4 -3 l-1 3 l1 3 z" fill="#C7D6E0"/><path d="M2 7 Q8 2.5 15 5.5 Q18.5 7 18.5 7 Q18.5 7 15 8.5 Q8 11.5 2 7 Z" fill="#9FB6C6"/><path d="M4 5.8 Q10 2.8 16 5.8" stroke="#7C96A8" stroke-width="1.4" fill="none" stroke-linecap="round"/><circle cx="4.8" cy="6.4" r=".9" fill="#33424E"/></svg></div>
+          <div class="dsh-pet-actor " style="width:59.8px;height:66.69999999999999px;transform:translate(456.2px,103.30000000000001px)">
+            <span class="dsh-pet-tag dsh-pet-force">
+              <span class="dsh-pet-name">波波</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 52 58" aria-hidden="true"><path d="M9.6 44 l-4.5 3 l5.2 .8 z" fill="#26303C"/><ellipse cx="20" cy="54.5" rx="4.6" ry="2.4" fill="#F5A623"/><ellipse cx="30" cy="54.5" rx="4.6" ry="2.4" fill="#E8961B"/><ellipse cx="26" cy="33" rx="17" ry="21" fill="#2E3A48"/><ellipse cx="30" cy="38" rx="11.5" ry="14" fill="#FDFDFB"/><path class="dsh-pet-wing" d="M12 24 Q6 32 10 42 Q14 40 15.5 31 Q15 25 12 24 Z" fill="#26303C" style="transform-origin:12px 25px"/><path d="M18 14 Q24 9.5 31 11" stroke="#3E4E60" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="33.5" cy="22" r="2" fill="#242C36" class="dsh-pet-eye"/><circle cx="34.2" cy="21.3" r=".6" fill="#FFFFFF"/><path d="M42 24 l7 2.2 l-7 2.6 z" fill="#F5A623"/></svg><svg class="dsh-pet-front" viewBox="0 0 52 58" aria-hidden="true"><ellipse cx="19" cy="55" rx="4.4" ry="2.3" fill="#F5A623"/><ellipse cx="33" cy="55" rx="4.4" ry="2.3" fill="#F5A623"/><ellipse cx="26" cy="34" rx="17" ry="21" fill="#2E3A48"/><ellipse cx="26" cy="39" rx="12" ry="14.5" fill="#FDFDFB"/><path class="dsh-pet-wing" d="M9 26 Q3 34 7.5 44 Q12 42 13 32 Q12.4 26 9 26 Z" fill="#26303C" style="transform-origin:9px 27px"/><path class="dsh-pet-wing" d="M43 26 Q49 34 44.5 44 Q40 42 39 32 Q39.6 26 43 26 Z" fill="#26303C" style="transform-origin:43px 27px"/><path d="M16 13 Q22 8.5 29 10" stroke="#3E4E60" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="20" cy="23" r="2" fill="#242C36" class="dsh-pet-eye"/><circle cx="32" cy="23" r="2" fill="#242C36" class="dsh-pet-eye"/><circle cx="20.7" cy="22.3" r=".6" fill="#FFFFFF"/><circle cx="32.7" cy="22.3" r=".6" fill="#FFFFFF"/><path d="M22.5 27.5 l7 0 l-3.5 4.4 z" fill="#F5A623"/></svg></span>
+            </span>
+          </div>
+          
+        </div>
+      </div>
+      <figcaption>① 静止：待机微动画（悬停出名牌）</figcaption>
+    </figure>
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:27.599999999999998px;height:16.099999999999998px;transform:translate(392.59999999999997px,153.9px)"><svg viewBox="0 0 24 14" aria-hidden="true"><path d="M18 7 l4.4 -3 l-1 3 l1 3 z" fill="#C7D6E0"/><path d="M2 7 Q8 2.5 15 5.5 Q18.5 7 18.5 7 Q18.5 7 15 8.5 Q8 11.5 2 7 Z" fill="#9FB6C6"/><path d="M4 5.8 Q10 2.8 16 5.8" stroke="#7C96A8" stroke-width="1.4" fill="none" stroke-linecap="round"/><circle cx="4.8" cy="6.4" r=".9" fill="#33424E"/></svg></div>
+          <div class="dsh-pet-actor dsh-pet-waddle" style="width:59.8px;height:66.69999999999999px;transform:translate(456.2px,103.30000000000001px)">
+            <span class="dsh-pet-tag">
+              <span class="dsh-pet-name">波波</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 52 58" aria-hidden="true"><path d="M9.6 44 l-4.5 3 l5.2 .8 z" fill="#26303C"/><ellipse cx="20" cy="54.5" rx="4.6" ry="2.4" fill="#F5A623"/><ellipse cx="30" cy="54.5" rx="4.6" ry="2.4" fill="#E8961B"/><ellipse cx="26" cy="33" rx="17" ry="21" fill="#2E3A48"/><ellipse cx="30" cy="38" rx="11.5" ry="14" fill="#FDFDFB"/><path class="dsh-pet-wing" d="M12 24 Q6 32 10 42 Q14 40 15.5 31 Q15 25 12 24 Z" fill="#26303C" style="transform-origin:12px 25px"/><path d="M18 14 Q24 9.5 31 11" stroke="#3E4E60" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="33.5" cy="22" r="2" fill="#242C36" class="dsh-pet-eye"/><circle cx="34.2" cy="21.3" r=".6" fill="#FFFFFF"/><path d="M42 24 l7 2.2 l-7 2.6 z" fill="#F5A623"/></svg><svg class="dsh-pet-front" viewBox="0 0 52 58" aria-hidden="true"><ellipse cx="19" cy="55" rx="4.4" ry="2.3" fill="#F5A623"/><ellipse cx="33" cy="55" rx="4.4" ry="2.3" fill="#F5A623"/><ellipse cx="26" cy="34" rx="17" ry="21" fill="#2E3A48"/><ellipse cx="26" cy="39" rx="12" ry="14.5" fill="#FDFDFB"/><path class="dsh-pet-wing" d="M9 26 Q3 34 7.5 44 Q12 42 13 32 Q12.4 26 9 26 Z" fill="#26303C" style="transform-origin:9px 27px"/><path class="dsh-pet-wing" d="M43 26 Q49 34 44.5 44 Q40 42 39 32 Q39.6 26 43 26 Z" fill="#26303C" style="transform-origin:43px 27px"/><path d="M16 13 Q22 8.5 29 10" stroke="#3E4E60" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="20" cy="23" r="2" fill="#242C36" class="dsh-pet-eye"/><circle cx="32" cy="23" r="2" fill="#242C36" class="dsh-pet-eye"/><circle cx="20.7" cy="22.3" r=".6" fill="#FFFFFF"/><circle cx="32.7" cy="22.3" r=".6" fill="#FFFFFF"/><path d="M22.5 27.5 l7 0 l-3.5 4.4 z" fill="#F5A623"/></svg></span>
+            </span>
+          </div>
+          
+        </div>
+      </div>
+      <figcaption>② 摇摆步（左右摇着走）</figcaption>
+    </figure>
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:27.599999999999998px;height:16.099999999999998px;transform:translate(392.59999999999997px,153.9px)"><svg viewBox="0 0 24 14" aria-hidden="true"><path d="M18 7 l4.4 -3 l-1 3 l1 3 z" fill="#C7D6E0"/><path d="M2 7 Q8 2.5 15 5.5 Q18.5 7 18.5 7 Q18.5 7 15 8.5 Q8 11.5 2 7 Z" fill="#9FB6C6"/><path d="M4 5.8 Q10 2.8 16 5.8" stroke="#7C96A8" stroke-width="1.4" fill="none" stroke-linecap="round"/><circle cx="4.8" cy="6.4" r=".9" fill="#33424E"/></svg></div>
+          <div class="dsh-pet-actor dsh-pet-react" style="width:59.8px;height:66.69999999999999px;transform:translate(456.2px,103.30000000000001px)">
+            <span class="dsh-pet-tag">
+              <span class="dsh-pet-name">波波</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 52 58" aria-hidden="true"><path d="M9.6 44 l-4.5 3 l5.2 .8 z" fill="#26303C"/><ellipse cx="20" cy="54.5" rx="4.6" ry="2.4" fill="#F5A623"/><ellipse cx="30" cy="54.5" rx="4.6" ry="2.4" fill="#E8961B"/><ellipse cx="26" cy="33" rx="17" ry="21" fill="#2E3A48"/><ellipse cx="30" cy="38" rx="11.5" ry="14" fill="#FDFDFB"/><path class="dsh-pet-wing" d="M12 24 Q6 32 10 42 Q14 40 15.5 31 Q15 25 12 24 Z" fill="#26303C" style="transform-origin:12px 25px"/><path d="M18 14 Q24 9.5 31 11" stroke="#3E4E60" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="33.5" cy="22" r="2" fill="#242C36" class="dsh-pet-eye"/><circle cx="34.2" cy="21.3" r=".6" fill="#FFFFFF"/><path d="M42 24 l7 2.2 l-7 2.6 z" fill="#F5A623"/></svg><svg class="dsh-pet-front" viewBox="0 0 52 58" aria-hidden="true"><ellipse cx="19" cy="55" rx="4.4" ry="2.3" fill="#F5A623"/><ellipse cx="33" cy="55" rx="4.4" ry="2.3" fill="#F5A623"/><ellipse cx="26" cy="34" rx="17" ry="21" fill="#2E3A48"/><ellipse cx="26" cy="39" rx="12" ry="14.5" fill="#FDFDFB"/><path class="dsh-pet-wing" d="M9 26 Q3 34 7.5 44 Q12 42 13 32 Q12.4 26 9 26 Z" fill="#26303C" style="transform-origin:9px 27px"/><path class="dsh-pet-wing" d="M43 26 Q49 34 44.5 44 Q40 42 39 32 Q39.6 26 43 26 Z" fill="#26303C" style="transform-origin:43px 27px"/><path d="M16 13 Q22 8.5 29 10" stroke="#3E4E60" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="20" cy="23" r="2" fill="#242C36" class="dsh-pet-eye"/><circle cx="32" cy="23" r="2" fill="#242C36" class="dsh-pet-eye"/><circle cx="20.7" cy="22.3" r=".6" fill="#FFFFFF"/><circle cx="32.7" cy="22.3" r=".6" fill="#FFFFFF"/><path d="M22.5 27.5 l7 0 l-3.5 4.4 z" fill="#F5A623"/></svg></span>
+            </span>
+          </div>
+          <span class="dsh-pet-bubble" style="transform:translate(522px,69.30000000000001px)">嘎！</span>
+          <span class="dsh-pet-bubble" style="transform:translate(490.2px,41.30000000000001px)">嘎嘎！</span>
+        </div>
+      </div>
+      <figcaption>③ 戳一下：转身面对用户，说两句</figcaption>
+    </figure>
+    </div>
+  </section>
+  <section class="family">
+    <h2>糯米 · 仓鼠<span class="meta">步态 run · 170px/s · 道具在左，面朝左</span></h2>
+    <div class="row">
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:23px;height:16.099999999999998px;transform:translate(404.1px,153.9px)"><svg viewBox="0 0 20 14" aria-hidden="true"><path d="M3 7 Q7 2.5 13 4.5 Q17 6 17 7 Q17 8 13 9.5 Q7 11.5 3 7 Z" fill="#4A4038"/><path d="M7 4.2 l0 5.6 M10.5 3.8 l0 6.2 M14 4.8 l0 4.4" stroke="#2E2A26" stroke-width="1.1" fill="none" stroke-linecap="round"/><ellipse cx="16.8" cy="7" rx="1.5" ry="1.1" fill="#F7F2E8"/></svg></div>
+          <div class="dsh-pet-actor " style="width:52.9px;height:43.699999999999996px;transform:translate(463.1px,126.30000000000001px)">
+            <span class="dsh-pet-tag dsh-pet-force">
+              <span class="dsh-pet-name">糯米</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 46 38" aria-hidden="true"><circle cx="6.2" cy="26" r="1.6" fill="#E3C9A4"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="12" y="31" width="4" height="5.5" rx="2" fill="#D9BE97" style="transform-origin:14px 32px"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="22" y="31" width="4" height="5.5" rx="2" fill="#E3C9A4" style="transform-origin:24px 32px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="29" y="31" width="4" height="5.5" rx="2" fill="#E3C9A4" style="transform-origin:31px 32px"/><ellipse cx="21" cy="24" rx="16" ry="11" fill="#F0DCC0"/><ellipse cx="21" cy="18.5" rx="13" ry="5.5" fill="#E3C9A4" opacity=".8"/><ellipse class="dsh-pet-belly" cx="20" cy="28" rx="9" ry="4.5" fill="#F9EDD8" style="transform-origin:20px 28px"/><path d="M12 17.5 Q17 13.5 23 13.5" stroke="#F9EDD8" stroke-width="2" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="31.5" cy="12.5" r="2.8" fill="#E3C9A4"/><circle cx="31.7" cy="12.6" r="1.5" fill="#EFB9A8"/><circle cx="29.5" cy="15.5" r="1.7" fill="#3F3630" class="dsh-pet-eye"/><ellipse cx="33.5" cy="22" rx="5" ry="4.2" fill="#F6E6CE"/><circle cx="38.8" cy="18.5" r="1.1" fill="#E2A69B"/><path d="M37.4 20.6 q1.2 1 2.4 .2" stroke="#C89F82" stroke-width=".9" fill="none" stroke-linecap="round"/><path d="M36.5 19.5 l5.5 -1 M36.8 20.6 l5.5 .6" stroke="#C9AD8C" stroke-width=".8" fill="none" stroke-linecap="round"/></svg><svg class="dsh-pet-front" viewBox="0 0 46 38" aria-hidden="true"><ellipse cx="23" cy="26" rx="14" ry="10.5" fill="#F0DCC0"/><ellipse cx="23" cy="28" rx="8.5" ry="6.5" fill="#F9EDD8"/><ellipse cx="18.5" cy="36" rx="2.6" ry="1.8" fill="#E3C9A4"/><ellipse cx="27.5" cy="36" rx="2.6" ry="1.8" fill="#E3C9A4"/><circle cx="13.5" cy="19" r="6.5" fill="#F6E6CE"/><circle cx="32.5" cy="19" r="6.5" fill="#F6E6CE"/><circle cx="23" cy="17" r="9.5" fill="#F0DCC0"/><circle cx="16.5" cy="9" r="2.6" fill="#E3C9A4"/><circle cx="16.6" cy="9.1" r="1.3" fill="#EFB9A8"/><circle cx="29.5" cy="9" r="2.6" fill="#E3C9A4"/><circle cx="29.4" cy="9.1" r="1.3" fill="#EFB9A8"/><circle cx="19" cy="15.5" r="1.7" fill="#3F3630" class="dsh-pet-eye"/><circle cx="27" cy="15.5" r="1.7" fill="#3F3630" class="dsh-pet-eye"/><circle cx="23" cy="19.2" r="1.1" fill="#E2A69B"/><path d="M23 20.3 q-1.2 1.2 -2.3 .6 M23 20.3 q1.2 1.2 2.3 .6" stroke="#C89F82" stroke-width=".9" fill="none" stroke-linecap="round"/><rect x="21.7" y="21.4" width="1.9" height="2.4" rx=".7" fill="#FFFFFF"/><rect x="24.4" y="21.4" width="1.9" height="2.4" rx=".7" fill="#FFFFFF"/><ellipse cx="19.5" cy="29" rx="2.4" ry="2" fill="#E3C9A4"/><ellipse cx="26.5" cy="29" rx="2.4" ry="2" fill="#E3C9A4"/><ellipse cx="23" cy="28" rx="2" ry="1.3" fill="#4A4038"/><circle cx="24.6" cy="27.6" r=".7" fill="#F7F2E8"/></svg></span>
+            </span>
+          </div>
+          
+        </div>
+      </div>
+      <figcaption>① 静止：待机微动画（悬停出名牌）</figcaption>
+    </figure>
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:23px;height:16.099999999999998px;transform:translate(404.1px,153.9px)"><svg viewBox="0 0 20 14" aria-hidden="true"><path d="M3 7 Q7 2.5 13 4.5 Q17 6 17 7 Q17 8 13 9.5 Q7 11.5 3 7 Z" fill="#4A4038"/><path d="M7 4.2 l0 5.6 M10.5 3.8 l0 6.2 M14 4.8 l0 4.4" stroke="#2E2A26" stroke-width="1.1" fill="none" stroke-linecap="round"/><ellipse cx="16.8" cy="7" rx="1.5" ry="1.1" fill="#F7F2E8"/></svg></div>
+          <div class="dsh-pet-actor dsh-pet-run" style="width:52.9px;height:43.699999999999996px;transform:translate(463.1px,126.30000000000001px)">
+            <span class="dsh-pet-tag">
+              <span class="dsh-pet-name">糯米</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 46 38" aria-hidden="true"><circle cx="6.2" cy="26" r="1.6" fill="#E3C9A4"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="12" y="31" width="4" height="5.5" rx="2" fill="#D9BE97" style="transform-origin:14px 32px"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="22" y="31" width="4" height="5.5" rx="2" fill="#E3C9A4" style="transform-origin:24px 32px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="29" y="31" width="4" height="5.5" rx="2" fill="#E3C9A4" style="transform-origin:31px 32px"/><ellipse cx="21" cy="24" rx="16" ry="11" fill="#F0DCC0"/><ellipse cx="21" cy="18.5" rx="13" ry="5.5" fill="#E3C9A4" opacity=".8"/><ellipse class="dsh-pet-belly" cx="20" cy="28" rx="9" ry="4.5" fill="#F9EDD8" style="transform-origin:20px 28px"/><path d="M12 17.5 Q17 13.5 23 13.5" stroke="#F9EDD8" stroke-width="2" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="31.5" cy="12.5" r="2.8" fill="#E3C9A4"/><circle cx="31.7" cy="12.6" r="1.5" fill="#EFB9A8"/><circle cx="29.5" cy="15.5" r="1.7" fill="#3F3630" class="dsh-pet-eye"/><ellipse cx="33.5" cy="22" rx="5" ry="4.2" fill="#F6E6CE"/><circle cx="38.8" cy="18.5" r="1.1" fill="#E2A69B"/><path d="M37.4 20.6 q1.2 1 2.4 .2" stroke="#C89F82" stroke-width=".9" fill="none" stroke-linecap="round"/><path d="M36.5 19.5 l5.5 -1 M36.8 20.6 l5.5 .6" stroke="#C9AD8C" stroke-width=".8" fill="none" stroke-linecap="round"/></svg><svg class="dsh-pet-front" viewBox="0 0 46 38" aria-hidden="true"><ellipse cx="23" cy="26" rx="14" ry="10.5" fill="#F0DCC0"/><ellipse cx="23" cy="28" rx="8.5" ry="6.5" fill="#F9EDD8"/><ellipse cx="18.5" cy="36" rx="2.6" ry="1.8" fill="#E3C9A4"/><ellipse cx="27.5" cy="36" rx="2.6" ry="1.8" fill="#E3C9A4"/><circle cx="13.5" cy="19" r="6.5" fill="#F6E6CE"/><circle cx="32.5" cy="19" r="6.5" fill="#F6E6CE"/><circle cx="23" cy="17" r="9.5" fill="#F0DCC0"/><circle cx="16.5" cy="9" r="2.6" fill="#E3C9A4"/><circle cx="16.6" cy="9.1" r="1.3" fill="#EFB9A8"/><circle cx="29.5" cy="9" r="2.6" fill="#E3C9A4"/><circle cx="29.4" cy="9.1" r="1.3" fill="#EFB9A8"/><circle cx="19" cy="15.5" r="1.7" fill="#3F3630" class="dsh-pet-eye"/><circle cx="27" cy="15.5" r="1.7" fill="#3F3630" class="dsh-pet-eye"/><circle cx="23" cy="19.2" r="1.1" fill="#E2A69B"/><path d="M23 20.3 q-1.2 1.2 -2.3 .6 M23 20.3 q1.2 1.2 2.3 .6" stroke="#C89F82" stroke-width=".9" fill="none" stroke-linecap="round"/><rect x="21.7" y="21.4" width="1.9" height="2.4" rx=".7" fill="#FFFFFF"/><rect x="24.4" y="21.4" width="1.9" height="2.4" rx=".7" fill="#FFFFFF"/><ellipse cx="19.5" cy="29" rx="2.4" ry="2" fill="#E3C9A4"/><ellipse cx="26.5" cy="29" rx="2.4" ry="2" fill="#E3C9A4"/><ellipse cx="23" cy="28" rx="2" ry="1.3" fill="#4A4038"/><circle cx="24.6" cy="27.6" r=".7" fill="#F7F2E8"/></svg></span>
+            </span>
+          </div>
+          
+        </div>
+      </div>
+      <figcaption>② 跑动（腿部摆动、身体起伏）</figcaption>
+    </figure>
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:23px;height:16.099999999999998px;transform:translate(404.1px,153.9px)"><svg viewBox="0 0 20 14" aria-hidden="true"><path d="M3 7 Q7 2.5 13 4.5 Q17 6 17 7 Q17 8 13 9.5 Q7 11.5 3 7 Z" fill="#4A4038"/><path d="M7 4.2 l0 5.6 M10.5 3.8 l0 6.2 M14 4.8 l0 4.4" stroke="#2E2A26" stroke-width="1.1" fill="none" stroke-linecap="round"/><ellipse cx="16.8" cy="7" rx="1.5" ry="1.1" fill="#F7F2E8"/></svg></div>
+          <div class="dsh-pet-actor dsh-pet-react" style="width:52.9px;height:43.699999999999996px;transform:translate(463.1px,126.30000000000001px)">
+            <span class="dsh-pet-tag">
+              <span class="dsh-pet-name">糯米</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 46 38" aria-hidden="true"><circle cx="6.2" cy="26" r="1.6" fill="#E3C9A4"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="12" y="31" width="4" height="5.5" rx="2" fill="#D9BE97" style="transform-origin:14px 32px"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="22" y="31" width="4" height="5.5" rx="2" fill="#E3C9A4" style="transform-origin:24px 32px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="29" y="31" width="4" height="5.5" rx="2" fill="#E3C9A4" style="transform-origin:31px 32px"/><ellipse cx="21" cy="24" rx="16" ry="11" fill="#F0DCC0"/><ellipse cx="21" cy="18.5" rx="13" ry="5.5" fill="#E3C9A4" opacity=".8"/><ellipse class="dsh-pet-belly" cx="20" cy="28" rx="9" ry="4.5" fill="#F9EDD8" style="transform-origin:20px 28px"/><path d="M12 17.5 Q17 13.5 23 13.5" stroke="#F9EDD8" stroke-width="2" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="31.5" cy="12.5" r="2.8" fill="#E3C9A4"/><circle cx="31.7" cy="12.6" r="1.5" fill="#EFB9A8"/><circle cx="29.5" cy="15.5" r="1.7" fill="#3F3630" class="dsh-pet-eye"/><ellipse cx="33.5" cy="22" rx="5" ry="4.2" fill="#F6E6CE"/><circle cx="38.8" cy="18.5" r="1.1" fill="#E2A69B"/><path d="M37.4 20.6 q1.2 1 2.4 .2" stroke="#C89F82" stroke-width=".9" fill="none" stroke-linecap="round"/><path d="M36.5 19.5 l5.5 -1 M36.8 20.6 l5.5 .6" stroke="#C9AD8C" stroke-width=".8" fill="none" stroke-linecap="round"/></svg><svg class="dsh-pet-front" viewBox="0 0 46 38" aria-hidden="true"><ellipse cx="23" cy="26" rx="14" ry="10.5" fill="#F0DCC0"/><ellipse cx="23" cy="28" rx="8.5" ry="6.5" fill="#F9EDD8"/><ellipse cx="18.5" cy="36" rx="2.6" ry="1.8" fill="#E3C9A4"/><ellipse cx="27.5" cy="36" rx="2.6" ry="1.8" fill="#E3C9A4"/><circle cx="13.5" cy="19" r="6.5" fill="#F6E6CE"/><circle cx="32.5" cy="19" r="6.5" fill="#F6E6CE"/><circle cx="23" cy="17" r="9.5" fill="#F0DCC0"/><circle cx="16.5" cy="9" r="2.6" fill="#E3C9A4"/><circle cx="16.6" cy="9.1" r="1.3" fill="#EFB9A8"/><circle cx="29.5" cy="9" r="2.6" fill="#E3C9A4"/><circle cx="29.4" cy="9.1" r="1.3" fill="#EFB9A8"/><circle cx="19" cy="15.5" r="1.7" fill="#3F3630" class="dsh-pet-eye"/><circle cx="27" cy="15.5" r="1.7" fill="#3F3630" class="dsh-pet-eye"/><circle cx="23" cy="19.2" r="1.1" fill="#E2A69B"/><path d="M23 20.3 q-1.2 1.2 -2.3 .6 M23 20.3 q1.2 1.2 2.3 .6" stroke="#C89F82" stroke-width=".9" fill="none" stroke-linecap="round"/><rect x="21.7" y="21.4" width="1.9" height="2.4" rx=".7" fill="#FFFFFF"/><rect x="24.4" y="21.4" width="1.9" height="2.4" rx=".7" fill="#FFFFFF"/><ellipse cx="19.5" cy="29" rx="2.4" ry="2" fill="#E3C9A4"/><ellipse cx="26.5" cy="29" rx="2.4" ry="2" fill="#E3C9A4"/><ellipse cx="23" cy="28" rx="2" ry="1.3" fill="#4A4038"/><circle cx="24.6" cy="27.6" r=".7" fill="#F7F2E8"/></svg></span>
+            </span>
+          </div>
+          <span class="dsh-pet-bubble" style="transform:translate(522px,92.30000000000001px)">吱！</span>
+          <span class="dsh-pet-bubble" style="transform:translate(497.1px,64.30000000000001px)">吱吱！</span>
+        </div>
+      </div>
+      <figcaption>③ 戳一下：转身面对用户，说两句</figcaption>
+    </figure>
+    </div>
+  </section>
+  <section class="family">
+    <h2>阿赤 · 小狐狸<span class="meta">步态 run · 155px/s · 道具在左，面朝左</span></h2>
+    <div class="row">
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:23px;height:27.599999999999998px;transform:translate(381.1px,142.4px)"><svg viewBox="0 0 20 24" aria-hidden="true"><rect x="9.2" y="0.5" width="1.6" height="3" rx=".8" fill="#5E3D22"/><path d="M10 3 Q15.5 7 15 13 Q14.5 19.5 10 21.5 Q5.5 19.5 5 13 Q4.5 7 10 3 Z" fill="#9C6B3F"/><path d="M7 8 q3 1.6 6 0 M6.4 12 q3.6 1.8 7.2 0 M6.8 16 q3.2 1.7 6.4 0 M8.4 5 q1.6 1.2 3.2 0" stroke="#7C5230" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg></div>
+          <div class="dsh-pet-actor " style="width:75.89999999999999px;height:59.8px;transform:translate(440.1px,110.2px)">
+            <span class="dsh-pet-tag dsh-pet-force">
+              <span class="dsh-pet-name">阿赤</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 66 52" aria-hidden="true"><g class="dsh-pet-tail" style="transform-origin:16px 34px"><path d="M16 34 Q4 26 6.5 14 Q8 8 13 10 Q20 13 21.5 24 Q22 31 16 34 Z" fill="#D9663D"/><path d="M7 14 Q8.2 9.6 12 10.4 Q10.8 14.4 8.6 17.4 Q7.2 16 7 14 Z" fill="#FBF3E8"/></g><rect class="dsh-pet-leg dsh-pet-leg-b" x="18" y="38" width="6" height="12" rx="3" fill="#8A4A2F" style="transform-origin:21px 39px"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="40" y="38" width="6" height="12" rx="3" fill="#8A4A2F" style="transform-origin:43px 39px"/><path d="M14 30 Q20 20 34 21 Q46 22 50 30 Q47 37 36 37.5 Q22 38 14 30 Z" fill="#D9663D"/><ellipse cx="22" cy="32" rx="6.5" ry="5.5" fill="#C25832" opacity=".9"/><ellipse cx="46" cy="31" rx="6" ry="6.5" fill="#FBF3E8"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="24" y="38" width="5.5" height="12" rx="2.7" fill="#D9663D" style="transform-origin:26.7px 39px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="35" y="38" width="5.5" height="12" rx="2.7" fill="#D9663D" style="transform-origin:37.7px 39px"/><ellipse cx="27" cy="49.6" rx="2.8" ry="1.7" fill="#8A4A2F"/><ellipse cx="37.6" cy="49.6" rx="2.8" ry="1.7" fill="#8A4A2F"/><path d="M20 26 Q30 20.5 40 22" stroke="#E8845C" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".9"/><path d="M44.5 11.5 L43 2 L51 7.5 Z" fill="#D9663D"/><path d="M43 2 L47 5.6 L45.9 8.4 Z" fill="#4A372F"/><circle cx="51" cy="17" r="9.5" fill="#D9663D"/><path d="M49.5 10 L51 2 L56.5 8.5 Z" fill="#D9663D"/><path d="M51 2 L54.8 6.8 L52.9 9 Z" fill="#4A372F"/><circle cx="51.5" cy="15.5" r="1.8" fill="#3A2E28" class="dsh-pet-eye"/><path d="M56 15 Q63 16.5 63.5 19.5 Q60 22 55.6 21 Z" fill="#FBF3E8"/><circle cx="63" cy="18.6" r="1.5" fill="#3A2E28"/><path d="M57 20.8 q2.4 1.4 4.6 -.2" stroke="#8A4A2F" stroke-width=".9" fill="none" stroke-linecap="round"/></svg><svg class="dsh-pet-front" viewBox="0 0 66 52" aria-hidden="true"><path d="M52 42 Q62 38 61 28 Q57 30.5 54.5 36 Q53 39.5 52 42 Z" fill="#D9663D"/><path d="M61 28 Q58.6 29.6 57 33.4 Q59.6 32.6 61 28 Z" fill="#FBF3E8"/><ellipse cx="31" cy="40" rx="13" ry="10" fill="#D9663D"/><ellipse cx="31" cy="40" rx="7" ry="7.5" fill="#FBF3E8"/><rect x="25.5" y="44" width="5" height="7" rx="2.5" fill="#8A4A2F"/><rect x="33" y="44" width="5" height="7" rx="2.5" fill="#8A4A2F"/><path d="M22.5 9 L19.5 1 L27.5 5 Z" fill="#D9663D"/><path d="M19.5 1 L23.6 4.7 L22.2 8 Z" fill="#4A372F"/><path d="M39.5 9 L42.5 1 L34.5 5 Z" fill="#D9663D"/><path d="M42.5 1 L38.4 4.7 L39.8 8 Z" fill="#4A372F"/><path d="M20.5 14 l-4.5 -1.5 l3 5 z" fill="#D9663D"/><path d="M41.5 14 l4.5 -1.5 l-3 5 z" fill="#D9663D"/><circle cx="31" cy="16" r="11" fill="#D9663D"/><ellipse cx="31" cy="20.5" rx="6" ry="4.6" fill="#FBF3E8"/><circle cx="26" cy="15" r="1.9" fill="#3A2E28" class="dsh-pet-eye"/><circle cx="36" cy="15" r="1.9" fill="#3A2E28" class="dsh-pet-eye"/><ellipse cx="31" cy="18.6" rx="1.5" ry="1.2" fill="#3A2E28"/><path d="M31 19.8 q-1.5 1.6 -3 .8 M31 19.8 q1.5 1.6 3 .8" stroke="#8A4A2F" stroke-width=".9" fill="none" stroke-linecap="round"/></svg></span>
+            </span>
+          </div>
+          
+        </div>
+      </div>
+      <figcaption>① 静止：待机微动画（悬停出名牌）</figcaption>
+    </figure>
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:23px;height:27.599999999999998px;transform:translate(381.1px,142.4px)"><svg viewBox="0 0 20 24" aria-hidden="true"><rect x="9.2" y="0.5" width="1.6" height="3" rx=".8" fill="#5E3D22"/><path d="M10 3 Q15.5 7 15 13 Q14.5 19.5 10 21.5 Q5.5 19.5 5 13 Q4.5 7 10 3 Z" fill="#9C6B3F"/><path d="M7 8 q3 1.6 6 0 M6.4 12 q3.6 1.8 7.2 0 M6.8 16 q3.2 1.7 6.4 0 M8.4 5 q1.6 1.2 3.2 0" stroke="#7C5230" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg></div>
+          <div class="dsh-pet-actor dsh-pet-run" style="width:75.89999999999999px;height:59.8px;transform:translate(440.1px,110.2px)">
+            <span class="dsh-pet-tag">
+              <span class="dsh-pet-name">阿赤</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 66 52" aria-hidden="true"><g class="dsh-pet-tail" style="transform-origin:16px 34px"><path d="M16 34 Q4 26 6.5 14 Q8 8 13 10 Q20 13 21.5 24 Q22 31 16 34 Z" fill="#D9663D"/><path d="M7 14 Q8.2 9.6 12 10.4 Q10.8 14.4 8.6 17.4 Q7.2 16 7 14 Z" fill="#FBF3E8"/></g><rect class="dsh-pet-leg dsh-pet-leg-b" x="18" y="38" width="6" height="12" rx="3" fill="#8A4A2F" style="transform-origin:21px 39px"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="40" y="38" width="6" height="12" rx="3" fill="#8A4A2F" style="transform-origin:43px 39px"/><path d="M14 30 Q20 20 34 21 Q46 22 50 30 Q47 37 36 37.5 Q22 38 14 30 Z" fill="#D9663D"/><ellipse cx="22" cy="32" rx="6.5" ry="5.5" fill="#C25832" opacity=".9"/><ellipse cx="46" cy="31" rx="6" ry="6.5" fill="#FBF3E8"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="24" y="38" width="5.5" height="12" rx="2.7" fill="#D9663D" style="transform-origin:26.7px 39px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="35" y="38" width="5.5" height="12" rx="2.7" fill="#D9663D" style="transform-origin:37.7px 39px"/><ellipse cx="27" cy="49.6" rx="2.8" ry="1.7" fill="#8A4A2F"/><ellipse cx="37.6" cy="49.6" rx="2.8" ry="1.7" fill="#8A4A2F"/><path d="M20 26 Q30 20.5 40 22" stroke="#E8845C" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".9"/><path d="M44.5 11.5 L43 2 L51 7.5 Z" fill="#D9663D"/><path d="M43 2 L47 5.6 L45.9 8.4 Z" fill="#4A372F"/><circle cx="51" cy="17" r="9.5" fill="#D9663D"/><path d="M49.5 10 L51 2 L56.5 8.5 Z" fill="#D9663D"/><path d="M51 2 L54.8 6.8 L52.9 9 Z" fill="#4A372F"/><circle cx="51.5" cy="15.5" r="1.8" fill="#3A2E28" class="dsh-pet-eye"/><path d="M56 15 Q63 16.5 63.5 19.5 Q60 22 55.6 21 Z" fill="#FBF3E8"/><circle cx="63" cy="18.6" r="1.5" fill="#3A2E28"/><path d="M57 20.8 q2.4 1.4 4.6 -.2" stroke="#8A4A2F" stroke-width=".9" fill="none" stroke-linecap="round"/></svg><svg class="dsh-pet-front" viewBox="0 0 66 52" aria-hidden="true"><path d="M52 42 Q62 38 61 28 Q57 30.5 54.5 36 Q53 39.5 52 42 Z" fill="#D9663D"/><path d="M61 28 Q58.6 29.6 57 33.4 Q59.6 32.6 61 28 Z" fill="#FBF3E8"/><ellipse cx="31" cy="40" rx="13" ry="10" fill="#D9663D"/><ellipse cx="31" cy="40" rx="7" ry="7.5" fill="#FBF3E8"/><rect x="25.5" y="44" width="5" height="7" rx="2.5" fill="#8A4A2F"/><rect x="33" y="44" width="5" height="7" rx="2.5" fill="#8A4A2F"/><path d="M22.5 9 L19.5 1 L27.5 5 Z" fill="#D9663D"/><path d="M19.5 1 L23.6 4.7 L22.2 8 Z" fill="#4A372F"/><path d="M39.5 9 L42.5 1 L34.5 5 Z" fill="#D9663D"/><path d="M42.5 1 L38.4 4.7 L39.8 8 Z" fill="#4A372F"/><path d="M20.5 14 l-4.5 -1.5 l3 5 z" fill="#D9663D"/><path d="M41.5 14 l4.5 -1.5 l-3 5 z" fill="#D9663D"/><circle cx="31" cy="16" r="11" fill="#D9663D"/><ellipse cx="31" cy="20.5" rx="6" ry="4.6" fill="#FBF3E8"/><circle cx="26" cy="15" r="1.9" fill="#3A2E28" class="dsh-pet-eye"/><circle cx="36" cy="15" r="1.9" fill="#3A2E28" class="dsh-pet-eye"/><ellipse cx="31" cy="18.6" rx="1.5" ry="1.2" fill="#3A2E28"/><path d="M31 19.8 q-1.5 1.6 -3 .8 M31 19.8 q1.5 1.6 3 .8" stroke="#8A4A2F" stroke-width=".9" fill="none" stroke-linecap="round"/></svg></span>
+            </span>
+          </div>
+          
+        </div>
+      </div>
+      <figcaption>② 跑动（腿部摆动、身体起伏）</figcaption>
+    </figure>
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:23px;height:27.599999999999998px;transform:translate(381.1px,142.4px)"><svg viewBox="0 0 20 24" aria-hidden="true"><rect x="9.2" y="0.5" width="1.6" height="3" rx=".8" fill="#5E3D22"/><path d="M10 3 Q15.5 7 15 13 Q14.5 19.5 10 21.5 Q5.5 19.5 5 13 Q4.5 7 10 3 Z" fill="#9C6B3F"/><path d="M7 8 q3 1.6 6 0 M6.4 12 q3.6 1.8 7.2 0 M6.8 16 q3.2 1.7 6.4 0 M8.4 5 q1.6 1.2 3.2 0" stroke="#7C5230" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg></div>
+          <div class="dsh-pet-actor dsh-pet-react" style="width:75.89999999999999px;height:59.8px;transform:translate(440.1px,110.2px)">
+            <span class="dsh-pet-tag">
+              <span class="dsh-pet-name">阿赤</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 66 52" aria-hidden="true"><g class="dsh-pet-tail" style="transform-origin:16px 34px"><path d="M16 34 Q4 26 6.5 14 Q8 8 13 10 Q20 13 21.5 24 Q22 31 16 34 Z" fill="#D9663D"/><path d="M7 14 Q8.2 9.6 12 10.4 Q10.8 14.4 8.6 17.4 Q7.2 16 7 14 Z" fill="#FBF3E8"/></g><rect class="dsh-pet-leg dsh-pet-leg-b" x="18" y="38" width="6" height="12" rx="3" fill="#8A4A2F" style="transform-origin:21px 39px"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="40" y="38" width="6" height="12" rx="3" fill="#8A4A2F" style="transform-origin:43px 39px"/><path d="M14 30 Q20 20 34 21 Q46 22 50 30 Q47 37 36 37.5 Q22 38 14 30 Z" fill="#D9663D"/><ellipse cx="22" cy="32" rx="6.5" ry="5.5" fill="#C25832" opacity=".9"/><ellipse cx="46" cy="31" rx="6" ry="6.5" fill="#FBF3E8"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="24" y="38" width="5.5" height="12" rx="2.7" fill="#D9663D" style="transform-origin:26.7px 39px"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="35" y="38" width="5.5" height="12" rx="2.7" fill="#D9663D" style="transform-origin:37.7px 39px"/><ellipse cx="27" cy="49.6" rx="2.8" ry="1.7" fill="#8A4A2F"/><ellipse cx="37.6" cy="49.6" rx="2.8" ry="1.7" fill="#8A4A2F"/><path d="M20 26 Q30 20.5 40 22" stroke="#E8845C" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".9"/><path d="M44.5 11.5 L43 2 L51 7.5 Z" fill="#D9663D"/><path d="M43 2 L47 5.6 L45.9 8.4 Z" fill="#4A372F"/><circle cx="51" cy="17" r="9.5" fill="#D9663D"/><path d="M49.5 10 L51 2 L56.5 8.5 Z" fill="#D9663D"/><path d="M51 2 L54.8 6.8 L52.9 9 Z" fill="#4A372F"/><circle cx="51.5" cy="15.5" r="1.8" fill="#3A2E28" class="dsh-pet-eye"/><path d="M56 15 Q63 16.5 63.5 19.5 Q60 22 55.6 21 Z" fill="#FBF3E8"/><circle cx="63" cy="18.6" r="1.5" fill="#3A2E28"/><path d="M57 20.8 q2.4 1.4 4.6 -.2" stroke="#8A4A2F" stroke-width=".9" fill="none" stroke-linecap="round"/></svg><svg class="dsh-pet-front" viewBox="0 0 66 52" aria-hidden="true"><path d="M52 42 Q62 38 61 28 Q57 30.5 54.5 36 Q53 39.5 52 42 Z" fill="#D9663D"/><path d="M61 28 Q58.6 29.6 57 33.4 Q59.6 32.6 61 28 Z" fill="#FBF3E8"/><ellipse cx="31" cy="40" rx="13" ry="10" fill="#D9663D"/><ellipse cx="31" cy="40" rx="7" ry="7.5" fill="#FBF3E8"/><rect x="25.5" y="44" width="5" height="7" rx="2.5" fill="#8A4A2F"/><rect x="33" y="44" width="5" height="7" rx="2.5" fill="#8A4A2F"/><path d="M22.5 9 L19.5 1 L27.5 5 Z" fill="#D9663D"/><path d="M19.5 1 L23.6 4.7 L22.2 8 Z" fill="#4A372F"/><path d="M39.5 9 L42.5 1 L34.5 5 Z" fill="#D9663D"/><path d="M42.5 1 L38.4 4.7 L39.8 8 Z" fill="#4A372F"/><path d="M20.5 14 l-4.5 -1.5 l3 5 z" fill="#D9663D"/><path d="M41.5 14 l4.5 -1.5 l-3 5 z" fill="#D9663D"/><circle cx="31" cy="16" r="11" fill="#D9663D"/><ellipse cx="31" cy="20.5" rx="6" ry="4.6" fill="#FBF3E8"/><circle cx="26" cy="15" r="1.9" fill="#3A2E28" class="dsh-pet-eye"/><circle cx="36" cy="15" r="1.9" fill="#3A2E28" class="dsh-pet-eye"/><ellipse cx="31" cy="18.6" rx="1.5" ry="1.2" fill="#3A2E28"/><path d="M31 19.8 q-1.5 1.6 -3 .8 M31 19.8 q1.5 1.6 3 .8" stroke="#8A4A2F" stroke-width=".9" fill="none" stroke-linecap="round"/></svg></span>
+            </span>
+          </div>
+          <span class="dsh-pet-bubble" style="transform:translate(522px,76.2px)">咕？</span>
+          <span class="dsh-pet-bubble" style="transform:translate(474.1px,48.2px)">咕咕！</span>
+        </div>
+      </div>
+      <figcaption>③ 戳一下：转身面对用户，说两句</figcaption>
+    </figure>
+    </div>
+  </section>
+  <section class="family">
+    <h2>团团 · 熊猫<span class="meta">步态 waddle · 95px/s · 道具在左，面朝左</span></h2>
+    <div class="row">
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:23px;height:27.599999999999998px;transform:translate(388px,142.4px)"><svg viewBox="0 0 20 24" aria-hidden="true"><path d="M10 3 Q9 .8 7.4 .6 Q9.6 -.2 10.9 1.4 Q10.7 2.4 10 3 Z" fill="#67B35F"/><path d="M10 3 Q15 8 14 14 Q13 20.5 10 22.5 Q7 20.5 6 14 Q5 8 10 3 Z" fill="#D9C08A"/><path d="M7.6 8.4 q2.4 1.6 4.8 0 M7 13 q3 1.8 6 0 M7.8 17.6 q2.2 1.5 4.4 0 M8.8 5.2 q1.2 1 2.4 0" stroke="#B99C63" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg></div>
+          <div class="dsh-pet-actor " style="width:69px;height:64.39999999999999px;transform:translate(447px,105.60000000000001px)">
+            <span class="dsh-pet-tag dsh-pet-force">
+              <span class="dsh-pet-name">团团</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 60 56" aria-hidden="true"><ellipse cx="15.5" cy="40" rx="9.5" ry="11" fill="#2E2A28"/><ellipse cx="30" cy="37" rx="16.5" ry="12.5" fill="#FAFAF7"/><ellipse cx="42" cy="34" rx="6.5" ry="9.5" fill="#2E2A28"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="16" y="38" width="7.5" height="13" rx="3.7" fill="#2E2A28" style="transform-origin:19.7px 39px"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="38.5" y="38" width="7.5" height="13" rx="3.7" fill="#2E2A28" style="transform-origin:42.2px 39px"/><ellipse class="dsh-pet-belly" cx="29" cy="42" rx="9" ry="7.5" fill="#FFFFFF" style="transform-origin:29px 42px"/><circle cx="38.5" cy="7" r="4.2" fill="#2E2A28"/><circle cx="53" cy="7" r="4.2" fill="#2E2A28"/><circle cx="45.5" cy="17" r="11.5" fill="#FAFAF7"/><ellipse cx="41" cy="15" rx="4.4" ry="5.6" fill="#2E2A28" transform="rotate(-18 41 15)"/><ellipse cx="51.5" cy="14.5" rx="4.4" ry="5.6" fill="#2E2A28" transform="rotate(14 51.5 14.5)"/><circle cx="41.5" cy="15.8" r="1.5" fill="#FFFFFF" class="dsh-pet-eye"/><circle cx="51" cy="15.2" r="1.5" fill="#FFFFFF" class="dsh-pet-eye"/><ellipse cx="46.8" cy="21.8" rx="2" ry="1.5" fill="#2E2A28"/><path d="M46.8 23.3 q-1.4 1.6 -3 1 M46.8 23.3 q1.2 1.6 2.6 .8" stroke="#6B6560" stroke-width="1" fill="none" stroke-linecap="round"/></svg><svg class="dsh-pet-front" viewBox="0 0 60 56" aria-hidden="true"><circle cx="16" cy="8.5" r="4.6" fill="#2E2A28"/><circle cx="42" cy="8.5" r="4.6" fill="#2E2A28"/><ellipse cx="29" cy="39.5" rx="15.5" ry="11.5" fill="#FAFAF7"/><ellipse cx="29" cy="30" rx="11" ry="5" fill="#2E2A28"/><path d="M16.5 32 q-4.5 9 1 15.5 q7 -1.5 8.5 -8 Q24 33.5 16.5 32 Z" fill="#2E2A28"/><path d="M41.5 32 q4.5 9 -1 15.5 q-7 -1.5 -8.5 -8 Q34 33.5 41.5 32 Z" fill="#2E2A28"/><ellipse cx="21.5" cy="51" rx="5.4" ry="3" fill="#2E2A28"/><ellipse cx="36.5" cy="51" rx="5.4" ry="3" fill="#2E2A28"/><ellipse class="dsh-pet-belly" cx="29" cy="41" rx="8.5" ry="6.5" fill="#FFFFFF" style="transform-origin:29px 41px"/><circle cx="29" cy="16.5" r="12.5" fill="#FAFAF7"/><ellipse cx="22.5" cy="14.8" rx="4.8" ry="6" fill="#2E2A28" transform="rotate(-16 22.5 14.8)"/><ellipse cx="35.5" cy="14.8" rx="4.8" ry="6" fill="#2E2A28" transform="rotate(16 35.5 14.8)"/><circle cx="23" cy="15.6" r="1.55" fill="#FFFFFF" class="dsh-pet-eye"/><circle cx="35" cy="15.6" r="1.55" fill="#FFFFFF" class="dsh-pet-eye"/><ellipse cx="29" cy="20.8" rx="2.1" ry="1.6" fill="#2E2A28"/><path d="M29 22.4 q-1.4 1.6 -2.8 .9 M29 22.4 q1.4 1.6 2.8 .9" stroke="#6B6560" stroke-width="1" fill="none" stroke-linecap="round"/></svg></span>
+            </span>
+          </div>
+          
+        </div>
+      </div>
+      <figcaption>① 静止：待机微动画（悬停出名牌）</figcaption>
+    </figure>
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:23px;height:27.599999999999998px;transform:translate(388px,142.4px)"><svg viewBox="0 0 20 24" aria-hidden="true"><path d="M10 3 Q9 .8 7.4 .6 Q9.6 -.2 10.9 1.4 Q10.7 2.4 10 3 Z" fill="#67B35F"/><path d="M10 3 Q15 8 14 14 Q13 20.5 10 22.5 Q7 20.5 6 14 Q5 8 10 3 Z" fill="#D9C08A"/><path d="M7.6 8.4 q2.4 1.6 4.8 0 M7 13 q3 1.8 6 0 M7.8 17.6 q2.2 1.5 4.4 0 M8.8 5.2 q1.2 1 2.4 0" stroke="#B99C63" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg></div>
+          <div class="dsh-pet-actor dsh-pet-waddle" style="width:69px;height:64.39999999999999px;transform:translate(447px,105.60000000000001px)">
+            <span class="dsh-pet-tag">
+              <span class="dsh-pet-name">团团</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 60 56" aria-hidden="true"><ellipse cx="15.5" cy="40" rx="9.5" ry="11" fill="#2E2A28"/><ellipse cx="30" cy="37" rx="16.5" ry="12.5" fill="#FAFAF7"/><ellipse cx="42" cy="34" rx="6.5" ry="9.5" fill="#2E2A28"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="16" y="38" width="7.5" height="13" rx="3.7" fill="#2E2A28" style="transform-origin:19.7px 39px"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="38.5" y="38" width="7.5" height="13" rx="3.7" fill="#2E2A28" style="transform-origin:42.2px 39px"/><ellipse class="dsh-pet-belly" cx="29" cy="42" rx="9" ry="7.5" fill="#FFFFFF" style="transform-origin:29px 42px"/><circle cx="38.5" cy="7" r="4.2" fill="#2E2A28"/><circle cx="53" cy="7" r="4.2" fill="#2E2A28"/><circle cx="45.5" cy="17" r="11.5" fill="#FAFAF7"/><ellipse cx="41" cy="15" rx="4.4" ry="5.6" fill="#2E2A28" transform="rotate(-18 41 15)"/><ellipse cx="51.5" cy="14.5" rx="4.4" ry="5.6" fill="#2E2A28" transform="rotate(14 51.5 14.5)"/><circle cx="41.5" cy="15.8" r="1.5" fill="#FFFFFF" class="dsh-pet-eye"/><circle cx="51" cy="15.2" r="1.5" fill="#FFFFFF" class="dsh-pet-eye"/><ellipse cx="46.8" cy="21.8" rx="2" ry="1.5" fill="#2E2A28"/><path d="M46.8 23.3 q-1.4 1.6 -3 1 M46.8 23.3 q1.2 1.6 2.6 .8" stroke="#6B6560" stroke-width="1" fill="none" stroke-linecap="round"/></svg><svg class="dsh-pet-front" viewBox="0 0 60 56" aria-hidden="true"><circle cx="16" cy="8.5" r="4.6" fill="#2E2A28"/><circle cx="42" cy="8.5" r="4.6" fill="#2E2A28"/><ellipse cx="29" cy="39.5" rx="15.5" ry="11.5" fill="#FAFAF7"/><ellipse cx="29" cy="30" rx="11" ry="5" fill="#2E2A28"/><path d="M16.5 32 q-4.5 9 1 15.5 q7 -1.5 8.5 -8 Q24 33.5 16.5 32 Z" fill="#2E2A28"/><path d="M41.5 32 q4.5 9 -1 15.5 q-7 -1.5 -8.5 -8 Q34 33.5 41.5 32 Z" fill="#2E2A28"/><ellipse cx="21.5" cy="51" rx="5.4" ry="3" fill="#2E2A28"/><ellipse cx="36.5" cy="51" rx="5.4" ry="3" fill="#2E2A28"/><ellipse class="dsh-pet-belly" cx="29" cy="41" rx="8.5" ry="6.5" fill="#FFFFFF" style="transform-origin:29px 41px"/><circle cx="29" cy="16.5" r="12.5" fill="#FAFAF7"/><ellipse cx="22.5" cy="14.8" rx="4.8" ry="6" fill="#2E2A28" transform="rotate(-16 22.5 14.8)"/><ellipse cx="35.5" cy="14.8" rx="4.8" ry="6" fill="#2E2A28" transform="rotate(16 35.5 14.8)"/><circle cx="23" cy="15.6" r="1.55" fill="#FFFFFF" class="dsh-pet-eye"/><circle cx="35" cy="15.6" r="1.55" fill="#FFFFFF" class="dsh-pet-eye"/><ellipse cx="29" cy="20.8" rx="2.1" ry="1.6" fill="#2E2A28"/><path d="M29 22.4 q-1.4 1.6 -2.8 .9 M29 22.4 q1.4 1.6 2.8 .9" stroke="#6B6560" stroke-width="1" fill="none" stroke-linecap="round"/></svg></span>
+            </span>
+          </div>
+          
+        </div>
+      </div>
+      <figcaption>② 摇摆步（左右摇着走）</figcaption>
+    </figure>
+      
+    <figure class="cell">
+      <div class="stage">
+        <div class="mock-composer"><span>给 AI 发消息…</span></div>
+        <div class="ground"></div>
+        <div class="dsh-theme-pet-demo">
+          <div class="dsh-pet-prop" style="width:23px;height:27.599999999999998px;transform:translate(388px,142.4px)"><svg viewBox="0 0 20 24" aria-hidden="true"><path d="M10 3 Q9 .8 7.4 .6 Q9.6 -.2 10.9 1.4 Q10.7 2.4 10 3 Z" fill="#67B35F"/><path d="M10 3 Q15 8 14 14 Q13 20.5 10 22.5 Q7 20.5 6 14 Q5 8 10 3 Z" fill="#D9C08A"/><path d="M7.6 8.4 q2.4 1.6 4.8 0 M7 13 q3 1.8 6 0 M7.8 17.6 q2.2 1.5 4.4 0 M8.8 5.2 q1.2 1 2.4 0" stroke="#B99C63" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg></div>
+          <div class="dsh-pet-actor dsh-pet-react" style="width:69px;height:64.39999999999999px;transform:translate(447px,105.60000000000001px)">
+            <span class="dsh-pet-tag">
+              <span class="dsh-pet-name">团团</span>
+              <span class="dsh-pet-actions">
+                <button type="button" class="dsh-pet-rename">改名</button>
+                <button type="button" class="dsh-pet-poke">戳一下</button>
+              </span>
+            </span>
+            <span class="dsh-pet-flip" style="transform:scaleX(-1)">
+              <span class="dsh-pet-figure" style="transform:none"><svg class="dsh-pet-side" viewBox="0 0 60 56" aria-hidden="true"><ellipse cx="15.5" cy="40" rx="9.5" ry="11" fill="#2E2A28"/><ellipse cx="30" cy="37" rx="16.5" ry="12.5" fill="#FAFAF7"/><ellipse cx="42" cy="34" rx="6.5" ry="9.5" fill="#2E2A28"/><rect class="dsh-pet-leg dsh-pet-leg-b" x="16" y="38" width="7.5" height="13" rx="3.7" fill="#2E2A28" style="transform-origin:19.7px 39px"/><rect class="dsh-pet-leg dsh-pet-leg-a" x="38.5" y="38" width="7.5" height="13" rx="3.7" fill="#2E2A28" style="transform-origin:42.2px 39px"/><ellipse class="dsh-pet-belly" cx="29" cy="42" rx="9" ry="7.5" fill="#FFFFFF" style="transform-origin:29px 42px"/><circle cx="38.5" cy="7" r="4.2" fill="#2E2A28"/><circle cx="53" cy="7" r="4.2" fill="#2E2A28"/><circle cx="45.5" cy="17" r="11.5" fill="#FAFAF7"/><ellipse cx="41" cy="15" rx="4.4" ry="5.6" fill="#2E2A28" transform="rotate(-18 41 15)"/><ellipse cx="51.5" cy="14.5" rx="4.4" ry="5.6" fill="#2E2A28" transform="rotate(14 51.5 14.5)"/><circle cx="41.5" cy="15.8" r="1.5" fill="#FFFFFF" class="dsh-pet-eye"/><circle cx="51" cy="15.2" r="1.5" fill="#FFFFFF" class="dsh-pet-eye"/><ellipse cx="46.8" cy="21.8" rx="2" ry="1.5" fill="#2E2A28"/><path d="M46.8 23.3 q-1.4 1.6 -3 1 M46.8 23.3 q1.2 1.6 2.6 .8" stroke="#6B6560" stroke-width="1" fill="none" stroke-linecap="round"/></svg><svg class="dsh-pet-front" viewBox="0 0 60 56" aria-hidden="true"><circle cx="16" cy="8.5" r="4.6" fill="#2E2A28"/><circle cx="42" cy="8.5" r="4.6" fill="#2E2A28"/><ellipse cx="29" cy="39.5" rx="15.5" ry="11.5" fill="#FAFAF7"/><ellipse cx="29" cy="30" rx="11" ry="5" fill="#2E2A28"/><path d="M16.5 32 q-4.5 9 1 15.5 q7 -1.5 8.5 -8 Q24 33.5 16.5 32 Z" fill="#2E2A28"/><path d="M41.5 32 q4.5 9 -1 15.5 q-7 -1.5 -8.5 -8 Q34 33.5 41.5 32 Z" fill="#2E2A28"/><ellipse cx="21.5" cy="51" rx="5.4" ry="3" fill="#2E2A28"/><ellipse cx="36.5" cy="51" rx="5.4" ry="3" fill="#2E2A28"/><ellipse class="dsh-pet-belly" cx="29" cy="41" rx="8.5" ry="6.5" fill="#FFFFFF" style="transform-origin:29px 41px"/><circle cx="29" cy="16.5" r="12.5" fill="#FAFAF7"/><ellipse cx="22.5" cy="14.8" rx="4.8" ry="6" fill="#2E2A28" transform="rotate(-16 22.5 14.8)"/><ellipse cx="35.5" cy="14.8" rx="4.8" ry="6" fill="#2E2A28" transform="rotate(16 35.5 14.8)"/><circle cx="23" cy="15.6" r="1.55" fill="#FFFFFF" class="dsh-pet-eye"/><circle cx="35" cy="15.6" r="1.55" fill="#FFFFFF" class="dsh-pet-eye"/><ellipse cx="29" cy="20.8" rx="2.1" ry="1.6" fill="#2E2A28"/><path d="M29 22.4 q-1.4 1.6 -2.8 .9 M29 22.4 q1.4 1.6 2.8 .9" stroke="#6B6560" stroke-width="1" fill="none" stroke-linecap="round"/></svg></span>
+            </span>
+          </div>
+          <span class="dsh-pet-bubble" style="transform:translate(522px,71.60000000000001px)">嘿嘿！</span>
+          <span class="dsh-pet-bubble" style="transform:translate(481px,43.60000000000001px)">抱抱！</span>
+        </div>
+      </div>
+      <figcaption>③ 戳一下：转身面对用户，说两句</figcaption>
+    </figure>
+    </div>
+  </section>
+  
+  <section class="family">
+    <h2>脚印与头像（面板选择行用的就是这些脸）</h2>
+    <div class="chips"><figure class="chip"><div class="dsh-pet-trailmark" style="position:static;transform:none"><svg viewBox="0 0 12 11" width="12" height="11" aria-hidden="true"><g fill="#8F969C"><ellipse cx="6" cy="7.6" rx="3.1" ry="2.5"/><circle cx="2.7" cy="3.7" r="1.35"/><circle cx="5" cy="2.3" r="1.35"/><circle cx="7.3" cy="2.3" r="1.35"/><circle cx="9.5" cy="3.8" r="1.35"/></g></svg></div><figcaption>斑斑</figcaption></figure><figure class="chip"><div class="dsh-pet-trailmark" style="position:static;transform:none"><svg viewBox="0 0 11 10" width="11" height="10" aria-hidden="true"><g fill="#A98F7A"><ellipse cx="5.5" cy="6.8" rx="2.7" ry="2.1"/><circle cx="2.4" cy="3.3" r="1.15"/><circle cx="4.6" cy="2" r="1.15"/><circle cx="6.6" cy="2" r="1.15"/><circle cx="8.6" cy="3.4" r="1.15"/></g></svg></div><figcaption>大橘</figcaption></figure><figure class="chip"><div class="dsh-pet-trailmark" style="position:static;transform:none"><svg viewBox="0 0 10 8" width="10" height="8" aria-hidden="true"><g fill="#C9BCA8"><circle cx="3" cy="4.5" r="1.3"/><circle cx="7" cy="3.5" r="1.3"/></g></svg></div><figcaption>雪球</figcaption></figure><figure class="chip"><div class="dsh-pet-trailmark" style="position:static;transform:none"><svg viewBox="0 0 12 10" width="12" height="10" aria-hidden="true"><g fill="#8FA3B0"><ellipse cx="6" cy="7.6" rx="3.1" ry="2.5"/><circle cx="2.7" cy="3.7" r="1.35"/><circle cx="5" cy="2.3" r="1.35"/><circle cx="7.3" cy="2.3" r="1.35"/><circle cx="9.5" cy="3.8" r="1.35"/></g></svg></div><figcaption>波波</figcaption></figure><figure class="chip"><div class="dsh-pet-trailmark" style="position:static;transform:none"><svg viewBox="0 0 8 6" width="8" height="6" aria-hidden="true"><g fill="#B9A88C"><circle cx="2.5" cy="3.2" r="1.1"/><circle cx="5.6" cy="2.6" r="1.1"/></g></svg></div><figcaption>糯米</figcaption></figure><figure class="chip"><div class="dsh-pet-trailmark" style="position:static;transform:none"><svg viewBox="0 0 11 10" width="11" height="10" aria-hidden="true"><g fill="#8F7A66"><ellipse cx="5.5" cy="6.6" rx="2.3" ry="1.9"/><circle cx="2.7" cy="3.5" r="1.05"/><circle cx="5" cy="2.3" r="1.05"/><circle cx="7.3" cy="2.3" r="1.05"/><circle cx="9.3" cy="3.7" r="1.05"/></g></svg></div><figcaption>阿赤</figcaption></figure><figure class="chip"><div class="dsh-pet-trailmark" style="position:static;transform:none"><svg viewBox="0 0 14 12" width="14" height="12" aria-hidden="true"><g fill="#57534E"><ellipse cx="7" cy="8" rx="3.6" ry="2.8"/><circle cx="2.6" cy="4" r="1.15"/><circle cx="4.8" cy="2.6" r="1.15"/><circle cx="7" cy="2.2" r="1.15"/><circle cx="9.2" cy="2.7" r="1.15"/><circle cx="11.2" cy="4.2" r="1.15"/></g></svg></div><figcaption>团团</figcaption></figure></div>
+    <div class="chips"><figure class="chip"><svg viewBox="0 0 28 28" width="30" height="30" aria-hidden="true"><ellipse cx="8.5" cy="7.5" rx="3.4" ry="5" fill="#A9744F" transform="rotate(-18 8.5 7.5)"/><ellipse cx="19.5" cy="7.5" rx="3.4" ry="5" fill="#A9744F" transform="rotate(18 19.5 7.5)"/><circle cx="14" cy="15.5" r="9.6" fill="#F5E7CE"/><circle cx="17.5" cy="9.6" r="3.6" fill="#C79A6B"/><circle cx="10.4" cy="14.5" r="1.5" fill="#3B2B23" class="dsh-pet-eye"/><circle cx="17.6" cy="14.5" r="1.5" fill="#3B2B23" class="dsh-pet-eye"/><ellipse cx="14" cy="19" rx="4.6" ry="3.4" fill="#FBF3E4"/><circle cx="14" cy="17.8" r="1.6" fill="#4A372F"/><path d="M12.6 21.4 q1.4 1.2 2.8 0" stroke="#4A372F" stroke-width="1" fill="none" stroke-linecap="round"/></svg><figcaption>斑斑 · 小奶狗</figcaption></figure><figure class="chip"><svg viewBox="0 0 28 28" width="30" height="30" aria-hidden="true"><path d="M8 9 L5.5 2.5 L13 5.5 Z" fill="#F2A65A"/><path d="M8.6 7.9 L7.3 4.5 L11.6 6.2 Z" fill="#E79B72"/><path d="M20 9 L22.5 2.5 L15 5.5 Z" fill="#F2A65A"/><path d="M19.4 7.9 L20.7 4.5 L16.4 6.2 Z" fill="#E79B72"/><circle cx="14" cy="15" r="9.8" fill="#F2A65A"/><path d="M11.5 6.8 l.9 2.8 M14 6.4 l.3 3 M16.5 6.8 l-.7 2.8" stroke="#D98032" stroke-width="1.4" fill="none" stroke-linecap="round"/><circle cx="10.4" cy="14.5" r="1.5" fill="#3F3A36" class="dsh-pet-eye"/><circle cx="17.6" cy="14.5" r="1.5" fill="#3F3A36" class="dsh-pet-eye"/><path d="M13 18 l2 0 l-1 1.5 z" fill="#C96F5E"/><path d="M14 19.6 q-1.2 1.4 -2.4 .7 M14 19.6 q1.2 1.4 2.4 .7" stroke="#B98A5F" stroke-width=".9" fill="none" stroke-linecap="round"/><path d="M6.5 16.5 l-4 -1 M6.8 18.4 l-4 .5 M21.5 16.5 l4 -1 M21.2 18.4 l4 .5" stroke="#B98A5F" stroke-width=".8" fill="none" stroke-linecap="round"/></svg><figcaption>大橘 · 橘猫</figcaption></figure><figure class="chip"><svg viewBox="0 0 28 28" width="30" height="30" aria-hidden="true"><path d="M6.5 8 Q3.5 12 5 17 Q6 20 8 19 Q9.8 18 9.4 13 Q9 9 6.5 8 Z" fill="#FBF6EF"/><path d="M6.9 10.5 Q5.9 13 6.7 16.4 Q7.4 18.2 8.3 17.8 Q9.2 17.4 9 13.6 Q8.8 11 6.9 10.5 Z" fill="#F2C9C4"/><path d="M21.5 8 Q24.5 12 23 17 Q22 20 20 19 Q18.2 18 18.6 13 Q19 9 21.5 8 Z" fill="#FBF6EF"/><path d="M21.1 10.5 Q22.1 13 21.3 16.4 Q20.6 18.2 19.7 17.8 Q18.8 17.4 19 13.6 Q19.2 11 21.1 10.5 Z" fill="#F2C9C4"/><circle cx="14" cy="14" r="9.6" fill="#FBF6EF"/><circle cx="10.3" cy="13.5" r="1.5" fill="#4A4038" class="dsh-pet-eye"/><circle cx="17.7" cy="13.5" r="1.5" fill="#4A4038" class="dsh-pet-eye"/><path d="M13 16.6 l2 0 l-1 1.5 z" fill="#EFA8A0"/><rect x="12.8" y="18.4" width="1.2" height="1.7" rx=".5" fill="#FFFFFF"/><rect x="14.4" y="18.4" width="1.2" height="1.7" rx=".5" fill="#FFFFFF"/><circle cx="7.6" cy="16.4" r="1.5" fill="#F6CFC9"/><circle cx="20.4" cy="16.4" r="1.5" fill="#F6CFC9"/></svg><figcaption>雪球 · 垂耳兔</figcaption></figure><figure class="chip"><svg viewBox="0 0 28 28" width="30" height="30" aria-hidden="true"><circle cx="14" cy="15" r="10" fill="#2E3A48"/><ellipse cx="9.5" cy="14" rx="4" ry="4.6" fill="#FDFDFB"/><ellipse cx="18.5" cy="14" rx="4" ry="4.6" fill="#FDFDFB"/><path d="M9 7.5 Q12 5.6 15 6.4" stroke="#3E4E60" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="9.5" cy="14" r="1.5" fill="#242C36" class="dsh-pet-eye"/><circle cx="18.5" cy="14" r="1.5" fill="#242C36" class="dsh-pet-eye"/><circle cx="10" cy="13.5" r=".5" fill="#FFFFFF"/><circle cx="19" cy="13.5" r=".5" fill="#FFFFFF"/><path d="M12 18.5 l4 0 l-2 2.6 z" fill="#F5A623"/></svg><figcaption>波波 · 小企鹅</figcaption></figure><figure class="chip"><svg viewBox="0 0 28 28" width="30" height="30" aria-hidden="true"><circle cx="8.5" cy="8.5" r="2.5" fill="#E3C9A4"/><circle cx="8.6" cy="8.6" r="1.2" fill="#EFB9A8"/><circle cx="19.5" cy="8.5" r="2.5" fill="#E3C9A4"/><circle cx="19.4" cy="8.6" r="1.2" fill="#EFB9A8"/><circle cx="14" cy="15.5" r="9.8" fill="#F0DCC0"/><circle cx="7.2" cy="18" r="3.8" fill="#F6E6CE"/><circle cx="20.8" cy="18" r="3.8" fill="#F6E6CE"/><circle cx="10.5" cy="14.5" r="1.5" fill="#3F3630" class="dsh-pet-eye"/><circle cx="17.5" cy="14.5" r="1.5" fill="#3F3630" class="dsh-pet-eye"/><circle cx="14" cy="17.6" r="1" fill="#E2A69B"/><rect x="12.6" y="18.8" width="1.3" height="1.9" rx=".5" fill="#FFFFFF"/><rect x="14.2" y="18.8" width="1.3" height="1.9" rx=".5" fill="#FFFFFF"/></svg><figcaption>糯米 · 仓鼠</figcaption></figure><figure class="chip"><svg viewBox="0 0 28 28" width="30" height="30" aria-hidden="true"><path d="M8 8 L5.5 1 L12 4.5 Z" fill="#D9663D"/><path d="M5.5 1 L9 3.9 L7.6 6.4 Z" fill="#4A372F"/><path d="M20 8 L22.5 1 L16 4.5 Z" fill="#D9663D"/><path d="M22.5 1 L19 3.9 L20.4 6.4 Z" fill="#4A372F"/><circle cx="14" cy="15" r="9.8" fill="#D9663D"/><ellipse cx="14" cy="19.5" rx="5.4" ry="4.2" fill="#FBF3E8"/><circle cx="10" cy="14" r="1.5" fill="#3A2E28" class="dsh-pet-eye"/><circle cx="18" cy="14" r="1.5" fill="#3A2E28" class="dsh-pet-eye"/><ellipse cx="14" cy="17.8" rx="1.3" ry="1" fill="#3A2E28"/><path d="M14 18.8 q-1.3 1.4 -2.6 .7 M14 18.8 q1.3 1.4 2.6 .7" stroke="#8A4A2F" stroke-width=".9" fill="none" stroke-linecap="round"/></svg><figcaption>阿赤 · 小狐狸</figcaption></figure><figure class="chip"><svg viewBox="0 0 28 28" width="30" height="30" aria-hidden="true"><circle cx="7.5" cy="7" r="3.8" fill="#2E2A28"/><circle cx="20.5" cy="7" r="3.8" fill="#2E2A28"/><circle cx="14" cy="15.5" r="10" fill="#FAFAF7"/><ellipse cx="9.6" cy="14.3" rx="4.2" ry="5.2" fill="#2E2A28" transform="rotate(-15 9.6 14.3)"/><ellipse cx="18.4" cy="14.3" rx="4.2" ry="5.2" fill="#2E2A28" transform="rotate(15 18.4 14.3)"/><circle cx="9.9" cy="14.8" r="1.4" fill="#FFFFFF" class="dsh-pet-eye"/><circle cx="18.1" cy="14.8" r="1.4" fill="#FFFFFF" class="dsh-pet-eye"/><ellipse cx="14" cy="18.8" rx="1.8" ry="1.4" fill="#2E2A28"/><path d="M14 20.2 q-1.3 1.4 -2.6 .8 M14 20.2 q1.3 1.4 2.6 .8" stroke="#6B6560" stroke-width=".9" fill="none" stroke-linecap="round"/></svg><figcaption>团团 · 熊猫</figcaption></figure></div>
+  </section>
+</body>
+</html>

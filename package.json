@@ -1,7 +1,7 @@
 {
   "name": "dsh-theme-gallery",
-  "version": "0.4.1",
-  "description": "A theme gallery for DeepSeek Harness (DSH): six JSON-defined skins with full-screen coverage and sidebar scenery, plus built-in light/dark cards, switched from the panel under the sidebar's Plugins icon — adding skins needs no code change",
+  "version": "0.5.0",
+  "description": "A theme gallery for DeepSeek Harness (DSH): JSON-defined skins with full-screen coverage and sidebar scenery, a 15-swatch palette-picker card, a pet-widget card (7 registry-driven pets playing by the chat input), and a mood-greeting card (a scrolling greeting on the title bar that rotates every 35 minutes), switched from the panel under the sidebar's Plugins icon — adding skins needs no code change",
   "author": "renjie2026 (https://github.com/renjie2026)",
   "license": "MIT",
   "repository": {
@@ -63,9 +63,10 @@
     "test:scopelogic": "node tests/check-scope-reach-logic.mjs",
     "test:preview": "node scripts/build-ambient-preview.mjs",
     "preview:panel": "node scripts/build-panel-preview.mjs",
+    "preview:pet": "node scripts/build-pet-preview.mjs",
     "test:calls": "node tests/check-undefined-calls.mjs",
     "test:emitguard": "node tests/check-self-emit-guard.mjs && node tests/check-self-emit-guard-logic.mjs",
-    "test": "npm run test:schema && npm run test:host && npm run test:store && npm run test:order && npm run test:tdz && npm run test:theme && npm run test:cards && npm run test:copy && npm run test:ambient && npm run test:boot && npm run test:safety && npm run test:module && npm run test:bounded && npm run test:bootpath && npm run test:scope && npm run test:scopelogic && npm run test:calls && npm run test:emitguard",
+    "test": "npm run test:schema && npm run test:host && npm run test:store && npm run test:order && npm run test:tdz && npm run test:theme && npm run test:cards && npm run test:pets && npm run test:mood && npm run test:copy && npm run test:ambient && npm run test:boot && npm run test:safety && npm run test:module && npm run test:bounded && npm run test:bootpath && npm run test:scope && npm run test:scopelogic && npm run test:calls && npm run test:emitguard",
     "prepack": "node scripts/embed-themes.mjs",
     "publish:check": "node scripts/publish-check.mjs",
     "embed-themes": "node scripts/embed-themes.mjs",
@@ -77,7 +78,9 @@
     "skin:rollback": "node tools/profile-skin.mjs rollback",
     "watch:renderer": "node tools/watch-renderer.mjs",
     "check": "npm run typecheck && npm run test && npm run embed-themes && npm run preview:ambient && npm run preview:panel",
-    "prepublishOnly": "npm run publish:check"
+    "prepublishOnly": "npm run publish:check",
+    "test:mood": "node tests/check-mood.mjs",
+    "test:pets": "node tests/check-pet-registry.mjs"
   },
   "keywords": [
     "dsh",
@@ -117,6 +120,5 @@
     "react-dom": "^19.3.0",
     "typescript": "^5.6.0",
     "zustand": "^5.0.15"
-  },
-  "license": "MIT"
+  }
 }

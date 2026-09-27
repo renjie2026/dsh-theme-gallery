@@ -1,0 +1,412 @@
+{
+  "$comment": "心情问候语库（标题栏跑马灯）。出处：40 条种子复制自作者自己的「更新管理平台」站点（装修管理-心情问候语，2026-09-27 抓取，seq 1-40）；seq 101+ 为插件新增。分类沿用站点五类：morning 早安 / day 白天 / night 夜深 / general 通用 / holiday 节假日。节日区间为 MM-DD（去年份，每年复用）。红线：禁止负面、消极或敏感言论——embed-themes.mjs 建期黑名单校验，命中即构建失败。单条 text 不超过 100 字符。",
+  "version": 1,
+  "lines": [
+    {
+      "id": "m001",
+      "seq": 1,
+      "category": "morning",
+      "text": "寻必寻见，想必到达"
+    },
+    {
+      "id": "m002",
+      "seq": 2,
+      "category": "morning",
+      "text": "晨光不负赶路人，新的一天从心安开始"
+    },
+    {
+      "id": "m003",
+      "seq": 3,
+      "category": "morning",
+      "text": "今天也要做自己的太阳，无需凭借谁的光"
+    },
+    {
+      "id": "m004",
+      "seq": 4,
+      "category": "morning",
+      "text": "万物皆有裂痕，那是光照进来的地方"
+    },
+    {
+      "id": "m005",
+      "seq": 5,
+      "category": "morning",
+      "text": "早安，愿你所遇皆温柔，所行皆坦途"
+    },
+    {
+      "id": "m006",
+      "seq": 6,
+      "category": "morning",
+      "text": "把昨天的疲惫留在梦里，把今天的期待装进行囊"
+    },
+    {
+      "id": "m007",
+      "seq": 7,
+      "category": "morning",
+      "text": "山高路远，看世界，也找自己"
+    },
+    {
+      "id": "m008",
+      "seq": 8,
+      "category": "morning",
+      "text": "每一个清晨，都是世界温柔的重新开始"
+    },
+    {
+      "id": "m009",
+      "seq": 9,
+      "category": "day",
+      "text": "你对我来说真的很重要"
+    },
+    {
+      "id": "m010",
+      "seq": 10,
+      "category": "day",
+      "text": "心若无所求，有风无风皆自由"
+    },
+    {
+      "id": "m011",
+      "seq": 11,
+      "category": "day",
+      "text": "慢慢来，比较快"
+    },
+    {
+      "id": "m012",
+      "seq": 12,
+      "category": "day",
+      "text": "生活的答案，都藏在认真过好的今天里"
+    },
+    {
+      "id": "m013",
+      "seq": 13,
+      "category": "day",
+      "text": "保持热爱，奔赴山海"
+    },
+    {
+      "id": "m014",
+      "seq": 14,
+      "category": "day",
+      "text": "心中有丘壑，眉目作山河"
+    },
+    {
+      "id": "m015",
+      "seq": 15,
+      "category": "day",
+      "text": "世界盛大，欢迎回家"
+    },
+    {
+      "id": "m016",
+      "seq": 16,
+      "category": "day",
+      "text": "别慌，月亮也正在大海的某处迷茫"
+    },
+    {
+      "id": "m017",
+      "seq": 17,
+      "category": "day",
+      "text": "与其追风去，不如等风来；等风来，不如乘风起"
+    },
+    {
+      "id": "m018",
+      "seq": 18,
+      "category": "day",
+      "text": "认真生活的人，生活从不亏待"
+    },
+    {
+      "id": "m019",
+      "seq": 19,
+      "category": "night",
+      "text": "我来到你待过的星空，算不算相逢"
+    },
+    {
+      "id": "m020",
+      "seq": 20,
+      "category": "night",
+      "text": "夜色温柔，愿你好梦"
+    },
+    {
+      "id": "m021",
+      "seq": 21,
+      "category": "night",
+      "text": "晚风吹人醒，万事藏于心"
+    },
+    {
+      "id": "m022",
+      "seq": 22,
+      "category": "night",
+      "text": "星光不问赶路人，时光不负有心人"
+    },
+    {
+      "id": "m023",
+      "seq": 23,
+      "category": "night",
+      "text": "今晚的月色替我说晚安"
+    },
+    {
+      "id": "m024",
+      "seq": 24,
+      "category": "night",
+      "text": "熬过漫长黑夜，才配拥有满天星辰"
+    },
+    {
+      "id": "m025",
+      "seq": 25,
+      "category": "night",
+      "text": "愿所有的疲惫，都被这个夜晚温柔收留"
+    },
+    {
+      "id": "m026",
+      "seq": 26,
+      "category": "night",
+      "text": "深夜的坚持，是明天惊喜的伏笔"
+    },
+    {
+      "id": "m027",
+      "seq": 27,
+      "category": "holiday",
+      "text": "盛世华诞，与国同庆；山河远阔，人间烟火",
+      "holiday": {
+        "from": "10-01",
+        "to": "10-08"
+      }
+    },
+    {
+      "id": "m028",
+      "seq": 28,
+      "category": "holiday",
+      "text": "新年快乐，愿新岁胜旧年，万事尽可期",
+      "holiday": {
+        "from": "01-01",
+        "to": "01-03"
+      }
+    },
+    {
+      "id": "m029",
+      "seq": 29,
+      "category": "holiday",
+      "text": "新春吉祥，灯火可亲，岁岁常安",
+      "holiday": {
+        "from": "02-05",
+        "to": "02-12"
+      }
+    },
+    {
+      "id": "m030",
+      "seq": 30,
+      "category": "holiday",
+      "text": "清明时节，追思故人，也惜眼前春光",
+      "holiday": {
+        "from": "04-04",
+        "to": "04-06"
+      }
+    },
+    {
+      "id": "m031",
+      "seq": 31,
+      "category": "holiday",
+      "text": "劳动节快乐，向每一位认真生活的人致敬",
+      "holiday": {
+        "from": "05-01",
+        "to": "05-05"
+      }
+    },
+    {
+      "id": "m032",
+      "seq": 32,
+      "category": "holiday",
+      "text": "粽叶飘香，端午安康",
+      "holiday": {
+        "from": "06-09",
+        "to": "06-11"
+      }
+    },
+    {
+      "id": "m033",
+      "seq": 33,
+      "category": "holiday",
+      "text": "但愿人长久，千里共婵娟",
+      "holiday": {
+        "from": "09-15",
+        "to": "09-16"
+      }
+    },
+    {
+      "id": "m034",
+      "seq": 34,
+      "category": "holiday",
+      "text": "举国同庆，家和人安，愿岁并谢，与友长兮",
+      "holiday": {
+        "from": "10-01",
+        "to": "10-08"
+      }
+    },
+    {
+      "id": "m035",
+      "seq": 35,
+      "category": "general",
+      "text": "愿你眼中总有光芒，活成你想要的模样"
+    },
+    {
+      "id": "m036",
+      "seq": 36,
+      "category": "general",
+      "text": "万事顺遂，毫无蹉跎"
+    },
+    {
+      "id": "m037",
+      "seq": 37,
+      "category": "general",
+      "text": "所有的美好，都在赶来的路上"
+    },
+    {
+      "id": "m038",
+      "seq": 38,
+      "category": "general",
+      "text": "心里有光，慢一点又何妨"
+    },
+    {
+      "id": "m039",
+      "seq": 39,
+      "category": "general",
+      "text": "平安喜乐，得偿所愿"
+    },
+    {
+      "id": "m040",
+      "seq": 40,
+      "category": "general",
+      "text": "岁月不扰，余生静好"
+    },
+    {
+      "id": "m101",
+      "seq": 101,
+      "category": "morning",
+      "text": "清晨的风，是今天寄来的第一封信"
+    },
+    {
+      "id": "m102",
+      "seq": 102,
+      "category": "morning",
+      "text": "新的一天：把小事做好，把心情调亮"
+    },
+    {
+      "id": "m103",
+      "seq": 103,
+      "category": "morning",
+      "text": "太阳照常升起，你也照常了不起"
+    },
+    {
+      "id": "m104",
+      "seq": 104,
+      "category": "morning",
+      "text": "今天的你，比昨天多一点点勇敢"
+    },
+    {
+      "id": "m105",
+      "seq": 105,
+      "category": "morning",
+      "text": "晨光已就位，慢慢来，别着急"
+    },
+    {
+      "id": "m106",
+      "seq": 106,
+      "category": "day",
+      "text": "慢慢走，路上有花"
+    },
+    {
+      "id": "m107",
+      "seq": 107,
+      "category": "day",
+      "text": "把日子过成自己喜欢的样子"
+    },
+    {
+      "id": "m108",
+      "seq": 108,
+      "category": "day",
+      "text": "今天的风很温柔，很适合认真生活"
+    },
+    {
+      "id": "m109",
+      "seq": 109,
+      "category": "day",
+      "text": "一步一步，都是向上的路"
+    },
+    {
+      "id": "m110",
+      "seq": 110,
+      "category": "day",
+      "text": "保持微笑，好运正在排队"
+    },
+    {
+      "id": "m111",
+      "seq": 111,
+      "category": "night",
+      "text": "夜深了，把烦恼调成静音"
+    },
+    {
+      "id": "m112",
+      "seq": 112,
+      "category": "night",
+      "text": "星星已就位，陪你收工"
+    },
+    {
+      "id": "m113",
+      "seq": 113,
+      "category": "night",
+      "text": "今晚适合早点休息，明天见"
+    },
+    {
+      "id": "m114",
+      "seq": 114,
+      "category": "night",
+      "text": "愿你被月光温柔以待"
+    },
+    {
+      "id": "m115",
+      "seq": 115,
+      "category": "night",
+      "text": "辛苦了，今天也好好完成了"
+    },
+    {
+      "id": "m116",
+      "seq": 116,
+      "category": "general",
+      "text": "慢慢来，一切都会如期而至"
+    },
+    {
+      "id": "m117",
+      "seq": 117,
+      "category": "general",
+      "text": "生活明朗，万物可爱"
+    },
+    {
+      "id": "m118",
+      "seq": 118,
+      "category": "general",
+      "text": "你走的每一步，都算数"
+    },
+    {
+      "id": "m119",
+      "seq": 119,
+      "category": "general",
+      "text": "所求皆如愿，所行化坦途"
+    },
+    {
+      "id": "m120",
+      "seq": 120,
+      "category": "holiday",
+      "text": "致每一位闪闪发光的她，节日快乐",
+      "holiday": {
+        "from": "03-08",
+        "to": "03-08"
+      }
+    },
+    {
+      "id": "m121",
+      "seq": 121,
+      "category": "holiday",
+      "text": "愿你我童心未泯，简单快乐",
+      "holiday": {
+        "from": "06-01",
+        "to": "06-01"
+      }
+    }
+  ]
+}

@@ -161,6 +161,9 @@ mutation('test 链少跑一组校验',
 // 用**合成输入**而不是"把某套皮肤正式发布"：合成输入与当前目录状态无关，所以在
 // 发布副本（只含 6 套皮肤）里跑同一份断言也成立 —— 否则对照组会在那边失败，
 // 逼着发布副本里改测试文件。
+// 组数从**真实的 test 链现算**（不写死数字）：以后再加一组校验，这里不会跟着腐化 ——
+// 0.4.2 加 check-pet-registry（20→21）时这个写死的 20 就红过一次。
+const REAL_GROUP_COUNT = testGroups(pkg.scripts).length
 const synthetic = {
   readme: [
     '已随 **9.9.9** 发布 **2 套**皮肤：',
@@ -174,7 +177,7 @@ const synthetic = {
     '',
     '入口在左侧菜单区【插件】图标的下方。',
     '',
-    'npm test 的 **20 组**',
+    `npm test 的 **${REAL_GROUP_COUNT} 组**`,
     '',
   ].join('\n'),
   pkg: { version: '9.9.9', scripts: pkg.scripts },
@@ -187,8 +190,8 @@ check('对照组：完全一致的合成输入必须全过（防止这条检查�
   syntheticResults.every((item) => item.ok),
   syntheticResults.filter((item) => !item.ok).map((item) => item.label).join('；'))
 // 合成输入还必须**真的能被解析**：否则"全过"只是因为它什么都没抽到。
-check('对照组：合成输入被解析出 2 套皮肤 / 2 组校验',
-  declaredSkinIds(synthetic.readme).length === 2 && testGroups(synthetic.pkg.scripts).length === 20)
+check('对照组：合成输入被解析出 2 套皮肤 / 与真实链同数的校验组',
+  declaredSkinIds(synthetic.readme).length === 2 && testGroups(synthetic.pkg.scripts).length === REAL_GROUP_COUNT)
 
 if (failed > 0) {
   console.error(`\n${failed} copy consistency logic check(s) failed`)

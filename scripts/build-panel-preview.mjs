@@ -135,6 +135,8 @@ const BUILT_IN_DESCRIPTIONS = readLiteral('BUILT_IN_DESCRIPTIONS')
 const DEFAULT_SKIN = readLiteral('DEFAULT_SKIN')
 const VERSION = readLiteral('BUNDLED_VERSION')
 const zh = readLiteral('zh')
+const PET_WIDGET = readLiteral('PET_WIDGET')
+const MOOD_WIDGET = readLiteral('MOOD_WIDGET')
 const bundled = readBundledThemes()
 
 // The shipping order logic, executed rather than re-implemented.
@@ -186,18 +188,40 @@ const BUILT_INS = [
 ]
 
 const registry = [...BUILT_INS, ...bundled]
-const visible = registry.filter((theme) => !OMITTED_IDS.has(theme.id))
+
+/**
+ * 宠物挂件卡不是主题、不在注册表里：与 `publish()`（`petWidgetCardTheme`）同形状，
+ * 在过滤之后作为一张**只存在于面板**的卡片数据 concat 进来，一起排序。
+ */
+const petCardTheme = {
+  id: PET_WIDGET.id,
+  label: PET_WIDGET.label,
+  description: PET_WIDGET.description,
+  colorScheme: 'light',
+  tokens: {},
+}
+const moodCardTheme = {
+  id: MOOD_WIDGET.id,
+  label: MOOD_WIDGET.label,
+  description: MOOD_WIDGET.description,
+  colorScheme: 'light',
+  tokens: {},
+}
+const visible = registry
+  .filter((theme) => !OMITTED_IDS.has(theme.id))
+  .concat([petCardTheme, moodCardTheme])
 const shown = cardsInDisplayOrder(visible)
 
 /**
  * 卡片数 ≠ 皮肤数，这里与面板用同一条口径。
  *
- * 标题文案是 `{count} 款皮肤（另有内置浅色/深色两张卡）`，所以数字必须是**皮肤**数：
- * 把内置浅色/深色当成皮肤去数，会报出一个与 README 不一致的数字。
+ * 标题文案是 `{count} 款皮肤（另有内置浅色/深色与宠物挂件三张卡）`，所以数字必须是
+ * **皮肤**数：把内置浅色/深色与挂件卡当成皮肤去数，会报出一个与 README 不一致的数字。
  * （本页曾经就是这么错的 —— 标题打印卡片数、而卡片里含两张内置卡。这类错误没有任何
  * 运行期信号，正是发布自检现在守着的那一类。）
  */
-const builtInCardCount = shown.filter((theme) => BUILT_IN_LABELS[theme.id] !== undefined).length
+const builtInCardCount = shown.filter((theme) => BUILT_IN_LABELS[theme.id] !== undefined
+  || theme.id === PET_WIDGET.id || theme.id === MOOD_WIDGET.id).length
 const skinCount = shown.length - builtInCardCount
 
 /** Mirror of the store's `pick`: resolve a `{light,dark}` pair to one string. */
@@ -207,7 +231,8 @@ function tokenValue(theme, name) {
   return typeof value === 'string' ? value : value[theme.colorScheme]
 }
 
-const cards = shown.map((theme) => {  const label = theme.label || BUILT_IN_LABELS[theme.id] || theme.id
+const cards = shown.map((theme) => {
+  const label = theme.label || BUILT_IN_LABELS[theme.id] || theme.id
   const description = theme.description || BUILT_IN_DESCRIPTIONS[theme.id] || ''
   const swatches = [
     tokenValue(theme, '--dsw-alias-brand-primary'),
@@ -242,23 +267,82 @@ const cards = shown.map((theme) => {  const label = theme.label || BUILT_IN_LABE
     ? ''
     : `
         <span class="tg-strip">${swatches.map((colour) => `<span style="background:${colour}"></span>`).join('')}</span>`
+  // 挂件卡：卡面画小狗 + 毛线团（与面板 petCardArt / 运行时 PET_DOG_MARKUP 同一套
+  // 画法与配色的静态镜像），同样不渲染正文。预览里它只是版式对照，不可点。
+  const isPet = theme.id === PET_WIDGET.id
+  const isMood = theme.id === MOOD_WIDGET.id
+  const petArt = isPet
+    ? `
+        <span class="tg-pet-art">
+          <svg viewBox="0 0 64 56" width="48" height="42" aria-hidden="true">
+            <path d="M15 36 Q4 31 6.5 21" stroke="#A9744F" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <ellipse cx="32" cy="35" rx="17.5" ry="13.5" fill="#F5E7CE"/>
+            <ellipse cx="25" cy="31.5" rx="7" ry="5" fill="#C79A6B" opacity=".9"/>
+            <rect x="25" y="42" width="7" height="13" rx="3" fill="#E4CBA2"/>
+            <rect x="37" y="42" width="7" height="13" rx="3" fill="#F5E7CE"/>
+            <circle cx="46" cy="18" r="12.5" fill="#F5E7CE"/>
+            <circle cx="51.5" cy="9.5" r="5.2" fill="#C79A6B"/>
+            <ellipse cx="40" cy="10.5" rx="6" ry="8.6" fill="#A9744F" transform="rotate(-20 40 10.5)"/>
+            <ellipse cx="55" cy="22.5" rx="6.2" ry="5" fill="#FBF3E4"/>
+            <circle cx="58.6" cy="20.6" r="2.2" fill="#4A372F"/>
+            <circle cx="49" cy="16" r="1.9" fill="#3B2B23"/>
+          </svg>
+          <svg viewBox="0 0 26 22" width="25" height="21" aria-hidden="true">
+            <circle cx="13" cy="12" r="9.5" fill="#E06A4E"/>
+            <path d="M5 8.5 Q13 4 21 8.5" stroke="#B84A33" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+            <path d="M4.5 14 Q13 10 21.5 14" stroke="#B84A33" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+            <path d="M21.6 11 q5 1.4 3.8 6.4" stroke="#B84A33" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </span>`
+    : ''
+  // 问候卡：卡面画胶囊开关 + 三组 chips 的静态镜像（中速/自左至右/居中点亮），
+  // 与面板 moodControlsElement 同一版式；预览里不可点。
+  const moodBody = isMood
+    ? `
+        <div class="tg-mood-body">
+          <div class="tg-mood-row"><span class="tg-mood-switch" aria-checked="true"><span class="tg-mood-pill"></span><span class="tg-mood-state">${zh.petOn}</span></span></div>
+          <div class="tg-mood-row"><span class="tg-mood-row-label">速度</span>
+            <span class="tg-mood-seg"><span class="tg-mood-chip">慢速</span><span class="tg-mood-chip" aria-pressed="true">中速</span><span class="tg-mood-chip">快速</span></span></div>
+          <div class="tg-mood-row"><span class="tg-mood-row-label">方向</span>
+            <span class="tg-mood-seg"><span class="tg-mood-chip" aria-pressed="true">自左至右</span><span class="tg-mood-chip">自右至左</span></span></div>
+          <div class="tg-mood-row"><span class="tg-mood-row-label">区域</span>
+            <span class="tg-mood-zone"><span class="tg-mood-chip">左靠齐</span><span class="tg-mood-chip" aria-pressed="true">居中</span><span class="tg-mood-chip">左右缩进</span><span class="tg-mood-chip">右靠齐</span></span></div>
+        </div>`
+    : ''
+  // 挂件/问候卡的徽标常驻（它就是开关读数）；预览页恒为"开/关"缺省形态。
+  const widgetBadge = isPet || isMood
+    ? `<span class="tg-badge${isPet ? ' tg-badge-off' : ''}">${(isMood || !isPet) ? zh.petOn : zh.petOff}</span>`
+    : ''
   const selected = theme.id === DEFAULT_SKIN
   const rank = cardRank(theme.id)
   const head = `
         <div class="tg-card-top">
           <span class="tg-name">${label}</span>
-          ${selected ? `<span class="tg-badge">${zh.applied}</span>` : ''}
+          ${(isPet || isMood) ? widgetBadge : (selected ? `<span class="tg-badge">${zh.applied}</span>` : '')}
         </div>`
-  const tail = `${rows === undefined && description ? `<span class="tg-desc">${description}</span>` : ''}
+  const tail = `${rows === undefined && !isPet && !isMood && description ? `<span class="tg-desc">${description}</span>` : ''}
         <span class="pv-rank">序号 ${rank}${rank < 0 ? '（未排名）' : ''} · ${theme.id}</span>`
-  // 配色卡是 div（里面装着 15 个按钮），其余卡片仍是整块可点的 button —— 与面板一致。
+  // 配色卡/问候卡是 div（里面装着按钮），挂件卡与其余卡片是整块可点的 button —— 与面板一致。
+  const body = isPet ? petArt : (isMood ? moodBody : (rows === undefined ? strip : picker))
+  if (isPet) {
+    return `
+      <button type="button" class="tg-card tg-pet-card" aria-pressed="false" title="${description || label}">${head}${body}
+        ${tail}
+      </button>`
+  }
+  if (isMood) {
+    return `
+      <div class="tg-card tg-mood-card" title="${description || label}">${head}${body}
+        ${tail}
+      </div>`
+  }
   return rows === undefined
     ? `
-      <button type="button" class="tg-card" aria-pressed="${selected}" title="${description || label}">${head}${strip}
+      <button type="button" class="tg-card" aria-pressed="${selected}" title="${description || label}">${head}${body}
         ${tail}
       </button>`
     : `
-      <div class="tg-card tg-picker-card" title="${description || label}">${head}${picker}
+      <div class="tg-card tg-picker-card" title="${description || label}">${head}${body}
         ${tail}
       </div>`
 }).join('\n')
@@ -333,4 +417,4 @@ const out = join(root, 'tools', 'theme-bench', 'panel-preview.html')
 writeFileSync(out, html)
 console.log(`wrote ${out}`)
 console.log(`card order: ${shown.map((theme) => theme.id).join(' > ')}`)
-console.log(`cards: ${shown.length} = ${skinCount} skins + ${builtInCardCount} built-in light/dark`)
+console.log(`cards: ${shown.length} = ${skinCount} skins + ${builtInCardCount} non-skin cards (built-in light/dark + pet widget)`)
