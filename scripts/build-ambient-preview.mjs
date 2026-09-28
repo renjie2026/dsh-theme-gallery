@@ -93,6 +93,7 @@ const builderSource = [
   block('ymSeaSvg'),
   block('ymBalloonMarkup'),
   block('caiyunAmbientScene'),
+  block('jpMoonMarkup'),
   block('jpBoatMarkup'),
   block('dongyunAmbientScene'),
   block('xsPineMarkup'),
@@ -106,7 +107,7 @@ const builderSource = [
 ].join('\n\n')
 
 // eslint-disable-next-line no-new-func
-const builders = new Function(`${builderSource}\nreturn { shanAmbientScene, dreamAmbientScene, caiyunAmbientScene, dongyunAmbientScene, junyueAmbientScene, jiexinAmbientScene, fengchenAmbientScene, humaoAmbientScene, ahuangAmbientScene }`)()
+const builders = new Function(`${builderSource}\nreturn { shanAmbientScene, dreamAmbientScene, caiyunAmbientScene, jpMoonMarkup, dongyunAmbientScene, junyueAmbientScene, jiexinAmbientScene, fengchenAmbientScene, humaoAmbientScene, ahuangAmbientScene }`)()
 
 /**
  * Build one theme's scene from its bundled `ambient` config through the real

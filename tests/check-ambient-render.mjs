@@ -85,6 +85,7 @@ const builderSource = [
   block('ymSeaSvg'),
   block('ymBalloonMarkup'),
   block('caiyunAmbientScene'),
+  block('jpMoonMarkup'),
   block('jpBoatMarkup'),
   block('dongyunAmbientScene'),
   block('xsPineMarkup'),
@@ -98,7 +99,7 @@ const builderSource = [
 ].join('\n\n')
 
 // eslint-disable-next-line no-new-func
-const api = new Function(`${builderSource}\nreturn { shanAmbientScene, dragonflyMarkup, dreamAmbientScene, seaweedMarkup, rippleMarkup, dragonflyBlock, bladeMarkup, fishMarkup, ymSeaSvg, ymBalloonMarkup, caiyunAmbientScene, jpBoatMarkup, dongyunAmbientScene, xsPineMarkup, junyueAmbientScene, jiexinAmbientScene, gcFeatherMarkup, fengchenAmbientScene, petHazeMarkup, humaoAmbientScene, ahuangAmbientScene, open }`)()
+const api = new Function(`${builderSource}\nreturn { shanAmbientScene, dragonflyMarkup, dreamAmbientScene, seaweedMarkup, rippleMarkup, dragonflyBlock, bladeMarkup, fishMarkup, ymSeaSvg, ymBalloonMarkup, caiyunAmbientScene, jpMoonMarkup, jpBoatMarkup, dongyunAmbientScene, xsPineMarkup, junyueAmbientScene, jiexinAmbientScene, gcFeatherMarkup, fengchenAmbientScene, petHazeMarkup, humaoAmbientScene, ahuangAmbientScene, open }`)()
 
 // ── 山青婷彩 ─────────────────────────────────────────────────────────────────
 
@@ -219,7 +220,11 @@ check('the balloons carry envelope, ropes and basket artwork',
 const dongyun = api.dongyunAmbientScene(8)
 check('dongyun has a scene root carrying its own positioning',
   dongyun.startsWith('<div class="jp"') && /class="jp" style="[^"]*position:absolute/.test(dongyun))
-check('dongyun hangs a haloed winter moon', /class="jp-moon" style="[^"]*box-shadow/.test(dongyun))
+const jpMoonSvg = dongyun.slice(dongyun.indexOf('<svg class="jp-moon"'), dongyun.indexOf('</svg>', dongyun.indexOf('<svg class="jp-moon"')))
+check('dongyun hangs a circular SVG winter moon with halo gradients (CSS 圆角盘在部分渲染路径呈方斑，已换 SVG 正圆)',
+  /<svg class="jp-moon" style="[^"]*overflow:visible/.test(dongyun)
+  && dongyun.includes('url(#dsh-jp-moon-body)') && dongyun.includes('url(#dsh-jp-moon-halo)')
+  && (jpMoonSvg.match(/<circle /g) ?? []).length === 2)
 check('dongyun drifts three clouds', (dongyun.match(/class="jp-cloud jp-cloud-\d"/g) ?? []).length === 3)
 check('dongyun seeds the requested snow count', (dongyun.match(/class="jp-snowflake"/g) ?? []).length === 8)
 check('snow count is clamped', (api.dongyunAmbientScene(99).match(/class="jp-snowflake"/g) ?? []).length === 30)
@@ -248,7 +253,9 @@ check('junyue has a scene root carrying its own positioning',
   junyue.startsWith('<div class="xs"') && /class="xs" style="[^"]*position:absolute/.test(junyue))
 check('junyue seeds the requested star count', (junyue.match(/class="xs-star"/g) ?? []).length === 12)
 check('junyue star count is clamped', (api.junyueAmbientScene(99).match(/class="xs-star"/g) ?? []).length === 30)
-check('junyue hangs the full moon with a halo', /class="xs-moon" style="[^"]*box-shadow/.test(junyue))
+check('junyue hangs the full moon as an SVG circle with halo (同 jp-moon 的 SVG 换法)',
+  /<svg class="xs-moon" style="[^"]*overflow:visible/.test(junyue)
+  && junyue.includes('url(#dsh-xs-moon-body)') && junyue.includes('url(#dsh-xs-moon-halo)'))
 check('junyue veils the moon with two night clouds',
   (junyue.match(/class="xs-cloud xs-cloud-\d"/g) ?? []).length === 2)
 check('the meteor carries a glowing head',

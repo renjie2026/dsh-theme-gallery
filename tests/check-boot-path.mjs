@@ -536,6 +536,7 @@ function runBoot({
     'meng-hai-you-yu',
     'shan-qing-ting-cai',
     'ying-mu-cai-yun',
+    'jiang-pan-dong-yun',
     'pei-an-jie-xin',
     'hu-po-mao-mi',
     'hu-zi-a-huang',

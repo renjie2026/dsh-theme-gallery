@@ -53,16 +53,17 @@ function check(label, condition) {
  * 而不是某次重构的副作用。
  */
 const EXPECTED = [
-  'light', 'dark', 'shi-liu-jin', 'ying-mu-cai-yun', 'shan-qing-ting-cai',
+  'light', 'dark', 'shi-liu-jin', 'ying-mu-cai-yun', 'shan-qing-ting-cai', 'jiang-pan-dong-yun',
   'pei-an-jie-xin', 'meng-hai-you-yu',
   'hu-po-mao-mi', 'hu-zi-a-huang', 'pet-family', 'mood-greeting', 'menu-collapse',
 ]
 
 /** 与 {@link EXPECTED} 一一对应的序号。 */
-const EXPECTED_RANKS = [99, 98, 97, 96, 95, 91, 80, 76, 75, 74, 73, 72]
+const EXPECTED_RANKS = [99, 98, 97, 96, 95, 92, 91, 80, 76, 75, 74, 73, 72]
 
 /** 内联皮肤数组的注册顺序（= embed 的字母序），发布顺序的断言在 check-theme-contribution。 */
-const ALPHA_ORDER = 'hu-po-mao-mi,hu-zi-a-huang,meng-hai-you-yu,pei-an-jie-xin,shan-qing-ting-cai,shi-liu-jin,ying-mu-cai-yun'
+const ALPHA_ORDER = 'hu-po-mao-mi,hu-zi-a-huang,jiang-pan-dong-yun,meng-hai-you-yu,'
+  + 'pei-an-jie-xin,shan-qing-ting-cai,shi-liu-jin,ying-mu-cai-yun'
 
 /**
  * 官方 ui-theme 自带的内置主题，按真实注册顺序排在最前。
@@ -679,12 +680,12 @@ check('变异 4 真的改动了源码（默认皮肤被换掉）', mutDefault !=
 check('变异 4：换掉默认皮肤后"默认 = 山青婷彩"必须失败',
   extract(mutDefault).DEFAULT_SKIN !== 'shan-qing-ting-cai')
 
-const mutTypo = real.replace("'meng-hai-you-yu': 80,", "'meng-hai-you-yu-typo': 80,")
+const mutTypo = real.replace("'jiang-pan-dong-yun': 92,", "'jiang-pan-dong-yun-typo': 92,")
 check('变异 5 真的改动了源码（id 拼写错）', mutTypo !== real)
 check('变异 5：id 写错后"没有指不到主题的条目"必须失败',
   !Object.keys(extract(mutTypo).CARD_ORDER).every((id) => idIsKnown(extract(mutTypo), id)))
 check('变异 5：id 写错后该卡真的掉到列表最末（正是这个静默症状）',
-  shownOrder(extract(mutTypo)).indexOf('meng-hai-you-yu') === shownOrder(extract(mutTypo)).length - 1)
+  shownOrder(extract(mutTypo)).indexOf('jiang-pan-dong-yun') === shownOrder(extract(mutTypo)).length - 1)
 
 const mutSurprise = real.replace(SURPRISE_LINE, '')
 check('变异 6 真的改动了源码（「惊喜」那句被删掉）', mutSurprise !== real)

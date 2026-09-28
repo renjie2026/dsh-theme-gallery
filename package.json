@@ -1,6 +1,6 @@
 {
   "name": "dsh-theme-gallery",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "A theme gallery for DeepSeek Harness (DSH): JSON-defined skins with full-screen coverage and sidebar scenery, a 15-swatch palette-picker card, a pet-widget card (7 registry-driven pets playing by the chat input), a mood-greeting card (a scrolling greeting on the title bar that rotates every 35 minutes), and a menu-collapse card that moves the panel entry into Settings, switched from the panel under the sidebar's Plugins icon — adding skins needs no code change",
   "author": "renjie2026 (https://github.com/renjie2026)",
   "license": "MIT",
