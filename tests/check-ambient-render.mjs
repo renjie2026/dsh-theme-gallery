@@ -125,6 +125,66 @@ check('stop colours are spelled `stop-color`, not `stopColor`',
 check('shan draws the mist band', (shan.match(/class="sta-mist/g) ?? []).length === 2)
 check('shan draws the water and its ripple rings',
   shan.includes('class="sta-pond"') && (shan.match(/class="sta-ripple"/g) ?? []).length === 2)
+
+// ── 水面光圈的形状（2026-09-28 用户实机三轮反馈的落点）────────────────────────
+//
+// 第一轮：border-radius 圆在小尺寸栅格下发方；第二轮：非等比缩放椭圆把左右描边
+// 拉厚、端部像方片；第三轮：橄榄形 SVG 的尖顶不自然。落点 = **SVG `<ellipse>`**
+// （自然界水波的水平视角就是端部圆润的椭圆）+ **等比缩放**（容器 2.5:1 与 viewBox
+// 一致，preserveAspectRatio=none 不产生描边畸变）+ **描边随扩散变细**（keyframes
+// 动画 stroke-width 8 → 3）+ 基态 opacity:0（等延迟期间不闪整大的静态环）。
+// 颜色不动。dsh-amb-ring 定义了两次（预览层/座位层），两处必须同改（反证 29）。
+const junyueRing = api.rippleMarkup('38%', '5.2%', 0)
+check('水面光圈是 SVG 椭圆（rx 46 / ry 16，端部平滑圆润；两环同形）',
+  junyueRing.includes('viewBox="0 0 100 40"')
+  && (junyueRing.match(/<ellipse cx="50" cy="20" rx="46" ry="16"/g) ?? []).length === 2
+  && junyueRing.includes('stroke:rgba(232,139,176,.92)'))
+check('水面光圈的两圈追逐：基态 opacity:0（等延迟不闪静态环）+ 第二环延迟 +1.6s',
+  junyueRing.includes('opacity:0;') && junyueRing.includes('animation-delay:0s')
+  && junyueRing.includes('animation-delay:1.6s'))
+check('水面光圈扩散描边变细（两处 dsh-amb-ring 同改；颜色不动）',
+  (source.match(/@keyframes dsh-amb-ring\{0%\{transform:scale\(\.35\);opacity:\.85;stroke-width:8\}100%\{transform:scale\(1\);opacity:0;stroke-width:3\}\}/g) ?? []).length === 2
+  && /\.sta-ripple ellipse\{fill:none;stroke:rgba\(232,139,176,\.92\)/.test(source))
+
+// 反证 29：把其中一处 keyframe 的"描边变细"拆掉 → 两处不再一致，上面的计数必须翻红。
+const mutRing = source.replace('stroke-width:3}}', '}}')
+check('反证 29 真的改动了源码（一处 keyframe 的描边变细被拆掉）', mutRing !== source)
+check('反证 29：只改一处时两处不再一致（说明上面那条数的是两处）',
+  (mutRing.match(/@keyframes dsh-amb-ring\{0%\{transform:scale\(\.35\);opacity:\.85;stroke-width:8\}100%\{transform:scale\(1\);opacity:0;stroke-width:3\}\}/g) ?? []).length === 1)
+
+// ── 两圈光圈的远近层次（2026-09-28 用户实机：近大远小）────────────────────────
+//
+// 左圈（38%）是"远"：晚 1s 出现、整体缩小一档（sizeScale 0.8 → 宽 1.60em；0.9 时
+// 用户实机反馈层次不够）；右圈（62%）是"近"：保持 2em / 1.6s 不变。两圈相位错开
+// （1s vs 1.6s），起落不同步。
+const rippleStylesOf = (scene) => [...scene.matchAll(/class="sta-ripple" style="([^"]*)"/g)].map((m) => m[1])
+const rippleNow = rippleStylesOf(shan)
+check('近大远小：左圈（38%）远——宽 1.60em / 高 0.64em / 晚 1s；右圈（62%）近——2em / 0.80em / 1.6s',
+  rippleNow.length === 2
+  && rippleNow.some((s) => s.includes('left:38%') && s.includes('width:1.60em') && s.includes('height:0.64em'))
+  && rippleNow.some((s) => s.includes('left:62%') && s.includes('width:2.00em') && s.includes('height:0.80em')),
+  `实际：${JSON.stringify(rippleNow)}`)
+check('两圈相位错开：左圈 1s/2.6s，右圈 1.6s/3.2s（起落不同步）',
+  (() => {
+    // 延迟写在光圈内部两条 path 的行内样式上：每个容器向后匹配它自己的两环延迟。
+    const phases = [...shan
+      .matchAll(/class="sta-ripple"[\s\S]*?animation-delay:([\d.]+)s[\s\S]*?animation-delay:([\d.]+)s/g)]
+      .map((m) => [Number(m[1]), Number(m[2])])
+    return phases.length === 2
+      && phases.some(([first]) => first === 1) && phases.some(([first]) => first === 1.6)
+      && phases.every(([first, second]) => Math.abs(second - first - 1.6) < 0.001)
+      && JSON.stringify(phases) === JSON.stringify([[1, 2.6], [1.6, 3.2]])
+  })())
+
+// 反证 30：左圈尺寸恢复 1（大小系数撤销）→ 左右同大，近大远小消失，必须翻红。
+const mutNearFar = builderSource.replace("rippleMarkup('38%', '5.2%', 1, 0.8)", "rippleMarkup('38%', '5.2%', 1, 1)")
+check('反证 30 真的改动了场景源码（左圈恢复原尺寸）', mutNearFar !== builderSource)
+// eslint-disable-next-line no-new-func
+const nearFarApi = new Function(`${mutNearFar}\nreturn { shanAmbientScene }`)()
+const rippleMut = rippleStylesOf(nearFarApi.shanAmbientScene(6))
+check('反证 30：尺寸恢复后左右同大（近大远小消失，说明上面测的是真通道）',
+  rippleMut.length === 2 && rippleMut.every((s) => s.includes('width:2.00em')),
+  `实际：${JSON.stringify(rippleMut)}`)
 check('shan flies two dragonflies', (shan.match(/class="sta-dfly /g) ?? []).length === 2)
 check('shan seeds the requested petal count', (shan.match(/class="sta-petal"/g) ?? []).length === 6)
 check('shan seeds a different count on request',
