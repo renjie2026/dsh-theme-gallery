@@ -98,6 +98,7 @@ const builderSource = [
   block('dongyunAmbientScene'),
   block('xsPineMarkup'),
   block('junyueAmbientScene'),
+  block('liuxingAmbientScene'),
   block('jiexinAmbientScene'),
   block('gcFeatherMarkup'),
   block('fengchenAmbientScene'),
@@ -107,7 +108,7 @@ const builderSource = [
 ].join('\n\n')
 
 // eslint-disable-next-line no-new-func
-const builders = new Function(`${builderSource}\nreturn { shanAmbientScene, dreamAmbientScene, caiyunAmbientScene, jpMoonMarkup, dongyunAmbientScene, junyueAmbientScene, jiexinAmbientScene, fengchenAmbientScene, humaoAmbientScene, ahuangAmbientScene }`)()
+const builders = new Function(`${builderSource}\nreturn { shanAmbientScene, dreamAmbientScene, caiyunAmbientScene, jpMoonMarkup, dongyunAmbientScene, junyueAmbientScene, liuxingAmbientScene, jiexinAmbientScene, fengchenAmbientScene, humaoAmbientScene, ahuangAmbientScene }`)()
 
 /**
  * Build one theme's scene from its bundled `ambient` config through the real
@@ -130,6 +131,7 @@ function sceneFor(theme) {
     case 'caiyun': return builders.caiyunAmbientScene(a.stars)
     case 'dongyun': return builders.dongyunAmbientScene(a.snow)
     case 'junyue': return builders.junyueAmbientScene(a.stars)
+    case 'liuxing': return builders.liuxingAmbientScene(a.geese, a.dew)
     case 'jiexin': return builders.jiexinAmbientScene(a.dust)
     case 'fengchen': return builders.fengchenAmbientScene(a.feathers, a.dew)
     case 'humao': return builders.humaoAmbientScene(a.dust)
@@ -151,6 +153,7 @@ const KIND_NOTES = {
   fengchen: '晨光扇面 + 凤羽飘落 + 笔触凤凰往返飞行 + 晨露',
   humao: '暖阳光晕 + 晒暖窗台 + 坐姿虎斑猫（摆尾/抖耳）+ 蜷卧酣睡猫（呼吸 + 小 z）+ 阳光浮尘（原创）',
   ahuang: '金色光晕 + 田埂 + 中黄田园犬（镰刀尾摇摆/歪头/铃铛项圈）+ 干草丛 + 缃色皮球 + 蒲公英绒毛（原创）',
+  liuxing: '弦月金辉 + 白羽流星 + 雁阵缓渡 + 蒹葭白露 + 远山淡影（原创，取意歌曲《白羽行》）',
 }
 
 /** The bundled themes, in embed order (alphabetical by file). */

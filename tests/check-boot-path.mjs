@@ -30,9 +30,16 @@ let failed = 0
  * 断言一条。
  * @param label - 检查项。
  * @param condition - 结果。
+ * @param readout - 失败时要打印的实际读数（排查几何/序列类问题全靠它）。
+ *   0.4.1 那轮修过一次"第三参被丢掉"，本轮按当时的形状恢复。
  */
-function check(label, condition) {
-  if (!condition) failed += 1
+function check(label, condition, readout) {
+  if (!condition) {
+    failed += 1
+    if (readout !== undefined) {
+      console.error(`  实际：${typeof readout === 'string' ? readout : JSON.stringify(readout)}`)
+    }
+  }
   console.log(`${condition ? 'ok  ' : 'FAIL'} ${label}`)
 }
 
@@ -170,7 +177,8 @@ function loadBundle(window_, document_, recordJsx = () => {}, bundleSource = sou
  * 重点是 `querySelector` 能返回一个"有布局"的侧栏列 —— 引导门就靠它判断外壳是否就绪。
  * @returns 桩 document 与记录到的样式写入。
  */
-function documentStub() {
+/** @param seedFooterRow - 是否给侧栏列一个可测量的账户行（由 runBoot 的同名选项透传）。 */
+function documentStub(seedFooterRow = false) {
   /**
    * Every scene write, in order.
    *
@@ -201,7 +209,22 @@ function documentStub() {
       left: 0, top: 40, right: 280, bottom: 910, width: 280, height: 870,
       x: 0, y: 40,
     }),
-    querySelectorAll: () => [],
+    // 可选的「账户行」（头像+昵称）：footerHeight 靠"贴底的全宽短条"这个形状认它
+    // （宽 ≥ 列宽一半、高 28..96、底边距列底 ≤24px）。只在 seedFooterRow 时给出，
+    // 否则测得 reserve=0 —— 素材带底边下压（SCENERY_BOTTOM_OVERHANG_PX）的
+    // 行为断言需要它，而其余断言不想被几何变化扰动（规则 8：桩的替身要能长出
+    // 真实实现需要的副作用，但默认保持既有形状）。
+    querySelectorAll: (selector) => (selector === '*' && seedFooterRow)
+      ? [{
+        closest: () => null,
+        getBoundingClientRect: () => {
+          globalThis.__probeRowRect = (globalThis.__probeRowRect ?? 0) + 1
+          return {
+            left: 0, top: 850, right: 280, bottom: 906, width: 280, height: 56, x: 0, y: 850,
+          }
+        },
+      }]
+      : [],
     querySelector: () => null,
     append() {},
     appendChild() {},
@@ -488,6 +511,10 @@ const layoutSelectCalls = []
  * @param options.seedPet - 预置的挂件状态（原样 JSON 串）。
  * @param options.seedMenu - 预置的「菜单折叠」状态（原样 JSON 串；种子折叠启动时
  *   侧栏入口应从未注册，设置分节照常注册）。
+ * @param options.seedFooterRow - 是否给侧栏列一个可测量的「账户行」（贴底的全宽
+ *   56px 短条），让 `footerHeight` 真的测得到东西。缺省不给（测得 reserve=0），
+ *   避免扰动既有断言的几何；素材带底边下压（SCENERY_BOTTOM_OVERHANG_PX）的
+ *   行为断言需要它。
  * @param options.wireSlots - 是否让 `slots.inject('main', …)` 真的执行回调，
  *   从而拿到页面 `inject` 面（`setTheme`）—— 用来测"点卡片"这条真实入口。
  * @param options.bundleSource - 用哪份源码加载 bundle（缺省即真实文件）。
@@ -502,6 +529,7 @@ function runBoot({
   seedBuiltIn,
   seedPet,
   seedMenu,
+  seedFooterRow = false,
   wireSlots = false,
   bundleSource = source,
 } = {}) {
@@ -515,9 +543,12 @@ function runBoot({
   mutationObservers.length = 0
   layoutSelectCalls.length = 0
   try {
-  const { document_, body, innerHTMLWrites, removals, sceneHtml, created } = documentStub()
+  const { document_, body, innerHTMLWrites, removals, sceneHtml, created } = documentStub(seedFooterRow)
   const setThemeCalls = []
   let accentLayers = 0
+  // overrideTokens 的调用序列（source 按发生顺序）：「配色层站在最上」的断言读它 ——
+  // 上面的 Map 只有「在不在」，谁压住谁只有顺序才看得见（官方按 seq 合成、后叠者赢）。
+  const overrideCalls = []
   const registrations = []
   /** 页面构建过的所有元素描述（jsx 桩记录），用来拿到卡片真实的 props。 */
   const jsxCalls = []
@@ -537,6 +568,7 @@ function runBoot({
     'shan-qing-ting-cai',
     'ying-mu-cai-yun',
     'jiang-pan-dong-yun',
+    'xu-shan-jun-yue',
     'pei-an-jie-xin',
     'hu-po-mao-mi',
     'hu-zi-a-huang',
@@ -615,6 +647,7 @@ function runBoot({
     overrides: new Map(),
     overrideTokens(source, tokens) {
       accentLayers += 1
+      overrideCalls.push(source)
       ctxTheme.overrides.set(source, tokens)
       // ── THE OFFICIAL METHOD EMITS, AND THAT EMISSION IS THE HAZARD ──────────
       //
@@ -882,6 +915,13 @@ function runBoot({
     get bootError() { return globalThis.__bootError },
     paintedProbe: body.style.getPropertyValue('--dsw-alias-bg-base'),
     overrides: ctxTheme.overrides,
+    // overrideTokens 的 source 序列（见上面 overrideCalls 的文档）。
+    overrideCalls,
+    // 模拟外壳**延迟送达**的一回合 `theme/change`（0.4.1 实测读数：同一次点击里会
+    // 再来一次 publish）。桩的 setTheme/overrideTokens 自己会 emit；这里给测试一个
+    // 「凭空来一回合」的把手 —— 延迟回合里皮肤层撤掉重叠、配色层的站位复核，
+    // 都要靠它才跑得到。
+    echoChange: emitChange,
     adoptPersistedPreference,
     drive,
     clickCard,
@@ -1181,6 +1221,43 @@ check('反证 3：一旦在"无装饰"分支清理图层，「惊喜」素材就
   clearedBefore !== null && cleared.sceneHtml() === null,
   `实际 ${cleared.sceneHtml() === null ? '装饰层已消失' : '装饰层仍在'}`)
 
+// ── 素材带底边小幅下压（2026-09-28 用户实机：文字底部从素材下缘露出来）──────────
+//
+// 各主题素材的底部元素（营慕彩云的云底、山青婷彩与江畔冬云的水面、佩安杰心「自在
+// 安顿」文字背后的色区、徐山军月与流星白羽的山体、梦海游鱼的水草根部、琥珀猫咪与
+// 虎子阿黄的地面）全都锚在素材带底边上，所以"向下移一点点"是 bandBox 一处常量
+// （SCENERY_BOTTOM_OVERHANG_PX）的事。这里种上可选的账户行（贴底全宽 56px 短条），
+// footerHeight 测得 56+4=60 → 收紧到 62px；场景盒应停在侧栏下三分之一（top 620），
+// 高度比"不带下压"（228）恰好多出常量的像素。**下压量是用户实机目测的调参值**
+// （8 起步、后按用户要求试 4），断言从源码现算常量，以后调参不必改测试。
+const sceneryDip = Number(/const SCENERY_BOTTOM_OVERHANG_PX = (\d+)/.exec(source)[1])
+const overhang = runBoot({
+  activeId: 'shan-qing-ting-cai', seedSkin: 'shan-qing-ting-cai', seedFooterRow: true,
+})
+overhang.drive(30)
+const overhangBox = overhang.created.find((node) => node.className === 'dsh-amb-control-scene')
+const overhangStyle = overhangBox === undefined ? '' : String(overhangBox.attributes.get('style') ?? '')
+check(`素材带底边带 ${sceneryDip}px 刻意下压（场景盒 top 620 / 高 ${228 + sceneryDip}），盖住昵称文字底部`,
+  overhangStyle.includes('top:620px') && overhangStyle.includes(`height:${228 + sceneryDip}px`),
+  `实际样式：${overhangStyle || '(场景盒未建)'}`)
+
+// 反证 27：拆掉下压常量，场景盒矮回 228px（恰好少一个下压量）——文字底部又会露出来。
+const mutNoOverhang = source.replace(
+  'rect.bottom - reserved + SCENERY_BOTTOM_OVERHANG_PX',
+  'rect.bottom - reserved',
+)
+check('反证 27 真的改动了源码（底边下压被拆掉）', mutNoOverhang !== source)
+const noOverhang = runBoot({
+  activeId: 'shan-qing-ting-cai', seedSkin: 'shan-qing-ting-cai',
+  seedFooterRow: true, bundleSource: mutNoOverhang,
+})
+noOverhang.drive(30)
+const noOverhangBox = noOverhang.created.find((node) => node.className === 'dsh-amb-control-scene')
+const noOverhangStyle = noOverhangBox === undefined ? '' : String(noOverhangBox.attributes.get('style') ?? '')
+check('反证 27：拆掉下压后场景盒矮回 228px（文字底部重新露出，说明上面测的是真通道）',
+  noOverhangStyle.includes('height:228px') && !noOverhangStyle.includes(`height:${228 + sceneryDip}px`),
+  `实际样式：${noOverhangStyle || '(场景盒未建)'}`)
+
 // ── 色块排版的卡片（纯色/拼色 类）────────────────────────────────────────────
 //
 // 这一类卡片用 `card.rows` 换掉默认色带，并且**不渲染正文介绍**（description 只作 tooltip）。
@@ -1462,6 +1539,83 @@ check('反证 6：删掉切主题那一步后，活动主题卡在山青婷彩�
   noSwitch.themeState.active.id === 'shan-qing-ting-cai'
   && !noSwitch.overrides.has('theme-gallery: 配色'),
   `实际 ${noSwitch.themeState.active.id} / ${JSON.stringify([...noSwitch.overrides.keys()])}`)
+
+// ── 用户实机报的第三个 bug：首点色块先见「石榴金」，再点同一格「完全无反应」 ──────
+//
+// 根因（2026-09-28 钉死）：皮肤令牌层 `theme-gallery: palette` 是**整屏 67 个 token**
+// 的整层，官方服务合成层的规则是「按 seq 顺序、后叠者逐 token 赢」。点色块的当拍，
+// `rememberedSkin()` 读到的还是旧皮肤（`rememberActiveSkin` 要到 `syncRememberedSkin`
+// 才写），`stackSkinTokens` 早退，配色层以最新 seq 叠上 —— 此刻是对的。但外壳的
+// `theme/change` **常常延迟送达**（0.4.1 实测读数：同一次点击里会再来一次 publish），
+// 那一回合里 `rememberedSkin()` 已是锚主题 → 皮肤层被**撤掉重叠**（同一 source 重新
+// overrideTokens 拿到更新的 seq）→ 配色整层被压到 67 个 token 底下 → 屏幕回到锚主题
+// 原生 = 石榴金。`syncScheme` 的记账（`stackedScheme`）没变，再点同一格被当成
+// 「早已生效」早退 —— 完全无反应；点别的色格才触发一次真正的撤掉重叠，所以
+// 「必须先点其他色块」。修法：皮肤层每（重）叠一次 `skinLayerEpoch` +1，
+// `syncScheme` 发现配色层应用之后皮肤层又动过，就撤掉重叠配色层（站位复核）。
+const bury = runBoot({ activeId: 'shan-qing-ting-cai', seedSkin: 'shan-qing-ting-cai', wireSlots: true })
+const buryPicker = bury.cardTree('shi-liu-jin', { 'shi-liu-jin': PICKER_ROWS }, { 'shi-liu-jin': BLOCK_DESC })
+buryPicker.tree.filter((call) => call.props?.className === 'tg-swatch')[12].props.onClick()
+bury.drive(30)
+const buryLast = () => bury.overrideCalls[bury.overrideCalls.length - 1]
+check('点过的色格：配色层已叠上（当拍它就是最新的层）',
+  bury.overrides.has('theme-gallery: 配色') && buryLast() === 'theme-gallery: 配色',
+  `实际层：${JSON.stringify([...bury.overrides.keys()])}，最后写入：${buryLast()}`)
+// 外壳延迟送达的一回合 publish —— 皮肤层在这一回合被撤掉重叠（真机上就是它把配色压下去）。
+bury.echoChange()
+check('延迟回合里皮肤令牌层真的被撤掉重叠（压住配色层的机制在本 run 里发生过）',
+  bury.overrideCalls.filter((layerSource) => layerSource === 'theme-gallery: palette').length >= 2,
+  `palette 写入序列：${JSON.stringify(bury.overrideCalls)}`)
+check('延迟回合把皮肤层压上来之后，站位复核把配色层重新叠回最上（用户点的那格保得住）',
+  buryLast() === 'theme-gallery: 配色', `最后写入：${buryLast()}`)
+// 再点同一格：它真的已经生效 —— 必须安静（不许为了这一次点击再写两层）。
+const callsBeforeReclick = bury.overrideCalls.length
+buryPicker.tree.filter((call) => call.props?.className === 'tg-swatch')[12].props.onClick()
+check('再点同一格：层已在位，不产生任何多余写入（那一格本来就没变）',
+  bury.overrideCalls.length === callsBeforeReclick,
+  `写入数 ${callsBeforeReclick} → ${bury.overrideCalls.length}`)
+// 再来一回合延迟回声：站位已复核过，必须完全安静（收敛 —— 环必须能被数出来）。
+const callsBeforeEcho = bury.overrideCalls.length
+bury.echoChange()
+check('站位复核收敛：后续回声回合不再产生层写入',
+  bury.overrideCalls.length === callsBeforeEcho,
+  `写入数 ${callsBeforeEcho} → ${bury.overrideCalls.length}`)
+
+// 反证 25：拆掉「站位复核」（退回旧的裸幂等守卫），上面「搬回最上」必须翻转 ——
+// 延迟回合的皮肤层把配色压下去之后再没人管，正是实机那个形状。
+const mutNoRestack = source.replace(
+  'if (wanted === null || stackedSchemeEpoch === skinLayerEpoch) return',
+  'return',
+)
+check('反证 25 真的改动了源码（站位复核被拆掉）', mutNoRestack !== source)
+const buriedRun = runBoot({
+  activeId: 'shan-qing-ting-cai', seedSkin: 'shan-qing-ting-cai',
+  wireSlots: true, bundleSource: mutNoRestack,
+})
+buriedRun.cardTree('shi-liu-jin', { 'shi-liu-jin': PICKER_ROWS }, { 'shi-liu-jin': BLOCK_DESC })
+  .tree.filter((call) => call.props?.className === 'tg-swatch')[12].props.onClick()
+buriedRun.drive(30)
+buriedRun.echoChange()
+const buriedLast = buriedRun.overrideCalls[buriedRun.overrideCalls.length - 1]
+check('反证 25：拆掉复核后，延迟回合的皮肤层把配色压下去、再没人重叠（说明上面测的是真通道）',
+  buriedLast === 'theme-gallery: palette',
+  `最后写入：${buriedLast}；全序列：${JSON.stringify(buriedRun.overrideCalls)}`)
+
+// 反证 26：拆掉代数 +1，复核永远认为「站位没变」—— 修不触发，同样翻转。
+const mutNoEpoch = source.replace('skinLayerEpoch += 1', '')
+check('反证 26 真的改动了源码（皮肤层的代数不再递增）', mutNoEpoch !== source)
+const staleRun = runBoot({
+  activeId: 'shan-qing-ting-cai', seedSkin: 'shan-qing-ting-cai',
+  wireSlots: true, bundleSource: mutNoEpoch,
+})
+staleRun.cardTree('shi-liu-jin', { 'shi-liu-jin': PICKER_ROWS }, { 'shi-liu-jin': BLOCK_DESC })
+  .tree.filter((call) => call.props?.className === 'tg-swatch')[12].props.onClick()
+staleRun.drive(30)
+staleRun.echoChange()
+const staleLast = staleRun.overrideCalls[staleRun.overrideCalls.length - 1]
+check('反证 26：代数不递增时复核形同虚设，配色层同样被压下去（说明上面测的是真通道）',
+  staleLast === 'theme-gallery: palette',
+  `最后写入：${staleLast}`)
 
 // 卡片本体：点它 = 用"亮着的那一格"（从没选过时就是默认的石榴金）。
 //

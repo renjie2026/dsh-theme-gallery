@@ -50,7 +50,7 @@ export const ReadingSchema = z.object({
  * 它比这里严格（未知 kind 直接失败），并且发布 CI 一定会跑。
  */
 export const AmbientSchema = z.object({
-  kind: z.union(['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen', 'humao', 'ahuang']),
+  kind: z.union(['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen', 'humao', 'ahuang', 'liuxing']),
   petals: z.number().min(0).max(20),
   bubbles: z.number().min(0).max(24),
   // 淡蓝荧光光点：与气泡是不同的特效，两者同时绘制，故各自独立计数。
@@ -66,6 +66,8 @@ export const AmbientSchema = z.object({
   // 光彩凤晨的凤羽与晨露：两种独立特效，各自计数。
   feathers: z.number().min(0).max(16),
   dew: z.number().min(0).max(30),
+  // 流星白羽的雁阵只数（领头一只 + 人字展开的随行）。
+  geese: z.number().min(0).max(9),
 })
 
 /**

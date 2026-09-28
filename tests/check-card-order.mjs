@@ -54,16 +54,16 @@ function check(label, condition) {
  */
 const EXPECTED = [
   'light', 'dark', 'shi-liu-jin', 'ying-mu-cai-yun', 'shan-qing-ting-cai', 'jiang-pan-dong-yun',
-  'pei-an-jie-xin', 'meng-hai-you-yu',
+  'pei-an-jie-xin', 'xu-shan-jun-yue', 'meng-hai-you-yu',
   'hu-po-mao-mi', 'hu-zi-a-huang', 'pet-family', 'mood-greeting', 'menu-collapse',
 ]
 
 /** 与 {@link EXPECTED} 一一对应的序号。 */
-const EXPECTED_RANKS = [99, 98, 97, 96, 95, 92, 91, 80, 76, 75, 74, 73, 72]
+const EXPECTED_RANKS = [99, 98, 97, 96, 95, 92, 91, 90, 80, 76, 75, 74, 73, 72]
 
 /** 内联皮肤数组的注册顺序（= embed 的字母序），发布顺序的断言在 check-theme-contribution。 */
-const ALPHA_ORDER = 'hu-po-mao-mi,hu-zi-a-huang,jiang-pan-dong-yun,meng-hai-you-yu,'
-  + 'pei-an-jie-xin,shan-qing-ting-cai,shi-liu-jin,ying-mu-cai-yun'
+const ALPHA_ORDER = 'hu-po-mao-mi,hu-zi-a-huang,jiang-pan-dong-yun,'
+  + 'meng-hai-you-yu,pei-an-jie-xin,shan-qing-ting-cai,shi-liu-jin,xu-shan-jun-yue,ying-mu-cai-yun'
 
 /**
  * 官方 ui-theme 自带的内置主题，按真实注册顺序排在最前。

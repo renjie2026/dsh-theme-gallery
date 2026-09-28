@@ -90,6 +90,7 @@ const builderSource = [
   block('dongyunAmbientScene'),
   block('xsPineMarkup'),
   block('junyueAmbientScene'),
+  block('liuxingAmbientScene'),
   block('jiexinAmbientScene'),
   block('gcFeatherMarkup'),
   block('fengchenAmbientScene'),
@@ -99,7 +100,7 @@ const builderSource = [
 ].join('\n\n')
 
 // eslint-disable-next-line no-new-func
-const api = new Function(`${builderSource}\nreturn { shanAmbientScene, dragonflyMarkup, dreamAmbientScene, seaweedMarkup, rippleMarkup, dragonflyBlock, bladeMarkup, fishMarkup, ymSeaSvg, ymBalloonMarkup, caiyunAmbientScene, jpMoonMarkup, jpBoatMarkup, dongyunAmbientScene, xsPineMarkup, junyueAmbientScene, jiexinAmbientScene, gcFeatherMarkup, fengchenAmbientScene, petHazeMarkup, humaoAmbientScene, ahuangAmbientScene, open }`)()
+const api = new Function(`${builderSource}\nreturn { shanAmbientScene, dragonflyMarkup, dreamAmbientScene, seaweedMarkup, rippleMarkup, dragonflyBlock, bladeMarkup, fishMarkup, ymSeaSvg, ymBalloonMarkup, caiyunAmbientScene, jpMoonMarkup, jpBoatMarkup, dongyunAmbientScene, xsPineMarkup, junyueAmbientScene, liuxingAmbientScene, jiexinAmbientScene, gcFeatherMarkup, fengchenAmbientScene, petHazeMarkup, humaoAmbientScene, ahuangAmbientScene, open }`)()
 
 // ── 山青婷彩 ─────────────────────────────────────────────────────────────────
 
@@ -266,6 +267,70 @@ check('junyue stands five pines from one shared art def',
   (junyue.match(/<use href="#dsh-xsj-pine-art"/g) ?? []).length === 5
   && api.xsPineMarkup().includes('M 12 120 L 12 112'))
 
+// ── 最右侧的松树必须完整落在 viewBox 里（2026-09-28 用户实机：右半被裁掉）────────
+//
+// 松树画稿自身横跨 x 3..21（宽 18，上一条断言钉住了它的路径起点），`<use>` 的
+// translate/scale 把它映射进 viewBox 0..140。第 5 棵原先 translate(126,0) scale(1.05)
+// → 实际占位 129.2..148.1，超出 140 的右半被 SVG 裁掉——实机看到的就是"只剩左半边"。
+// 这里从渲染出的 markup **现算**每棵树的实际占位，五棵全部必须在画面内（左 ≥0、
+// 右 ≤140）。松树画稿若改动外形，本断言的 3..21 界要与 `xsPineMarkup` 同步复核。
+const PINE_ART_X0 = 3
+const PINE_ART_X1 = 21
+const junyuePineUses = [...junyue
+  .matchAll(/<use href="#dsh-xsj-pine-art" transform="translate\((-?[\d.]+),(-?[\d.]+)\) scale\(([\d.]+)\)"/g)]
+const pineExtent = junyuePineUses.map((m) => {
+  const tx = Number(m[1])
+  const s = Number(m[3])
+  return [tx + s * PINE_ART_X0, tx + s * PINE_ART_X1]
+})
+check('徐山军月：五棵松树全部完整落在 viewBox 0..140 内（最右一棵曾被裁掉右半）',
+  junyuePineUses.length === 5
+  && pineExtent.every(([left, right]) => left >= 0 && right <= 140),
+  `实际占位：${pineExtent.map(([l, r]) => `[${l.toFixed(1)},${r.toFixed(1)}]`).join(' ')}`)
+
+// 反证 28：把最右一棵挪回被裁的位置（translate 126）→ 右缘 148.1 越过 140，必须翻红。
+const mutPineCut = builderSource.replace('translate(117,0) scale(1.05)', 'translate(126,0) scale(1.05)')
+check('反证 28 真的改动了场景源码（最右松树挪回被裁的位置）', mutPineCut !== builderSource)
+// eslint-disable-next-line no-new-func
+const cutApi = new Function(`${mutPineCut}\nreturn { xsPineMarkup, junyueAmbientScene }`)()
+const cutExtent = [...cutApi.junyueAmbientScene(12)
+  .matchAll(/<use href="#dsh-xsj-pine-art" transform="translate\((-?[\d.]+),(-?[\d.]+)\) scale\(([\d.]+)\)"/g)]
+  .map((m) => {
+    const tx = Number(m[1])
+    const s = Number(m[3])
+    return [tx + s * PINE_ART_X0, tx + s * PINE_ART_X1]
+  })
+check('反证 28：挪回之后最右松树的右缘越过 140（右半被裁，说明上面测的是真通道）',
+  cutExtent.length === 5 && cutExtent[4][1] > 140,
+  `实际最右占位：[${cutExtent[4]?.[0]?.toFixed(1)},${cutExtent[4]?.[1]?.toFixed(1)}]`)
+
+// ── 流星白羽（原创）────────────────────────────────────────────────────────────
+
+const liuxing = api.liuxingAmbientScene(5, 7)
+check('liuxing has a scene root carrying its own positioning',
+  liuxing.startsWith('<div class="lx"') && /class="lx" style="[^"]*position:absolute/.test(liuxing))
+check('liuxing hangs the full moon as an SVG circle with a gold halo (同 jp/xs-moon 的 SVG 换法)',
+  /<svg class="lx-moon" style="[^"]*overflow:visible/.test(liuxing)
+  && liuxing.includes('url(#dsh-lx-moon-body)') && liuxing.includes('url(#dsh-lx-moon-halo)'))
+check('the white-feather streak carries a glowing head and flies on the lx keyframe',
+  liuxing.includes('class="lx-streak"') && liuxing.includes('animation:dsh-amb-lx-streak 26s'))
+check('liuxing seeds the requested geese count', (liuxing.match(/class="lx-goose"/g) ?? []).length === 5)
+check('geese count is clamped', (api.liuxingAmbientScene(99, 0).match(/class="lx-goose"/g) ?? []).length === 9)
+check('the wedge drifts across the band on the lx keyframe',
+  liuxing.includes('animation:dsh-amb-lx-drift 150s'))
+check('liuxing seeds the requested dew count', (liuxing.match(/class="lx-dew"/g) ?? []).length === 7)
+check('dew count is clamped', (api.liuxingAmbientScene(0, 99).match(/class="lx-dew"/g) ?? []).length === 30)
+check('liuxing plants four swaying reeds', (liuxing.match(/class="lx-reed lx-reed-\d"/g) ?? []).length === 4)
+check('liuxing backs the reeds with faint ink ridges',
+  liuxing.includes('class="lx-ridge"') && liuxing.includes('opacity="0.16"'))
+// The streak is the song's own image (流星白羽): it must be a GUEST, not a resident —
+// visible for a short window of its loop, invisible at both ends, like xs-meteor.
+check('the streak is invisible at both ends of its loop (低频掠过，不常驻亮线)',
+  /@keyframes dsh-amb-lx-streak\{0%\{transform:rotate\(-24deg\) translateX\(0\);opacity:0\}/.test(source)
+  && /14%\{transform:rotate\(-24deg\) translateX\(-30em\);opacity:0\}/.test(source))
+check('every goose is a stroked bird glyph, not a filled blob',
+  /class="lx-goose"[\s\S]{0,320}stroke-linecap="round"/.test(liuxing))
+
 // ── 佩安杰心 ─────────────────────────────────────────────────────────────────
 
 const jiexin = api.jiexinAmbientScene(4)
@@ -403,12 +468,13 @@ const NEW_KEYFRAMES = [
   'dsh-amb-hm-ear', 'dsh-amb-hm-zzz',
   'dsh-amb-hz-glow', 'dsh-amb-hz-fluff', 'dsh-amb-hz-wag', 'dsh-amb-hz-grass',
   'dsh-amb-hz-tilt',
+  'dsh-amb-lx-streak', 'dsh-amb-lx-drift', 'dsh-amb-lx-sway', 'dsh-amb-lx-dew',
 ]
 // The name must be followed by the opening brace: an unanchored match would also
 // hit a RENAMED keyframe (`dsh-amb-hm-tail-x` contains `dsh-amb-hm-tail`), and this
 // check exists to catch exactly that silent-invalid-animation shape.
 const missingKeyframes = NEW_KEYFRAMES.filter((name) => !new RegExp(`@keyframes ${name}\\s*\\{`).test(source))
-check('all 35 new-scene keyframes are defined in AMBIENT_CSS', missingKeyframes.length === 0)
+check('all 39 new-scene keyframes are defined in AMBIENT_CSS', missingKeyframes.length === 0)
 if (missingKeyframes.length > 0) console.error(`  missing: ${missingKeyframes.join(', ')}`)
 
 // A @keyframes name defined TWICE is a silent override: the later block wins for every
@@ -417,7 +483,7 @@ if (missingKeyframes.length > 0) console.error(`  missing: ${missingKeyframes.jo
 // user's decision, which is why only the NEW families are asserted here) — and it was
 // walked into again while adding the balloon wander, minutes after reading that note.
 // Hence the machine check instead of a resolution to be careful.
-const newKeyframeDefs = [...source.matchAll(/@keyframes\s+(dsh-amb-(?:ym|jp|xs|pj|gc|hm|hz)-[A-Za-z0-9-]+)\s*\{/g)]
+const newKeyframeDefs = [...source.matchAll(/@keyframes\s+(dsh-amb-(?:ym|jp|xs|pj|gc|hm|hz|lx)-[A-Za-z0-9-]+)\s*\{/g)]
   .map((match) => match[1])
 const duplicatedKeyframes = [...new Set(newKeyframeDefs.filter((name, i) => newKeyframeDefs.indexOf(name) !== i))]
 check('every new-scene keyframe is defined exactly once (a duplicate silently wins)',
@@ -426,7 +492,7 @@ if (duplicatedKeyframes.length > 0) console.error(`  duplicated: ${duplicatedKey
 
 const sceneMarkupBlock = block('sceneMarkup')
 check('sceneMarkup dispatches every ported and original kind',
-  ['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen', 'humao', 'ahuang']
+  ['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen', 'humao', 'ahuang', 'liuxing']
     .every((kind) => sceneMarkupBlock.includes(`'${kind}'`)))
 
 // ── escaping and the script guard ────────────────────────────────────────────
@@ -567,7 +633,11 @@ check('there is only ONE render path',
 
 // The band is placed by `bandBox`, which asks `footerHeight` how much of the column's
 // bottom to leave alone. Both are extracted together so the stubs stay self-contained.
-const bandSource = [block('footerHeight'), block('viewportBottomOf'), block('bandBox')].join('\n\n')
+// bandBox also reads a factory-level constant (the deliberate bottom dip); it is lifted
+// from the real source rather than hardcoded here, so the eval'd copy tracks what ships.
+const bandSource = [block('footerHeight'), block('viewportBottomOf'), block('bandBox'),
+  /const SCENERY_BOTTOM_OVERHANG_PX = \d+/.exec(source)[0],
+].join('\n\n')
 // eslint-disable-next-line no-new-func
 const bandOf = new Function('window', `${bandSource}\nreturn { footerHeight, bandBox }`)({ innerHeight: 900 })
 
@@ -609,7 +679,16 @@ check('the reserved strip covers the account row', reserve >= 64)
 // than something that grows with the window. A proportional reserve left a widening empty
 // band on a tall window, which read as "too much space reserved".
 check('the reserved strip stays small on a normal window', reserve <= 80)
-check('the band stops above the reserved strip', band.top + band.height <= 820 - reserve + 1)
+// 2026-09-28: the band deliberately dips a FIXED number of px into the reserved strip.
+// The user found the artwork's bottom edge a few px above the account text's bottom — a
+// sliver of the text peeked out below the artwork (云底/水面/山体/地面/水草根部 all sit
+// on the band's bottom edge). The dip amount is USER-TUNED (started at 8, then 4 while
+// looking for the smallest value that still covers), so the assertion reads it from the
+// source and pins EXACT equality: less lets the sliver back, more swallows the row.
+const sceneryDip = Number(/const SCENERY_BOTTOM_OVERHANG_PX = (\d+)/.exec(source)[1])
+check(`the band dips exactly ${sceneryDip}px into the reserved strip (盖住文字底部露出的一截)`,
+  band.top + band.height === 820 - reserve + sceneryDip,
+  `实际 band.bottom = ${band.top + band.height}，期望 ${820 - reserve + sceneryDip}`)
 check('the band still has usable height', band.height >= 140)
 check('the band spans the column width', band.width === 280 && band.left === 0)
 // A very short column is clamped to a minimum footprint rather than collapsing.

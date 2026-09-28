@@ -230,7 +230,11 @@ check('the old fixed retry delays are gone', !/\[120, 400, 900\]/.test(source))
 // loop AND is what a `ResizeObserver` callback leads to. If the signature did not change when
 // the sidebar did, a maximised window would keep the band at its old pixel geometry — which is
 // the "artwork jumped to the middle of the sidebar" report.
-const bandSource = [block('viewportBottomOf'), block('footerHeight'), block('bandBox')].join('\n\n')
+// bandBox reads the factory-level dip constant; lift it from the real source so the eval'd
+// copy tracks what ships (a hardcoded value here would drift silently).
+const bandSource = [block('viewportBottomOf'), block('footerHeight'), block('bandBox'),
+  /const SCENERY_BOTTOM_OVERHANG_PX = \d+/.exec(source)[0],
+].join('\n\n')
 
 /**
  * A sidebar column stub with the shell's shape: a full-height wrapper, a 64px account row

@@ -150,7 +150,7 @@ const ids = new Set()
 const byCategory = new Map()
 
 check(`语料共 ${pack.lines.length} 条（种子 40 条不得丢失）`,
-  pack.lines.length === 61 && pack.lines.length >= 40)
+  pack.lines.length === 67 && pack.lines.length >= 40)
 for (const line of pack.lines) {
   ids.add(line.id)
   byCategory.set(line.category, (byCategory.get(line.category) ?? 0) + 1)
