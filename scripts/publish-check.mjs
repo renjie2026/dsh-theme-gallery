@@ -231,7 +231,26 @@ if (packed !== '') {
     check('打包结果不含 package.json 之外的本机文件',
       !names.some((n) => /^(_profile-backup|_before-uninstall|dsh-client-ui-cat-patched)/.test(n)),
       names.join(', '))
-    check('打包体积合理（< 1 MB）', (meta[0]?.size ?? 0) < 1_000_000,
+    // 大鲸鱼娘的立绘是**内联**进 `lib/client.js` 的 data URI（插件跑在渲染进程里，读不到
+    // 本地文件路径），原始 PNG 也随包发出以便再加工 —— 这两块合起来 2.1 MB（未压缩），
+    // 必然突破旧的「整包 < 1 MB」总闸。闸门没有改成"整包 < 5 MB"了事，而是**拆成两条**，
+    // 把原始意图（"包里没有意外的大文件"）按文件保留下来：除这两块之外的一切仍须 < 1 MB，
+    // 整包另设一条写明原因的上限。
+    // 龙焰宝剑的双剑透明素材与背景壁纸同理（2026-10-01）：内联 data URI + 原始 PNG 随包。
+    const INLINED_ART_FILES = ['lib/client.js', 'lib/assets/whale-maid.png', 'lib/assets/feijian-wall.png',
+      'lib/assets/longyan-sword-a.png', 'lib/assets/longyan-sword-b.png', 'lib/assets/longyan2-wall.jpg']
+    const inlinedArtBytes = (meta[0]?.files ?? [])
+      .filter((f) => INLINED_ART_FILES.includes(f.path))
+      .reduce((sum, f) => sum + (f.size ?? 0), 0)
+    const otherBytes = (meta[0]?.unpackedSize ?? 0) - inlinedArtBytes
+    check('打包体积合理（除客户端与内联立绘之外，其余文件合计 < 1 MB）',
+      otherBytes < 1_000_000,
+      `其余 ${otherBytes} B（解包 ${meta[0]?.unpackedSize} B − 客户端与立绘 ${inlinedArtBytes} B）`)
+    // 整包上限 2026-10-01 从 5MB 上调到 8MB：龙焰宝剑的背景壁纸（用户选定国风图，
+    // JPEG 240KB 内联 + 原图随包）加入后整包约 5.5MB——全部是点名过的内联立绘成本，
+    // "其余文件 < 1 MB" 那条仍然守着"没有意外大文件"的原始意图。
+    check('整包体积在上限内（< 8 MB；内联立绘是已知且已记录在案的成本）',
+      (meta[0]?.size ?? 0) < 8_000_000,
       `实际 ${meta[0]?.size} B`)
     console.log(`     → ${names.length} 个文件，${meta[0]?.size} B（解包 ${meta[0]?.unpackedSize} B）`)
   } catch (error) {

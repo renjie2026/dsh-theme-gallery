@@ -50,10 +50,10 @@ export const ReadingSchema = z.object({
  * 它比这里严格（未知 kind 直接失败），并且发布 CI 一定会跑。
  */
 export const AmbientSchema = z.object({
-  kind: z.union(['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen', 'humao', 'ahuang', 'liuxing']),
+  kind: z.union(['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen', 'humao', 'ahuang', 'liuxing', 'fanhua', 'jingyu', 'feijian', 'longyan', 'longyan2']),
   petals: z.number().min(0).max(20),
   bubbles: z.number().min(0).max(24),
-  // 淡蓝荧光光点：与气泡是不同的特效，两者同时绘制，故各自独立计数。
+  // 淡蓝荧光光点（dream）；青冥飞剑悬停剑四周的荧光微尘（feijian，每三颗一颗樱粉）。
   motes: z.number().min(0).max(24),
   // 游动的蓝色卡通小鱼：第三种独立特效（源自原系统的 FishAnimation 组件）。
   fish: z.number().min(0).max(6),
@@ -68,6 +68,10 @@ export const AmbientSchema = z.object({
   dew: z.number().min(0).max(30),
   // 流星白羽的雁阵只数（领头一只 + 人字展开的随行）。
   geese: z.number().min(0).max(9),
+  // 姑苏繁花的飞燕只数（落英复用上面的 petals 计数旋钮）。
+  swallows: z.number().min(0).max(4),
+  // 大鲸鱼娘游过水光带的小鲸鱼只数（气泡复用上面的 bubbles 计数旋钮）。
+  calves: z.number().min(0).max(4),
 })
 
 /**

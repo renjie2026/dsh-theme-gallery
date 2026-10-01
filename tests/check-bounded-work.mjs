@@ -181,9 +181,42 @@ for (const [label, pattern] of [
 check('the scene markup is only written when it changes',
   /painted !== markup/.test(code) && /dataset\.ambientMarkup = markup/.test(code))
 check('the geometry is refreshed without repainting', /applySceneBox\(box, column\)/.test(code))
-// One DOM copy, not two. Two copies meant two of every animated element on screen.
+// One DOM copy of the SIDEBAR SCENE, not two. Two copies meant two of every animated element.
+//
+// 工作区壁纸是**刻意的例外**：用户要的"3 秒后变背景壁纸"就是靠两份同样的立绘做的
+// （最前方那份 + body 级背景层那份，见 `paintWall` 的长注）。所以那条"只写一个容器"
+// 管的是**侧栏场景**；壁纸的第二份另有入口，而且下面这条钉住它**只有一处** ——
+// 三份就是三个 `jyb-figure` 在同时动画，而画面上一份都看不出来多。
 check('the scene is written to exactly one container',
   (code.match(/\.innerHTML = String\(markup\)/g) ?? []).length === 1)
+// 两处写入都在 `ensureBackdropLayer` 里（新建那一支与"标记变了要重画"那一支），
+// 即背景层只有**一条**写入路径 —— 别处再冒出一个 `backdropWallMarkup` 就是第三份立绘。
+const layerWriteBody = block('ensureBackdropLayer')
+const backdropWrites = (code.match(/\.innerHTML = backdropWallMarkup\(wall\)/g) ?? []).length
+check('the work-area wall has exactly two copies, both from the one builder and one write path',
+  backdropWrites === 2
+  && backdropWrites === (layerWriteBody.match(/\.innerHTML = backdropWallMarkup\(wall\)/g) ?? []).length
+  && /ensureBackdropLayer\(wall\)/.test(code))
+
+// ── 7b. 「3 秒后转背景壁纸」那一个定时器：单个可追踪句柄，不许裸写 ─────────────
+//
+// 仓库硬规则：裸 `setTimeout` 会把测试进程吊住（0.5.0 那次 `npm test` 假死就是这么来的），
+// 所以这里对着真实函数体数入口，并要求**所有撤场路径都经过同一个作废函数** ——
+// 少撤一次，就会有一个定时器在切皮肤之后回来改 DOM（症状是"入场被提前掐断"，
+// 或者上一套皮肤的壁纸态被按到新皮肤上）。
+const scheduleBody = block('scheduleWallSettle')
+const demoteBody = block('demoteWallpaper')
+const teardownBody = block('removeWallLayers')
+check('the wall settle timer is ONE tracked handle, never a bare setTimeout',
+  /wallSettleHandle = window\.setTimeout\(/.test(scheduleBody)
+  && !/(^|[^.\w])setTimeout\(/.test(scheduleBody)
+  && /let wallSettleHandle/.test(code))
+// 只数**调用点**（负向回顾把定义行排除掉）：句柄只允许有一个作废入口。
+const clearCalls = (code.match(/(?<!function )clearWallSettle\(\)/g) ?? []).length
+check('one joint teardown clears that handle, and the four-piece teardown goes through it',
+  /function clearWallSettle\(\)/.test(code) && clearCalls === 1
+  && /clearWallSettle\(\)/.test(demoteBody)
+  && /demoteWallpaper\(\)/.test(teardownBody))
 
 // ── 8. 计数断言的自检：两个方向都要成立（规则 6 / 规则 7）─────────────────────
 //

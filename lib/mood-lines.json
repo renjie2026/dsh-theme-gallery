@@ -1,5 +1,5 @@
 {
-  "$comment": "心情问候语库（标题栏跑马灯）。出处：40 条种子复制自作者自己的「更新管理平台」站点（装修管理-心情问候语，2026-09-27 抓取，seq 1-40）；seq 101+ 为插件新增。分类沿用站点五类：morning 早安 / day 白天 / night 夜深 / general 通用 / holiday 节假日。节日区间为 MM-DD（去年份，每年复用）。红线：禁止负面、消极或敏感言论——embed-themes.mjs 建期黑名单校验，命中即构建失败。单条 text 不超过 100 字符。",
+  "$comment": "心情问候语库（标题栏跑马灯）。出处：40 条种子复制自作者自己的「更新管理平台」站点（装修管理-心情问候语，2026-09-27 抓取，seq 1-40）；seq 101+ 为插件新增。分类共四类：morning 早安 / day 白天 / night 夜深 / holiday 节假日。原第五类 general（通用）已于 2026-09-29 废除——时段池覆盖全天 24 小时、general 池永远轮不到（用户实机发现 16 条通用语料从未播出），16 条原通用语料已全部并入白天池；embed 建期校验现在会直接拒绝 general 分类，防止「放进永远播不到的池子」复发。节日区间为 MM-DD（去年份，每年复用）。红线：禁止负面、消极或敏感言论——embed-themes.mjs 建期黑名单校验，命中即构建失败。单条 text 不超过 100 字符。",
   "version": 1,
   "lines": [
     {
@@ -241,37 +241,37 @@
     {
       "id": "m035",
       "seq": 35,
-      "category": "general",
+      "category": "day",
       "text": "愿你眼中总有光芒，活成你想要的模样"
     },
     {
       "id": "m036",
       "seq": 36,
-      "category": "general",
+      "category": "day",
       "text": "万事顺遂，毫无蹉跎"
     },
     {
       "id": "m037",
       "seq": 37,
-      "category": "general",
+      "category": "day",
       "text": "所有的美好，都在赶来的路上"
     },
     {
       "id": "m038",
       "seq": 38,
-      "category": "general",
+      "category": "day",
       "text": "心里有光，慢一点又何妨"
     },
     {
       "id": "m039",
       "seq": 39,
-      "category": "general",
+      "category": "day",
       "text": "平安喜乐，得偿所愿"
     },
     {
       "id": "m040",
       "seq": 40,
-      "category": "general",
+      "category": "day",
       "text": "岁月不扰，余生静好"
     },
     {
@@ -367,25 +367,25 @@
     {
       "id": "m116",
       "seq": 116,
-      "category": "general",
+      "category": "day",
       "text": "慢慢来，一切都会如期而至"
     },
     {
       "id": "m117",
       "seq": 117,
-      "category": "general",
+      "category": "day",
       "text": "生活明朗，万物可爱"
     },
     {
       "id": "m118",
       "seq": 118,
-      "category": "general",
+      "category": "day",
       "text": "你走的每一步，都算数"
     },
     {
       "id": "m119",
       "seq": 119,
-      "category": "general",
+      "category": "day",
       "text": "所求皆如愿，所行化坦途"
     },
     {
@@ -411,37 +411,37 @@
     {
       "id": "m122",
       "seq": 122,
-      "category": "general",
+      "category": "day",
       "text": "会有人发现你身上所有的好"
     },
     {
       "id": "m123",
       "seq": 123,
-      "category": "general",
+      "category": "day",
       "text": "总会有人拥抱你微笑背后的伤，让你觉得世界不算糟"
     },
     {
       "id": "m124",
       "seq": 124,
-      "category": "general",
+      "category": "day",
       "text": "总会有人放弃所有也不把你丢掉，会有人在你身边就引以为豪"
     },
     {
       "id": "m125",
       "seq": 125,
-      "category": "general",
+      "category": "day",
       "text": "还忆此地习射时，姑苏正繁花"
     },
     {
       "id": "m126",
       "seq": 126,
-      "category": "general",
+      "category": "day",
       "text": "旧日浮华皆放下，迎风缓归家"
     },
     {
       "id": "m127",
       "seq": 127,
-      "category": "general",
+      "category": "day",
       "text": "桃花马上仰射天，笑言功名尘土，犹如离弦箭"
     }
   ]

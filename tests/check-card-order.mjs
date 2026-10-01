@@ -53,17 +53,34 @@ function check(label, condition) {
  * 而不是某次重构的副作用。
  */
 const EXPECTED = [
-  'light', 'dark', 'shi-liu-jin', 'ying-mu-cai-yun', 'shan-qing-ting-cai', 'jiang-pan-dong-yun',
-  'pei-an-jie-xin', 'xu-shan-jun-yue', 'meng-hai-you-yu',
-  'hu-po-mao-mi', 'hu-zi-a-huang', 'pet-family', 'mood-greeting', 'menu-collapse',
+  'light',
+  'dark',
+  'shi-liu-jin',
+  'ying-mu-cai-yun',
+  'shan-qing-ting-cai',
+  'jiang-pan-dong-yun',
+  'pei-an-jie-xin',
+  'xu-shan-jun-yue',
+  'meng-hai-you-yu',
+  // 用户序（2026-10-01）：青玉凤剑（原龙焰宝剑）77 →
+  // 龙焰宝剑（显示名青玉凤剑（带壁纸））76 → 大鲸鱼娘 75；
+  // 大鲸鱼娘之后五张卡各减 10（66~62），74 以下留给以后的新主题
+  // （默认排大鲸鱼娘之后、取最近的未用数值）。
+  'longyan-baojian',
+  'longyan-baojian-2',
+  'da-jing-yu-niang',
+  'hu-po-mao-mi',
+  'hu-zi-a-huang',
+  'pet-family',
+  'mood-greeting',
+  'menu-collapse',
 ]
 
 /** 与 {@link EXPECTED} 一一对应的序号。 */
-const EXPECTED_RANKS = [99, 98, 97, 96, 95, 92, 91, 90, 80, 76, 75, 74, 73, 72]
+const EXPECTED_RANKS = [99, 98, 97, 96, 95, 92, 91, 90, 80, 77, 76, 75, 66, 65, 64, 63, 62]
 
 /** 内联皮肤数组的注册顺序（= embed 的字母序），发布顺序的断言在 check-theme-contribution。 */
-const ALPHA_ORDER = 'hu-po-mao-mi,hu-zi-a-huang,jiang-pan-dong-yun,'
-  + 'meng-hai-you-yu,pei-an-jie-xin,shan-qing-ting-cai,shi-liu-jin,xu-shan-jun-yue,ying-mu-cai-yun'
+const ALPHA_ORDER = 'da-jing-yu-niang,hu-po-mao-mi,hu-zi-a-huang,jiang-pan-dong-yun,longyan-baojian-2,longyan-baojian,meng-hai-you-yu,pei-an-jie-xin,shan-qing-ting-cai,shi-liu-jin,xu-shan-jun-yue,ying-mu-cai-yun'
 
 /**
  * 官方 ui-theme 自带的内置主题，按真实注册顺序排在最前。
@@ -237,8 +254,10 @@ if (shown.join(',') !== EXPECTED.join(',')) {
   console.error(`  实际: ${shown.join(',')}`)
 }
 check('序号表与清单的数字一致', EXPECTED.every((id, i) => api.CARD_ORDER[id] === EXPECTED_RANKS[i]))
-check('序号严格递减（确实是倒序，不是别的排列）',
-  EXPECTED_RANKS.every((rank, i) => i === 0 || rank < EXPECTED_RANKS[i - 1]))
+check('序号严格递减（2026-10-01 用户序：大鲸鱼娘 75、其后六卡各减 10，全表不再有并列）',
+  EXPECTED_RANKS.every((rank, i) => i === 0 || rank < EXPECTED_RANKS[i - 1])
+  && EXPECTED_RANKS.filter((rank, i) => i > 0 && rank === EXPECTED_RANKS[i - 1]).length === 0,
+  '用户 2026-10-01 拉开了全部并列；以后出现任何并列都必须红')
 check('序号表没有多余条目', Object.keys(api.CARD_ORDER).length === EXPECTED.length)
 /**
  * 一个 id 是否指向一张真实存在的卡：内联皮肤、内置外观、挂件卡或问候卡（后两者
@@ -479,8 +498,8 @@ check('方案 id 存 localStorage、绝不写 preference（写进去会让应用
 //   4. 面板计数忘了排除它 → "皮肤数"凭空多 1，与 README / npm 描述失真。
 const petWidget = api.PET_WIDGET
 
-check('挂件卡在序号表里，序号是 74（用户指定：压轴）',
-  api.CARD_ORDER[petWidget.id] === 74)
+check('挂件卡在序号表里，序号是 64（2026-10-01 用户序：其后六卡各减 10，74 让给以后的新主题）',
+  api.CARD_ORDER[petWidget.id] === 64)
 check('挂件卡不在内联皮肤里（它不是主题，不该被注册进主题服务）',
   !api.bundled.some((theme) => theme.id === petWidget.id))
 check('挂件卡有自己的标题与 tooltip 文案（两者都非空）',

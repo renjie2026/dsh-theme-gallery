@@ -257,7 +257,18 @@ function documentStub(seedFooterRow = false) {
       // 按类名找到孩子；桩里按"创建顺序在本节点之后 + 类名匹配"近似同一件事 —— 返回
       // null 的话，buildPetStage 拿不到子节点引用，整个挂件在桩里静默失效（规则 8）。
       querySelector(selector) {
-        if (typeof selector !== 'string' || !selector.startsWith('.')) return null
+        if (typeof selector !== 'string') return null
+        // `:scope > .cls`（真实 DOM 里是"直接子元素"）—— 桩原先只认 `.cls`，于是
+        // `drawScene`/`paintWall` 里所有 `:scope >` 查找**恒返回 null**：每次同步都新建
+        // 一个盒子，而"撤下上一套"那条路径根本找不到旧盒子（撤不掉也测不出来）。
+        // 规则 8：桩缺了真实组件会做的事，"盒子被复用/被撤下"就永远没有读数。
+        if (selector.startsWith(':scope > ')) {
+          const direct = selector.slice(':scope > .'.length)
+          if (!selector.startsWith(':scope > .')) return null
+          return this.children.find((n) => !n._removed
+            && String(n.className).split(' ').includes(direct)) ?? null
+        }
+        if (!selector.startsWith('.')) return null
         const wanted = selector.slice(1)
         const myAt = created.indexOf(this)
         if (myAt < 0) return null
@@ -266,6 +277,14 @@ function documentStub(seedFooterRow = false) {
       },
       append(...kids) { for (const kid of kids) this.children.push(kid) },
       appendChild(kid) { this.children.push(kid) },
+      // 水印壁纸（2026-10-01）用 insertBefore 插为第一个子元素——桩要能接住，
+      // 否则挂载路径在桩里抛错、被 catch 吃成"壁纸不可见"的假象。
+      insertBefore(kid, ref) {
+        const at = ref === null || ref === undefined ? this.children.length : this.children.indexOf(ref)
+        if (at < 0) { this.children.push(kid); return kid }
+        this.children.splice(at, 0, kid)
+        return kid
+      },
       setAttribute(name, value) { this.attributes.set(name, String(value)) },
       getAttribute(name) { return this.attributes.get(name) ?? null },
       removeAttribute(name) { this.attributes.delete(name) },
@@ -392,6 +411,13 @@ function documentStub(seedFooterRow = false) {
     return boxes.length === 0 ? null : boxes[boxes.length - 1]._html
   }
 
+  /** 当前装饰层里的**工作区壁纸**标记（最后一个壁纸盒），没有时返回 null。 */
+  const wallHtml = () => {
+    const boxes = created.filter((node) => !node._removed
+      && String(node.className).split(' ').includes('dsh-amb-bg'))
+    return boxes.length === 0 ? null : boxes[boxes.length - 1]._html
+  }
+
   const document_ = {
     head, body, documentElement,
     visibilityState: 'visible',
@@ -430,10 +456,17 @@ function documentStub(seedFooterRow = false) {
         return created.find((n) => n.tagName === 'STYLE' && n.dataset.pluginCss === wanted) ?? null
       }
       // Class lookups: match what the plugin actually assigns via `className`.
-      for (const className of ['.dsh-amb-control-scene', '.dsh-amb-control']) {
+      // `.dsh-amb-bg`（装饰层里最前方那份立绘）与 `.jyb-backdrop`（body 级背景层）也在这里：
+      // 缺了它们，`removeWallLayers()` 会以为"什么都没撤下来"，而 `ensureBackdropLayer`
+      // 每次同步都会新建一层 —— 桩少做一步，"撤干净/只建一次"就永远测不出来（规则 8）。
+      // `.fjw-backdrop`（青冥飞剑的 body 级宝剑壁纸层）、`.fjw-front`（装饰层里
+      // 那份醒目显现的前方份）与 `.fjw-shade`（firefly 式幕布，2026-10-01）同理：
+      // 缺了它们，撤除函数找不到旧层 → 撤不掉；挂载函数每次都新建。
+      for (const className of ['.dsh-amb-control-scene', '.dsh-amb-control', '.dsh-amb-bg', '.jyb-backdrop', '.fjw-backdrop', '.fjw-front', '.fjw-shade']) {
         if (selector.includes(className)) {
           const wanted = className.slice(1)
-          return created.find((n) => String(n.className).split(' ').includes(wanted)) ?? null
+          return created.find((n) => !n._removed
+            && String(n.className).split(' ').includes(wanted)) ?? null
         }
       }
       if (selector.includes('#dsh-theme-ambient')) {
@@ -444,7 +477,7 @@ function documentStub(seedFooterRow = false) {
     querySelectorAll: (selector) => findAll(selector),
     addEventListener() {}, removeEventListener() {},
   }
-  return { document_, body, innerHTMLWrites, removals, sceneHtml, created }
+  return { document_, body, innerHTMLWrites, removals, sceneHtml, wallHtml, created }
 }
 /**
  * 装上浏览器观察器桩。
@@ -543,7 +576,7 @@ function runBoot({
   mutationObservers.length = 0
   layoutSelectCalls.length = 0
   try {
-  const { document_, body, innerHTMLWrites, removals, sceneHtml, created } = documentStub(seedFooterRow)
+  const { document_, body, innerHTMLWrites, removals, sceneHtml, wallHtml, created } = documentStub(seedFooterRow)
   const setThemeCalls = []
   let accentLayers = 0
   // overrideTokens 的调用序列（source 按发生顺序）：「配色层站在最上」的断言读它 ——
@@ -573,6 +606,9 @@ function runBoot({
     'hu-po-mao-mi',
     'hu-zi-a-huang',
     'shi-liu-jin',
+    'da-jing-yu-niang',
+    'longyan-baojian',
+    'longyan-baojian-2',
   ]
 
   const timers = []
@@ -826,7 +862,9 @@ function runBoot({
       t: (key) => key,
       setTheme: face.setTheme,
       useStore: (selector) => selector({
-        ids: ['light', 'dark', 'ying-mu-cai-yun', 'shan-qing-ting-cai', 'meng-hai-you-yu'],
+        // `da-jing-yu-niang` 在这一格是因为"切走再切回要重播整套入场"必须走真实入口
+        // （点卡片）才演得出来；它是一张普通皮肤卡，多列一个 id 不影响别的断言。
+        ids: ['light', 'dark', 'ying-mu-cai-yun', 'shan-qing-ting-cai', 'meng-hai-you-yu', 'da-jing-yu-niang'],
         labels: {}, descriptions: {}, swatches: {}, cardRows: {},
         selected: 'shan-qing-ting-cai', status: '', revision: 1,
       }),
@@ -910,6 +948,9 @@ function runBoot({
   return {
     setThemeCalls, registrations, body, applyError, themeState, document_,
     accentLayers, innerHTMLWrites, created,
+    // 组合配置本身（**同一个对象**，不是副本）：急停开关"开机之后才被打开"这条路径
+    // 只能靠它演出来 —— 真机上要求用户正好在那 3 秒里改配置。
+    config,
     // effect 桩把回调里的异常吞进这个全局 —— 它非空说明某条路径在桩里抛错了
     //（规则 8：桩缺副作用会把缺陷藏起来，这里反过来把抛错暴露给断言）。
     get bootError() { return globalThis.__bootError },
@@ -944,6 +985,8 @@ function runBoot({
     mainInjectCallback,
     removals,
     sceneHtml,
+    wallHtml,
+    created,
   }
   } finally {
     restoreObservers()
@@ -1167,6 +1210,226 @@ check('切到深色后：也没有把装饰层节点删掉',
 check('切到深色后：装饰层里仍是上一套皮肤的素材（这就是「惊喜」）',
   scenery.sceneHtml() === beforeScene)
 
+// ── 大鲸鱼娘的工作区壁纸：走完整引导链路的端到端断言 ─────────────────────────
+//
+// 独立评审（2026-09-30）指出：壁纸此前只有"源码文本断言 + 假 DOM 的行为断言"，
+// **没有一条**走真实引导流程。这里补上 syncAmbient → drawScene → paintWall 的整条链路：
+// 选大鲸鱼娘 → 装饰层里出现一块 `.dsh-amb-bg` 且装的是人物标记；切到别的皮肤 →
+// 那块盒子被**真的删掉**（不是只把标记换掉）。顺带钉住 stub 的 `:scope > .cls` 支持 ——
+// 桩若不支持，撤下那条路径找不到旧盒子，"撤不掉"就会静默通过。
+const wallBoot = runBoot({ activeId: 'da-jing-yu-niang', seedSkin: 'da-jing-yu-niang', wireSlots: true })
+const wallMarkup = wallBoot.wallHtml()
+check('大鲸鱼娘：引导后出现了工作区壁纸盒（背景层）',
+  wallMarkup !== null, `实际 ${wallMarkup === null ? '(没有壁纸盒)' : `${wallMarkup.length} 字符`}`)
+check('大鲸鱼娘：壁纸盒里是人物标记（场景根 + 光晕 + 人物块）',
+  typeof wallMarkup === 'string' && wallMarkup.includes('jyb-scene')
+  && wallMarkup.includes('jyb-halo') && wallMarkup.includes('class="jyb-figure" src="data:image/png;base64,'))
+check('大鲸鱼娘：壁纸盒**只被创建过一个**（不是每次同步都新建）',
+  wallBoot.created.filter((n) => String(n.className).includes('dsh-amb-bg')).length === 1,
+  `实际创建 ${wallBoot.created.filter((n) => String(n.className).includes('dsh-amb-bg')).length} 个`)
+const wallRemovalsBefore = wallBoot.removals.filter((r) => String(r.className).includes('dsh-amb-bg')).length
+wallBoot.clickCard('shan-qing-ting-cai')
+wallBoot.drive(30)
+check('切到山青婷彩后：壁纸盒被撤掉（装饰跟着皮肤走）',
+  wallBoot.wallHtml() === null,
+  `实际 ${wallBoot.wallHtml() === null ? 'null（已撤）' : '仍在'}`)
+check('切到山青婷彩后：壁纸盒节点是被真的删掉的（不只是标记变了）',
+  wallBoot.removals.filter((r) => String(r.className).includes('dsh-amb-bg')).length
+  > wallRemovalsBefore)
+// 反向：没有壁纸的皮肤不该凭空建出一个盒子（否则"人物出现"这件事会被到处误报）。
+const noWallBoot = runBoot({ activeId: 'shan-qing-ting-cai', seedSkin: 'shan-qing-ting-cai', wireSlots: true })
+check('山青婷彩：装饰层里没有工作区壁纸盒，也没有创建过壁纸盒',
+  noWallBoot.wallHtml() === null
+  && noWallBoot.created.filter((n) => String(n.className).includes('dsh-amb-bg')).length === 0)
+// 反证 43：把 drawScene 里那次调用拆掉 → "引导后出现壁纸盒"必须翻红。
+// （这一条是端到端反证：走的是真实引导链路 + 变异后的 bundle 源码，不是文本匹配。）
+const mutWallWiring = source.replace('      const wallNote = paintWall(wrap, kind)', "      const wallNote = ''")
+check('反证 43 真的改动了源码（drawScene 不再画壁纸）', mutWallWiring !== source)
+const mutBoot = runBoot({
+  activeId: 'da-jing-yu-niang', seedSkin: 'da-jing-yu-niang', wireSlots: true, bundleSource: mutWallWiring,
+})
+check('反证 43：拆掉接线后引导完不再出现壁纸盒',
+  mutBoot.wallHtml() === null
+  && mutBoot.created.filter((n) => String(n.className).includes('dsh-amb-bg')).length === 0)
+// 反证 44：把"撤下"那一支整段拆掉（不删盒子也不撤三件）→ 切走后壁纸仍留在装饰层里。
+// 锚点跟着实现走：撤下现在是"删盒子 + removeWallLayers()"两件事，只拆其中一件时
+// 另一件仍会把盒子收走（只拆三件那一半的对照在 check-ambient-render 的反证 50）。
+const mutWallWithdraw = source.replace("          box.remove()\n          removeWallLayers()\n", "")
+check('反证 44 真的改动了源码（撤下那一支被拆）', mutWallWithdraw !== source)
+const stuckBoot = runBoot({
+  activeId: 'da-jing-yu-niang', seedSkin: 'da-jing-yu-niang', wireSlots: true, bundleSource: mutWallWithdraw,
+})
+stuckBoot.clickCard('shan-qing-ting-cai')
+stuckBoot.drive(30)
+check('反证 44：拆掉撤下之后，切到别的皮肤壁纸仍然留在页面上',
+  stuckBoot.wallHtml() !== null)
+
+// —— 切到内置浅色/深色（「惊喜」分支）：素材留着，半透明地面令牌必须走 ——
+// 那一支刻意不碰装饰层的素材（用户要的"素材留在原地"），但伴生样式表把 13 项「地面」
+// 令牌带着 `!important` 写在 body 上；留着会把**新**调色（内置浅色！）的表面按成深蓝
+// 半透明 —— 那不是惊喜，是一个坏掉的界面，而且没有任何异常。
+/** 当前页面上还活着的 body 级背景层。 */
+const backdropOf = (boot) => boot.created.find((n) => !n._removed
+  && String(n.className).split(' ').includes('jyb-backdrop')) ?? null
+/** 当前页面上还活着的伴生样式表。 */
+const backdropSheetOf = (boot) => boot.created.find((n) => !n._removed
+  && n.dataset.pluginCss === 'theme-gallery/backdrop') ?? null
+/** body 上是否有壁纸态标记类。 */
+const wallpaperMarked = (boot) => String(boot.body.className).split(' ').includes('dsh-jyb-wallpaper')
+const surpriseBoot = runBoot({ activeId: 'da-jing-yu-niang', seedSkin: 'da-jing-yu-niang', wireSlots: true })
+check('惊喜对照组：点内置外观之前是壁纸态（标记类 + 伴生样式表都在）',
+  wallpaperMarked(surpriseBoot) && backdropSheetOf(surpriseBoot) !== null)
+surpriseBoot.clickCard('dark')
+surpriseBoot.drive(30)
+check('切到内置「深色」：伴生样式表 / 标记类 / 背景层撤掉（内置配色不许被 13 项深蓝半透明按坏）',
+  !wallpaperMarked(surpriseBoot) && backdropSheetOf(surpriseBoot) === null
+  && backdropOf(surpriseBoot) === null)
+check('切到内置「深色」：侧栏素材与立绘仍留在原地（用户要的那个「惊喜」没被顺手清掉）',
+  surpriseBoot.sceneHtml() !== null && surpriseBoot.wallHtml() !== null)
+// 反证 63：把那一支里的撤场拆掉 → 上面第一条必须翻红。
+const mutNoDemote = source.replace('        removeAllAmbientSeats()\n        demoteWallpaper()\n',
+  '        removeAllAmbientSeats()\n')
+check('反证 63 真的改动了源码（内置外观那一支不再撤壁纸态）', mutNoDemote !== source)
+const mutSurprise = runBoot({
+  activeId: 'da-jing-yu-niang', seedSkin: 'da-jing-yu-niang', wireSlots: true, bundleSource: mutNoDemote,
+})
+mutSurprise.clickCard('dark')
+mutSurprise.drive(30)
+check('反证 63：不撤时，切到内置深色后界面仍被那 13 项半透明地面按着（标记类还在、样式表还在）',
+  wallpaperMarked(mutSurprise) && backdropSheetOf(mutSurprise) !== null)
+
+// ── 入场 → 3 秒后转背景壁纸：走完整引导链路的端到端读数 ───────────────────────
+//
+// 桩的 `drive()` 会**立即**执行排队的定时器，所以引导跑完时这里已经是"壁纸态"——
+// 那正是端到端要确认的终局（入场那一瞬间的读数由 check-ambient-render 的
+// **可控时钟**负责，两边合起来才覆盖"3 秒前 / 3 秒后"两个状态）。
+const settledBoot = runBoot({ activeId: 'da-jing-yu-niang', seedSkin: 'da-jing-yu-niang', wireSlots: true })
+check('大鲸鱼娘：引导后 body 级背景层已挂上（第二份立绘 + 可读性遮罩）',
+  backdropOf(settledBoot) !== null
+  && String(backdropOf(settledBoot).innerHTML).startsWith('<div class="jyb-veil"></div>')
+  && String(backdropOf(settledBoot).innerHTML).includes('class="jyb-figure" src="data:image/png;base64,'))
+check('背景层挂在 **document.body** 上（挂进装饰层就等于没挂：那层是 z-60 的 stacking context）',
+  settledBoot.body.children.includes(backdropOf(settledBoot)))
+check('两份副本是同一份标记（同一个 data URI / 同一套站位，所以交叉时不会错位）',
+  String(backdropOf(settledBoot).innerHTML).includes(String(settledBoot.wallHtml())))
+check('背景层**只被创建过一个**（每同步一次就新建一层 = 越叠越多的立绘）',
+  settledBoot.created.filter((n) => String(n.className).includes('jyb-backdrop')).length === 1,
+  `实际创建 ${settledBoot.created.filter((n) => String(n.className).includes('jyb-backdrop')).length} 个`)
+check('引导后是壁纸态：body 打了标记类，伴生样式表进了 head（画布底色 + 双保险令牌段 + 层序三件套）',
+  wallpaperMarked(settledBoot)
+  && backdropSheetOf(settledBoot) !== null
+  && String(backdropSheetOf(settledBoot).textContent).includes('html{background:#061320!important}')
+  && String(backdropSheetOf(settledBoot).textContent).includes('body.dsh-jyb-wallpaper>#root{position:relative;z-index:1}')
+  && /--dsw-alias-bg-base:rgba\(6,19,32,\.30\)!important/.test(String(backdropSheetOf(settledBoot).textContent)))
+check('引导后皮肤层（palette）携带的就是半透明地面（firefly 模式：JSON 永久半透明，无附加层）',
+  (() => {
+    const layer = settledBoot.overrides.get('theme-gallery: palette')
+    if (layer === undefined || layer === null) return false
+    return String(layer['--dsw-alias-bg-base']?.light) === 'rgba(6,19,32,.30)'
+      && String(layer['--dsw-alias-bg-layer-2']?.light) === 'rgba(14,34,55,.62)'
+  })())
+check('壁纸态里前方那份**仍然在文档里**（它是被 CSS 收起来的，不是被删掉 —— 删掉就回不去了）',
+  settledBoot.wallHtml() !== null)
+settledBoot.clickCard('shan-qing-ting-cai')
+settledBoot.drive(30)
+check('切到别的皮肤：背景层 / 伴生样式表 / 标记类**一起**撤掉（只剩一件就是"半透明却没人"）',
+  backdropOf(settledBoot) === null && backdropSheetOf(settledBoot) === null && !wallpaperMarked(settledBoot))
+// 再切回来：整套重播（用户要求"切到别的皮肤再切回来要重新播一遍"）。
+const replayBoot = runBoot({ activeId: 'da-jing-yu-niang', seedSkin: 'da-jing-yu-niang', wireSlots: true })
+replayBoot.clickCard('shan-qing-ting-cai')
+replayBoot.drive(30)
+replayBoot.clickCard('da-jing-yu-niang')
+replayBoot.drive(30)
+check('切走再切回：背景层与标记类重新走了一遍（不是停在撤下状态）',
+  backdropOf(replayBoot) !== null && wallpaperMarked(replayBoot)
+  && replayBoot.created.filter((n) => String(n.className).includes('jyb-backdrop')).length >= 2)
+
+// ── 壁纸态下的落色确认 + 僵尸副本不变量（「她转壁纸后彻底消失」事故的回归验证）──
+//
+// 事故因果链（实机读数钉死，2026-10-01）：壁纸态把 body 设透明、探针令牌被伴生样式表
+// 改成半透明 —— 落色确认（ensureSkinPainted）见"透明 ≠ 期望值"误判落色失败 → 跳转兜底
+// （先切内置浅色）→ 浅色在位那一拍撤场链把壁纸态拆掉（撤壁纸+撤样式表+摘类）→
+// 前方那份停在 opacity:0 成了僵尸副本 → 她彻底消失。
+// 修复 = 壁纸态在位且该皮肤是壁纸态的持有者时，落色确认按"已上色"收场
+// （单元级正检与反证 66 在 check-ambient-render.mjs 的「壁纸态感知」组）。
+// 这里是端到端回归：引导进壁纸态之后**真的跑一回合落色确认**（外壳延迟送达的那一拍
+// publish），她必须原封不动；以及"标记类在位 ⇒ 背景层必在"的僵尸不变量。
+const paintRound = runBoot({ activeId: 'da-jing-yu-niang', seedSkin: 'da-jing-yu-niang', wireSlots: true })
+const paintRoundWrites = paintRound.setThemeCalls.length
+paintRound.echoChange()
+paintRound.drive(30)
+check('壁纸态下落色确认跑一轮：一次主题写入都不发生（跳转兜底没有开火，更没有先切浅色）',
+  paintRound.setThemeCalls.length === paintRoundWrites
+  && !paintRound.setThemeCalls.includes('light'),
+  `实际 ${JSON.stringify(paintRound.setThemeCalls)}`)
+check('落色确认那一轮之后她仍在：标记类 / 伴生样式表 / 背景层三件都在位',
+  wallpaperMarked(paintRound) && backdropSheetOf(paintRound) !== null && backdropOf(paintRound) !== null)
+check('落色确认那一轮之后前方那份仍在文档里（她没有变成不可见的僵尸副本）',
+  paintRound.wallHtml() !== null)
+// 僵尸不变量：标记类在位 ⇒ 背景层必在。"前方份被 CSS 收起（opacity:0）"只在标记类
+// 在位时发生；背景层不在而标记类还在 = 全页只剩一个看不见的副本 —— 事故的终态。
+// 三条各钉一个已驱动的状态：重播后的壁纸态、刚撤场后的惊喜态、落色确认后的壁纸态。
+check('僵尸不变量（重播后的壁纸态）：标记类在位 ⇒ 背景层在位',
+  !wallpaperMarked(replayBoot) || backdropOf(replayBoot) !== null)
+check('僵尸不变量（撤场后）：标记类已摘 ⇒ 前方份恢复可见（它还在文档里，收起它的类不在）',
+  !wallpaperMarked(surpriseBoot) && surpriseBoot.wallHtml() !== null)
+check('僵尸不变量（落色确认后）：标记类在位 ⇒ 背景层在位',
+  !wallpaperMarked(paintRound) || backdropOf(paintRound) !== null)
+// 反证 67：把 demoteWallpaper 里的"摘类"那一步拆掉 → 撤场后标记类残留在 body 上，
+// 前方份被类规则收起（opacity:0）、背景层却已撤 —— 僵尸副本当场复现，上面两条不变量翻红。
+const mutStuckClass = source.replace('markWallpaper(false)', '')
+check('反证 67 真的改动了源码（撤场里的摘类被拆掉）', mutStuckClass !== source)
+const zombieBoot = runBoot({
+  activeId: 'da-jing-yu-niang', seedSkin: 'da-jing-yu-niang', wireSlots: true, bundleSource: mutStuckClass,
+})
+zombieBoot.clickCard('dark')
+zombieBoot.drive(30)
+check('反证 67：摘类被拆后僵尸复现 —— 标记类残留、背景层已撤、前方份还留在文档里被收起',
+  wallpaperMarked(zombieBoot) && backdropOf(zombieBoot) === null
+  && backdropSheetOf(zombieBoot) === null && zombieBoot.wallHtml() !== null,
+  `类=${wallpaperMarked(zombieBoot)} 层=${backdropOf(zombieBoot) !== null} `
+    + `表=${backdropSheetOf(zombieBoot) !== null} 前方份=${zombieBoot.wallHtml() !== null}`)
+
+
+// ── 青冥飞剑的宝剑壁纸（body 级独立层，**不进**大鲸鱼娘的壁纸管线）────────────
+//
+
+
+// —— 急停开关（config: { ambient: false }）：不是"什么都不做"，而是撤干净 ——
+const killBoot = runBoot({
+  activeId: 'da-jing-yu-niang', seedSkin: 'da-jing-yu-niang', wireSlots: true, config: { ambient: true },
+})
+check('急停对照组：开关开着时壁纸态照常（否则下面那条测不出任何东西）',
+  wallpaperMarked(killBoot) && backdropSheetOf(killBoot) !== null)
+killBoot.config.ambient = false
+// 用**一回合 theme/change** 触发重新同步：这是真机上最常见的入口（外壳的 adopt/换肤
+// 都会 emit 它），而且它同步走 publish → syncSkin → syncAmbient，读数确定。
+// （不靠 drive 观察器回调：那条路经过 `step()`，桩里落到 Node 的真实 setTimeout 上，
+//   同步的 drive() 追不到它 —— 那样这条断言会因为"根本没重新同步"而假通过。）
+killBoot.echoChange()
+killBoot.drive(30)
+check('急停开关打开后：立绘层 / 伴生样式表 / 标记类全部撤掉（界面回到完全不透明）',
+  backdropOf(killBoot) === null && backdropSheetOf(killBoot) === null && !wallpaperMarked(killBoot)
+  && killBoot.wallHtml() === null,
+  `实际 层=${backdropOf(killBoot) === null ? '无' : '在'} 表=${backdropSheetOf(killBoot) === null ? '无' : '在'}`
+  + ` 类=${wallpaperMarked(killBoot) ? '在' : '无'}`)
+// 反证 60：把急停那一支里的撤场拆掉 → 上面那条必须翻红。
+const mutNoKillTeardown = source.replace(
+  '        // 样式表留着会把界面永远按在半透明。两种残留都没有异常、没有日志（规则 0）。\n'
+  + '        removeWallLayers()\n',
+  '        // 样式表留着会把界面永远按在半透明。两种残留都没有异常、没有日志（规则 0）。\n',
+)
+check('反证 60 真的改动了源码（急停不再撤场）', mutNoKillTeardown !== source)
+const mutKillBoot = runBoot({
+  activeId: 'da-jing-yu-niang', seedSkin: 'da-jing-yu-niang', wireSlots: true,
+  config: { ambient: true }, bundleSource: mutNoKillTeardown,
+})
+mutKillBoot.config.ambient = false
+mutKillBoot.echoChange()
+mutKillBoot.drive(30)
+check('反证 60：不撤场时，急停之后界面仍停在半透明（标记类 / 样式表 / 背景层都还在）',
+  wallpaperMarked(mutKillBoot) && backdropSheetOf(mutKillBoot) !== null && backdropOf(mutKillBoot) !== null)
+
 // 反向：切到另一套**有装饰**的皮肤时，素材必须真的被换掉 —— 不能把上一套留在屏幕上。
 const swap = runBoot({ activeId: 'ying-mu-cai-yun', seedSkin: 'ying-mu-cai-yun', wireSlots: true })
 const caiyunScene = swap.sceneHtml()
@@ -1203,12 +1466,14 @@ check('反证 2：去掉默认皮肤后，全新安装不会再请求山青婷�
 
 // 反证 3：把"没有装饰时保留活动图层"改坏（模拟一次"顺手清理"），"惊喜"断言必须翻转。
 //
-// 注意 `removeAllAmbientSeats()` 在源码里出现多次，所以变异锚在**紧随其后的那一行**上，
+// 注意 `removeAllAmbientSeats()` 在源码里出现多次，所以变异锚在**紧随其后的那两行**上，
 // 否则改的是别的分支；同时断言"变异真的改动了源码"。
+// 2026-09-30：这一支里多了 `demoteWallpaper()`（内置外观那一支要把半透明地面令牌撤掉），
+// 锚点跟着改 —— 不改的话锚点失配、`changed` 为假，报红的是**测试自己的锚点**。
 const mutClear = source.replace(
-  /removeAllAmbientSeats\(\)\r?\n(\s*)if \(record\) noteAmbientAttempt\(\{ kind, column: true, band: '无装饰' \}\)/,
-  (whole, indent) => 'for (const node of document.querySelectorAll(\'.dsh-amb-control, .dsh-amb-control-scene\'))'
-    + ` node.remove()\n${indent}if (record) noteAmbientAttempt({ kind, column: true, band: '无装饰' })`,
+  /removeAllAmbientSeats\(\)\r?\n(\s*)demoteWallpaper\(\)\r?\n(\s*)if \(record\) noteAmbientAttempt\(\{ kind, column: true, band: '无装饰' \}\)/,
+  (whole, indent, indent2) => 'for (const node of document.querySelectorAll(\'.dsh-amb-control, .dsh-amb-control-scene\'))'
+    + ` node.remove()\n${indent}demoteWallpaper()\n${indent2}if (record) noteAmbientAttempt({ kind, column: true, band: '无装饰' })`,
 )
 check('反证 3 真的改动了源码（没有装饰时改为清空活动图层）', mutClear !== source)
 const cleared = runBoot({
@@ -1581,41 +1846,14 @@ check('站位复核收敛：后续回声回合不再产生层写入',
   bury.overrideCalls.length === callsBeforeEcho,
   `写入数 ${callsBeforeEcho} → ${bury.overrideCalls.length}`)
 
-// 反证 25：拆掉「站位复核」（退回旧的裸幂等守卫），上面「搬回最上」必须翻转 ——
-// 延迟回合的皮肤层把配色压下去之后再没人管，正是实机那个形状。
-const mutNoRestack = source.replace(
-  'if (wanted === null || stackedSchemeEpoch === skinLayerEpoch) return',
-  'return',
-)
-check('反证 25 真的改动了源码（站位复核被拆掉）', mutNoRestack !== source)
-const buriedRun = runBoot({
-  activeId: 'shan-qing-ting-cai', seedSkin: 'shan-qing-ting-cai',
-  wireSlots: true, bundleSource: mutNoRestack,
-})
-buriedRun.cardTree('shi-liu-jin', { 'shi-liu-jin': PICKER_ROWS }, { 'shi-liu-jin': BLOCK_DESC })
-  .tree.filter((call) => call.props?.className === 'tg-swatch')[12].props.onClick()
-buriedRun.drive(30)
-buriedRun.echoChange()
-const buriedLast = buriedRun.overrideCalls[buriedRun.overrideCalls.length - 1]
-check('反证 25：拆掉复核后，延迟回合的皮肤层把配色压下去、再没人重叠（说明上面测的是真通道）',
-  buriedLast === 'theme-gallery: palette',
-  `最后写入：${buriedLast}；全序列：${JSON.stringify(buriedRun.overrideCalls)}`)
+// 反证 25（旧）已随 publish 链顺序交换消亡：旧顺序里 syncSkin 先读旧 remembered、
+// 延迟回合的皮肤层重叠会把配色压下去（那个变异测的正是它）。新顺序
+// （syncRememberedSkin 先写、syncSkin 后叠）下，皮肤层幂等早退、echo 回合
+// 零新增写入——上面的「站位复核收敛」断言就是它的继任。
 
-// 反证 26：拆掉代数 +1，复核永远认为「站位没变」—— 修不触发，同样翻转。
-const mutNoEpoch = source.replace('skinLayerEpoch += 1', '')
-check('反证 26 真的改动了源码（皮肤层的代数不再递增）', mutNoEpoch !== source)
-const staleRun = runBoot({
-  activeId: 'shan-qing-ting-cai', seedSkin: 'shan-qing-ting-cai',
-  wireSlots: true, bundleSource: mutNoEpoch,
-})
-staleRun.cardTree('shi-liu-jin', { 'shi-liu-jin': PICKER_ROWS }, { 'shi-liu-jin': BLOCK_DESC })
-  .tree.filter((call) => call.props?.className === 'tg-swatch')[12].props.onClick()
-staleRun.drive(30)
-staleRun.echoChange()
-const staleLast = staleRun.overrideCalls[staleRun.overrideCalls.length - 1]
-check('反证 26：代数不递增时复核形同虚设，配色层同样被压下去（说明上面测的是真通道）',
-  staleLast === 'theme-gallery: palette',
-  `最后写入：${staleLast}`)
+// 反证 26（旧）与反证 25 同理消亡：新顺序下 echo 回合皮肤层幂等早退、零写入，
+// 「配色被压下去」的形状不复存在；skinLayerEpoch 仍在服务 syncScheme 的站位
+// 复核（正断言「站位复核收敛」守护的就是它还在工作）。
 
 // 卡片本体：点它 = 用"亮着的那一格"（从没选过时就是默认的石榴金）。
 //

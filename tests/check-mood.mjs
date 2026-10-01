@@ -145,7 +145,7 @@ const sandbox = makeSandbox(real, { localStorage: makeStorage() })
 /* ── 1. 数据层：语料文件与内联副本 ─────────────────────────────────────────── */
 
 const BLACKLIST_SAMPLE = ['自杀', '抑郁', '绝望', '崩溃', '暴力', '色情', '赌博', '毒品', '生无可恋']
-const CATEGORIES = ['morning', 'day', 'night', 'general', 'holiday']
+const CATEGORIES = ['morning', 'day', 'night', 'holiday']
 const ids = new Set()
 const byCategory = new Map()
 
@@ -159,9 +159,15 @@ check('语料 id 全部唯一且形如 m\\d{3}',
   ids.size === pack.lines.length && [...ids].every((id) => /^m\d{3}$/.test(id)))
 check('语料文本全部非空且 ≤ 100 字符',
   pack.lines.every((line) => typeof line.text === 'string' && line.text.length > 0 && line.text.length <= 100))
-check('语料分类全部在五类枚举内且五类都非空（空池 = 到点没话说）',
+check('语料分类全部在四类枚举内且四类都非空（空池 = 到点没话说）',
   pack.lines.every((line) => CATEGORIES.includes(line.category))
   && CATEGORIES.every((cat) => (byCategory.get(cat) ?? 0) >= 1))
+check('general 分类已废除：时段池覆盖全天 24 小时，general 池永远轮不到——建期枚举不再收它',
+  pack.lines.every((line) => line.category !== 'general')
+  && embedScript.includes("const MOOD_CATEGORIES = ['morning', 'day', 'night', 'holiday']"))
+check('原 16 条通用语料已全部并入白天池（day=31）：用户点名复核的 m123「总会有人…」必须在白天池',
+  pack.lines.filter((line) => line.category === 'day').length === 31
+  && pack.lines.find((line) => line.id === 'm123')?.category === 'day')
 check('红线：语料零命中负面/敏感黑名单（样本词逐一核对）',
   pack.lines.every((line) => BLACKLIST_SAMPLE.every((term) => !line.text.includes(term))))
 check('红线是建期校验：embed 脚本里有黑名单与长度/分类/id 校验（坏语料进不了包）',
@@ -187,8 +193,8 @@ check('内联副本与语料文件逐字一致（embed 的读回校验之外的�
 
 /* ── 2. 源码层：接线与有界性 ───────────────────────────────────────────────── */
 
-check('CARD_ORDER 里有 mood-greeting，序号 73（挂件 74 之后，压轴段）',
-  /'mood-greeting': 73,/.test(real))
+check('CARD_ORDER 里有 mood-greeting，序号 63（2026-10-01 用户序：其后六卡各减 10）',
+  /'mood-greeting': 63,/.test(real))
 check('publish() 把挂件卡、问候卡与折叠卡一起追加进面板列表',
   /\.concat\(\[petWidgetCardTheme\(\), moodCardTheme\(\), menuCollapseCardTheme\(\)\]\)/.test(real))
 check('面板计数把问候卡与内置卡/挂件卡/折叠卡一起排除（皮肤数不含它）',
@@ -277,14 +283,14 @@ check('节日区间：区间内命中、区间外不命中、单日区间、跨�
       && sandbox.moodHolidayMatches(wrap, '01-01') && sandbox.moodHolidayMatches(wrap, '12-31')
       && !sandbox.moodHolidayMatches(wrap, '01-03')
   })())
-check('moodPicksFor：节日池优先于时段池；时段池按小时选；空池回落 general',
+check('moodPicksFor：节日池优先于时段池；时段池按小时选；池空（病态）回落全库',
   (() => {
     const holidayHit = sandbox.moodPicksFor(new Date(2026, 9, 5, 8, 0, 0), sandbox.MOOD_LINES)
     const morning = sandbox.moodPicksFor(new Date(2026, 6, 15, 8, 0, 0), sandbox.MOOD_LINES)
-    const noMorning = sandbox.moodPicksFor(new Date(2026, 6, 15, 8, 0, 0),
-      sandbox.MOOD_LINES.filter((line) => line.category !== 'morning'))
+    const noMorningInput = sandbox.MOOD_LINES.filter((line) => line.category !== 'morning')
+    const noMorning = sandbox.moodPicksFor(new Date(2026, 6, 15, 8, 0, 0), noMorningInput)
     return holidayHit.pool === 'holiday' && morning.pool === 'morning'
-      && noMorning.pool === 'general' && noMorning.items.every((line) => line.category === 'general')
+      && noMorning.pool === 'all' && noMorning.items.length === noMorningInput.length
   })())
 check('日期种子洗牌：同一天同池顺序稳定，不同日期顺序不同（"每天不重样"是本地实现的）',
   (() => {
@@ -363,10 +369,10 @@ check('M1：删掉注入后"shell.overlay 注入存在"必须失败',
   !/ctx\.slots\.inject\('shell\.overlay'/.test(mutOverlay))
 
 // M2 删序号行
-const mutRank = real.replace("'mood-greeting': 73,", '')
+const mutRank = real.replace("'mood-greeting': 63,", '')
 check('M2 真的改动了源码（序号行被删）', mutRank !== real)
 check('M2：删掉序号行后"CARD_ORDER 里有 mood-greeting"必须失败',
-  !/'mood-greeting': 73,/.test(mutRank))
+  !/'mood-greeting': 63,/.test(mutRank))
 
 // M3 周期改 1 分钟
 const mutPeriod = real.replace('const MOOD_PERIOD_MS = 35 * 60 * 1000', 'const MOOD_PERIOD_MS = 60 * 1000')
@@ -447,6 +453,14 @@ check('M11 真的改动了源码（座位重试的定义被拆掉）',
   mutRetry !== real && !/function moodArmSeatRetry\(\)/.test(mutRetry))
 check('M11：定义消失后缺席路径的武装调用仍在（证明真实源码把重试接进了缺席路径）',
   /moodArmSeatRetry\(\)\n        return/.test(mutRetry))
+
+// M12 建期枚举混回 general（"放进播不到的池子"的复发路径）
+const mutGeneral = embedScript.replace(
+  "const MOOD_CATEGORIES = ['morning', 'day', 'night', 'holiday']",
+  "const MOOD_CATEGORIES = ['morning', 'day', 'night', 'general', 'holiday']")
+check('M12 真的改动了脚本（建期枚举混回 general）', mutGeneral !== embedScript)
+check('M12：枚举混回 general 后"general 已废除"必须失败',
+  !mutGeneral.includes("const MOOD_CATEGORIES = ['morning', 'day', 'night', 'holiday']"))
 
 /* ── 收尾 ─────────────────────────────────────────────────────────────────── */
 

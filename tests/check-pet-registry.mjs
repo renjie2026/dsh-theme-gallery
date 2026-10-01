@@ -175,9 +175,9 @@ check('P10 markup 用到的每个动画锚点类，PET_CSS 里都有同名选择
 check('P11 PET_CSS 含全部关键机制：眨眼 / 摇摆步 / 戳反应 / 加油 / 精神一下',
   ['dsh-pet-blink', 'dsh-pet-waddle', 'dsh-pet-react', 'dsh-pet-cheer', 'dsh-pet-perk']
     .every((name) => registry.css.includes(name)))
-check('P12 卡片 id 是 pet-family（序号 74 压轴）；旧键 pet-ban-ban 不在 CARD_ORDER',
+check('P12 卡片 id 是 pet-family（序号 64；2026-10-01 用户序其后六卡各减 10）；旧键 pet-ban-ban 不在 CARD_ORDER',
   registry.widget.id === 'pet-family'
-  && registry.cardOrder['pet-family'] === 74
+  && registry.cardOrder['pet-family'] === 64
   && registry.cardOrder['pet-ban-ban'] === undefined)
 check('P13 斑斑是一期验收资产：尾巴路径、耳朵 rotate(-20 与六个一期色值逐个在册',
   (() => {

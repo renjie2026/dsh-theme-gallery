@@ -18,7 +18,7 @@
  * Run after editing any file in lib/themes/:
  *   node scripts/embed-themes.mjs
  */
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { cardRowProblems, paletteProblems } from './lib/card-rows.mjs'
@@ -48,7 +48,7 @@ const problems = []
  * scene that exists. Keeping the list here means a typo fails the build instead of
  * silently drawing nothing at runtime.
  */
-const AMBIENT_KINDS = ['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen', 'humao', 'ahuang', 'liuxing']
+const AMBIENT_KINDS = ['shan', 'dream', 'caiyun', 'dongyun', 'junyue', 'jiexin', 'fengchen', 'humao', 'ahuang', 'liuxing', 'fanhua', 'jingyu', 'feijian', 'longyan', 'longyan2']
 
 /**
  * Validated ranges for each scene's seed-count option.
@@ -68,6 +68,8 @@ const AMBIENT_COUNTS = {
   feathers: [0, 16],
   dew: [0, 30],
   geese: [0, 9],
+  swallows: [0, 2],
+  calves: [0, 4],
 }
 
 /**
@@ -262,7 +264,11 @@ const embedded = next.slice(0, paletteAt)
 // line must fail the BUILD (including the release CI's embed step) rather than
 // surface at runtime as a garbled or inappropriate greeting. The red line is the
 // user's: no negative, depressing, or sensitive wording may ship.
-const MOOD_CATEGORIES = ['morning', 'day', 'night', 'general', 'holiday']
+// 'general' is DELIBERATELY absent (2026-09-29): the time pools cover all 24 hours,
+// so a general pool could never be picked — 16 lines sat there unplayable until the
+// user noticed. Lines written as 'general' now fail the build instead of shipping
+// into a pool nothing can ever reach.
+const MOOD_CATEGORIES = ['morning', 'day', 'night', 'holiday']
 // Multi-character terms ONLY: single characters like 死 or 黑 would false-positive
 // on kept lines (#24 熬过漫长黑夜, #30 追思故人 — both explicitly retained by the
 // user). Every listed term was checked against the whole corpus: zero hits.
@@ -349,6 +355,147 @@ if (moodAt < 0) {
     + embedded.slice(moodEnd + '\n    }'.length)
 }
 
+// ── the wallpaper figure: binary art, inlined as a data URI ───────────────────
+//
+// The whale-maid wallpaper (skin 大鲸鱼娘, ambient kind `jingyu`) is community character
+// art that was cut out of its flat background once, offline — see
+// `lib/assets/whale-maid.png` and the one-shot tool `tools/art/whale-maid-from-whalechan.py`
+// (which ships with the pristine source webp it reads).
+// The browser half cannot read a file path (the same reason the themes are inlined), so
+// the bytes travel as a data URI baked into `jingyuWallScene`.
+//
+// Two silent failures are fenced off here:
+//   * regenerating the PNG without re-running this step would ship the OLD figure while
+//     every other reading still said the build was clean -> the substitution is anchored
+//     on the declaration and THROWS when it cannot find it;
+//   * a truncated or non-PNG file would ship `<img>` with a broken source, which reads as
+//     "the wallpaper silently disappeared" -> the magic bytes and the trailing IEND chunk
+//     are both checked. (A 4 MB ceiling keeps `lib/client.js` well under the ~5 MB the
+//     integration notes require; today's asset is ~0.6 MB raw.)
+const MAX_ART_DATA_URI = 4 * 1024 * 1024
+const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+const PNG_IEND = Buffer.from([0, 0, 0, 0, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82])
+const artPath = join(root, 'lib', 'assets', 'whale-maid.png')
+if (!existsSync(artPath)) {
+  throw new Error('lib/assets/whale-maid.png is missing — regenerate it with tools/art/whale-maid-from-whalechan.py')
+}
+const artBytes = readFileSync(artPath)
+if (artBytes.length < 32 || !artBytes.subarray(0, 8).equals(PNG_MAGIC)) {
+  throw new Error('lib/assets/whale-maid.png is not a PNG (bad magic bytes)')
+}
+if (!artBytes.subarray(artBytes.length - 12).equals(PNG_IEND)) {
+  throw new Error(`lib/assets/whale-maid.png is truncated (no trailing IEND chunk; ${artBytes.length} bytes)`)
+}
+const artData = `data:image/png;base64,${artBytes.toString('base64')}`
+if (artData.length > MAX_ART_DATA_URI) {
+  throw new Error(`lib/assets/whale-maid.png would inline as ${(artData.length / 1048576).toFixed(2)} MB, over the ${MAX_ART_DATA_URI / 1048576} MB ceiling`)
+}
+const ART_DECL = "const WHALE_MAID_PNG = '"
+const ART_PREFIX = 'data:image/png;base64,'
+const artAt = withMood.indexOf(ART_DECL)
+if (artAt < 0) {
+  throw new Error('lib/client.js: could not find the WHALE_MAID_PNG declaration to replace')
+}
+// The WHOLE literal is replaced, prefix included — splicing only the payload after the
+// prefix double-writes `data:image/png;base64,` into the `src` and ships a broken image.
+const artOpen = artAt + ART_DECL.length
+const artClose = withMood.indexOf("'", artOpen)
+if (artClose < 0) {
+  throw new Error('lib/client.js: the WHALE_MAID_PNG literal is not terminated')
+}
+if (!withMood.startsWith(ART_PREFIX, artOpen)) {
+  throw new Error('lib/client.js: the WHALE_MAID_PNG literal does not start with a PNG data URI')
+}
+withMood = withMood.slice(0, artOpen) + artData + withMood.slice(artClose)
+if (!withMood.includes(artData)) {
+  throw new Error('embed-themes: the inlined wallpaper data URI does not read back out of lib/client.js')
+}
+
+// ── the feijian wallpaper image: same inlining pattern, own anchor ────────────
+// 青冥飞剑的聊天区背景壁纸（用户提供，2026-10-01）：同 whale-maid 的锚定替换。
+const FJ_ART_DECL = "const FEIJIAN_WALL_PNG = '"
+const fjArtAt = withMood.indexOf(FJ_ART_DECL)
+if (fjArtAt < 0) {
+  throw new Error('lib/client.js: could not find the FEIJIAN_WALL_PNG declaration to replace')
+}
+const fjOpen = fjArtAt + FJ_ART_DECL.length
+const fjClose = withMood.indexOf("'", fjOpen)
+if (fjClose < 0) {
+  throw new Error('lib/client.js: the FEIJIAN_WALL_PNG literal is not terminated')
+}
+const fjArtPath = join(root, 'lib', 'assets', 'feijian-wall.png')
+if (!existsSync(fjArtPath)) {
+  throw new Error('lib/assets/feijian-wall.png is missing')
+}
+const fjBytes = readFileSync(fjArtPath)
+if (fjBytes.length < 32 || !fjBytes.subarray(0, 8).equals(PNG_MAGIC)) {
+  throw new Error('lib/assets/feijian-wall.png is not a PNG (bad magic bytes)')
+}
+if (!fjBytes.subarray(fjBytes.length - 12).equals(PNG_IEND)) {
+  throw new Error(`lib/assets/feijian-wall.png is truncated (no trailing IEND chunk; ${fjBytes.length} bytes)`)
+}
+const fjData = `data:image/png;base64,${fjBytes.toString('base64')}`
+if (fjData.length > MAX_ART_DATA_URI) {
+  throw new Error(`lib/assets/feijian-wall.png would inline as ${(fjData.length / 1048576).toFixed(2)} MB, over the ${MAX_ART_DATA_URI / 1048576} MB ceiling`)
+}
+withMood = withMood.slice(0, fjOpen) + fjData + withMood.slice(fjClose)
+if (!withMood.includes(fjData)) {
+  throw new Error('embed-themes: the inlined feijian wallpaper data URI does not read back out of lib/client.js')
+}
+
+// ── the 龙焰宝剑 sword sprites: same inlining pattern, own anchors ────────────
+// 龙焰宝剑（kind longyan）的双剑透明素材（004/029 系黑底重绘抠黑，2026-10-01）。
+// 两把各占一个锚定声明（LONGYAN_SWORD_A_PNG / LONGYAN_SWORD_B_PNG），同一套
+// 魔数/IEND/回读校验——少一把都会在建期当场红，而不是实机上"剑没了"。
+// 壁纸（longyan2-wall）是照片类插图，按扩展名走 **JPEG** 分支（SOI/EOI 校验）：
+// 同图的 PNG 是 1.5MB，JPEG q85 只有约 1/5——client.js 装载体积的红线所在。
+const JPEG_SOI = Buffer.from([0xff, 0xd8, 0xff])
+for (const [lyDecl, lyAsset] of [
+  ["const LONGYAN_SWORD_A_PNG = '", 'longyan-sword-a.png'],
+  ["const LONGYAN_SWORD_B_PNG = '", 'longyan-sword-b.png'],
+  ["const LONGYAN2_WALL_PNG = '", 'longyan2-wall.jpg'],
+]) {
+  const lyAt = withMood.indexOf(lyDecl)
+  if (lyAt < 0) {
+    throw new Error(`lib/client.js: could not find the ${lyDecl} declaration to replace`)
+  }
+  const lyOpen = lyAt + lyDecl.length
+  const lyClose = withMood.indexOf("'", lyOpen)
+  if (lyClose < 0) {
+    throw new Error(`lib/client.js: the ${lyDecl} literal is not terminated`)
+  }
+  const lyPath = join(root, 'lib', 'assets', lyAsset)
+  if (!existsSync(lyPath)) {
+    throw new Error(`lib/assets/${lyAsset} is missing — regenerate it with tools/imgdl/prep-swords.mjs`)
+  }
+  const lyBytes = readFileSync(lyPath)
+  const isJpeg = lyAsset.endsWith('.jpg') || lyAsset.endsWith('.jpeg')
+  if (isJpeg) {
+    if (lyBytes.length < 32 || !lyBytes.subarray(0, 3).equals(JPEG_SOI)) {
+      throw new Error(`lib/assets/${lyAsset} is not a JPEG (bad SOI bytes)`)
+    }
+    if (lyBytes[lyBytes.length - 2] !== 0xff || lyBytes[lyBytes.length - 1] !== 0xd9) {
+      throw new Error(`lib/assets/${lyAsset} is truncated (no trailing EOI marker; ${lyBytes.length} bytes)`)
+    }
+  } else {
+    if (lyBytes.length < 32 || !lyBytes.subarray(0, 8).equals(PNG_MAGIC)) {
+      throw new Error(`lib/assets/${lyAsset} is not a PNG (bad magic bytes)`)
+    }
+    if (!lyBytes.subarray(lyBytes.length - 12).equals(PNG_IEND)) {
+      throw new Error(`lib/assets/${lyAsset} is truncated (no trailing IEND chunk; ${lyBytes.length} bytes)`)
+    }
+  }
+  const lyMime = isJpeg ? 'image/jpeg' : 'image/png'
+  const lyData = `data:${lyMime};base64,${lyBytes.toString('base64')}`
+  if (lyData.length > MAX_ART_DATA_URI) {
+    throw new Error(`lib/assets/${lyAsset} would inline as ${(lyData.length / 1048576).toFixed(2)} MB, over the ${MAX_ART_DATA_URI / 1048576} MB ceiling`)
+  }
+  withMood = withMood.slice(0, lyOpen) + lyData + withMood.slice(lyClose)
+  if (!withMood.includes(lyData)) {
+    throw new Error(`embed-themes: the inlined ${lyAsset} data URI does not read back out of lib/client.js`)
+  }
+}
+
 // ── READ THE LITERALS BACK OUT OF THE NEW TEXT, AND PARSE THE WHOLE FILE ──────
 //
 // Both assertions exist because of the truncation above: the file stayed syntactically
@@ -390,3 +537,4 @@ writeFileSync(
 )
 console.log(`embedded ${themes.length} theme(s) from ${files.length} file(s): ${[...seen.keys()].join(', ')}`)
 console.log(`inlined ${schemes.length} palette scheme(s) and ${moodPack.lines.length} mood line(s), version ${pkg.version}`)
+console.log(`inlined lib/assets/whale-maid.png as a ${(artData.length / 1024).toFixed(0)} KB data URI`)
