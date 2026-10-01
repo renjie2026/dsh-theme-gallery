@@ -11,7 +11,7 @@
 | 自己做皮肤（或让 AI 做） | 在 `lib/themes/` 加 JSON 后重跑 `npm run embed-themes`，或装 `dsh-theme-skin-author` 技能让 AI 生成 |
 | 贡献一个皮肤给所有人 | 在 `lib/themes/` 放一个 JSON，提 PR |
 
-已随 **0.8.0** 发布 **12 套**皮肤：六套复刻自**蜂链商城**电商新零售系统管理后台
+已随 **0.8.1** 发布 **12 套**皮肤：六套复刻自**蜂链商城**电商新零售系统管理后台
 （[`renjie2026/fenglianshop-open`](https://github.com/renjie2026/fenglianshop-open) 的
 `admin-modular/src/utils/themes.js`），两套是本插件**原创**的宠物主题（同一套造色方法，色相取自中国传统色库），
 一套是**「纯色/拼色」配色选择器**卡片（15 个可点色值，见下），
@@ -193,6 +193,11 @@ dsh plugin --profile web add dsh-theme-gallery
 
 > 桌面版的 profile 由 Electron 独占，`dsh plugin --profile desktop …` 会被拒绝 ——
 > 桌面用户请走上面的界面。
+
+> ⚠️ **刚发版就想装最新版？** DSH 桌面版内置的 pnpm 11 默认带「新版本约 24 小时冷却」的供应链保护：
+> 发布后一天内按包名安装或重装，会**静默装到上一版**（不报错，不是发版失败，与安装源无关）。
+> 想立即装到刚发布的新版，把**包名连版本号一起填**（例如新发布的是 `0.9.0`，就填 **`dsh-theme-gallery@0.9.0`**，实测可行），
+> 或等约 24 小时后正常安装。
 
 **② 下载构建产物**（不经过 npm 的等价方式，零构建授权）
 
